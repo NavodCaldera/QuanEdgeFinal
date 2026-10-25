@@ -106,7 +106,7 @@ whenever VaR lies above *u* they equal the classic POT formulas.
 
 - [x] **Phase 0 — Foundation:** package layout, shared config, temporary data loader with cached prices, portfolio aggregation, this plan
 - [x] **Phase 1 — VaR and ES:** historical, normal, Student-t, MC-normal, MC-t at 90/95/99%; unit tests against closed forms
-- [ ] **Phase 2 — EVT:** GPD MLE, threshold scan and selection rule, hybrid EVT VaR/ES; tests on data with known tails
+- [x] **Phase 2 — EVT:** GPD MLE, threshold scan and selection rule, hybrid EVT VaR/ES; tests on data with known tails
 - [ ] **Phase 3 — Evidence:** assumption tests, worst-day table, block-bootstrap intervals
 - [ ] **Phase 4 — Regime-conditioned risk:** GJR-GARCH filter, FHS, GARCH-EVT
 - [ ] **Phase 5 — Hand-offs:** rolling one-day-ahead forecasts (Person 4), figures (Person 5), one-command run writing tables, figures and `summary.md`
