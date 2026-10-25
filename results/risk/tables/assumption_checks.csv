@@ -1,0 +1,8 @@
+assumption,used_by,test,statistic,p_value,supported
+Returns are normal,"normal, mc_normal",Jarque-Bera,51241.1,0,no
+No autocorrelation in returns,all unconditional models,Ljung-Box Q(10) on r,88.8751,8.94896e-15,no
+Constant volatility (no clustering),all unconditional models,Ljung-Box Q(10) on r^2,4810.91,0,no
+Constant volatility (no clustering),all unconditional models,ARCH-LM(10),1538.6,0,no
+Returns are stationary,all models,ADF (H0: unit root),-16.6159,1.71482e-29,yes
+GARCH filter removed the clustering,"fhs, garch_evt",Ljung-Box Q(10) on z^2,12.0361,0.282651,yes
+GARCH residuals are normal,(why fhs/garch_evt model the residual tail),Jarque-Bera on z,1332.96,3.56766e-290,no

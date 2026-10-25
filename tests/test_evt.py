@@ -20,6 +20,8 @@ def test_cdf_and_ks_distance_match_scipy():
     y = stats.genpareto.rvs(0.3, scale=0.02, size=500, random_state=7)
     for xi in (-0.2, 0.0, 0.3):
         assert np.allclose(evt.gpd_cdf(y, xi, 0.02), stats.genpareto.cdf(y, xi, scale=0.02))
+        p = np.linspace(0.01, 0.99, 50)
+        assert np.allclose(evt.gpd_ppf(p, xi, 0.02), stats.genpareto.ppf(p, xi, scale=0.02))
         assert evt.ks_distance(y, xi, 0.02) == pytest.approx(
             stats.kstest(y, stats.genpareto(xi, scale=0.02).cdf).statistic, rel=1e-9)
 

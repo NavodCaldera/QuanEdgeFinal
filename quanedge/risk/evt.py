@@ -63,6 +63,14 @@ def gpd_cdf(y, xi: float, sigma: float):
     return 1 - np.maximum(1 + xi * np.asarray(y) / sigma, 0) ** (-1 / xi)
 
 
+def gpd_ppf(p, xi: float, sigma: float):
+    """GPD quantile function, the inverse of gpd_cdf."""
+    p = np.asarray(p, dtype=float)
+    if abs(xi) < 1e-9:
+        return -sigma * np.log1p(-p)
+    return sigma / xi * ((1 - p) ** (-xi) - 1)
+
+
 def ks_distance(y, xi: float, sigma: float) -> float:
     """Kolmogorov-Smirnov distance between the excesses y and GPD(xi, sigma)."""
     f = gpd_cdf(np.sort(y), xi, sigma)

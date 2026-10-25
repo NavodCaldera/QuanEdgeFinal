@@ -25,7 +25,7 @@ Workstream plan, interface contract and defence notes for the risk-measurement l
 | Sign | Loss $L=-r_p$; VaR and ES are positive losses | One convention for every model |
 | Money | USD loss $=10{,}000{,}000\times(1-e^{-L})$ | Exact for VaR (monotone map); for ES a very slightly conservative bound (Jensen), negligible at one day |
 | Headline sample | 2005-01-03 to 2026-09-30, all seven ETFs (GLD listed Nov 2004) | Contains GFC, COVID and 2022; ~5,400 days gives EVT enough exceedances |
-| Rolling window | 750 days (~3 years) | Forecasts start in early 2008, so the GFC crash is genuinely out-of-sample |
+| Rolling window | 750 days (~3 years) | The first forecast is for 27 Dec 2007, so the GFC crash is genuinely out-of-sample |
 | Reproducibility | Fixed end date, cached prices, seed 20261026 | Judges must get identical numbers |
 
 ## 3. Interface contract
@@ -40,17 +40,23 @@ Workstream plan, interface contract and defence notes for the risk-measurement l
 **Outputs**
 
 ```python
-from quanedge.risk import portfolio_log_returns, fit_models, risk_table, rolling_forecasts
+from quanedge.risk import portfolio_log_returns, fit_models, risk_table, rolling_forecasts, breach_summary
 
 r_p    = portfolio_log_returns(asset_log_returns, weights)
-models = fit_models(asset_log_returns, weights)      # {name: model}, each has .var(alpha), .es(alpha)
+models = fit_models(asset_log_returns, weights)         # {name: model}, each has .var(alpha), .es(alpha)
 table  = risk_table(models, alphas=(0.90, 0.95, 0.99))  # VaR/ES as log-loss, % of value and USD
-fc     = rolling_forecasts(r_p)                      # one-day-ahead VaR/ES + realised return, no look-ahead
+fc     = rolling_forecasts(r_p)                         # one-day-ahead VaR/ES + realised return, no look-ahead
+counts = breach_summary(fc, start="2020-01-01", end="2020-12-31")   # raw breach counts for any date range
 ```
 
-- *Person 4* takes `rolling_forecasts` into Kupiec, Christoffersen and the traffic light. For marginal/component
-  VaR and ES they can refit `fit_models` with bumped weights, or reuse the Monte Carlo scenarios.
-- *Person 5* puts `risk_table` in the dashboard; the functions in `quanedge.risk.plots` return matplotlib figures (`st.pyplot`).
+- *Person 4* takes `rolling_forecasts` into Kupiec, Christoffersen and the traffic light. Columns are
+  `var_{method}_{level}` / `es_{method}_{level}` in log-loss units (e.g. `var_garch_evt_99`), and a breach is
+  `-return > var`. A full run takes about 4 minutes, so `results/risk/tables/rolling_forecasts.csv` is saved for reuse.
+  For marginal/component VaR and ES, refit `fit_models` with bumped weights, or reuse the Monte Carlo scenarios.
+- *Person 5* puts `risk_table` in the dashboard (fitting all eight models takes about a second, so the sidebar
+  can refit live). The sidebar's backtest date range maps to `breach_summary(fc, start, end)`, reading the saved CSV.
+  `quanedge.risk.plots` returns matplotlib figures for `st.pyplot`: `fig_distribution`, `fig_threshold`,
+  `fig_evt_fit`, `fig_comparison`, `fig_tail_curve`, `fig_uncertainty`, `fig_rolling`.
 
 ## 4. Methods
 
@@ -109,7 +115,7 @@ whenever VaR lies above *u* they equal the classic POT formulas.
 - [x] **Phase 2 — EVT:** GPD MLE, threshold scan and selection rule, hybrid EVT VaR/ES; tests on data with known tails
 - [x] **Phase 3 — Evidence:** assumption tests, worst-day table, block-bootstrap intervals
 - [x] **Phase 4 — Regime-conditioned risk:** GJR-GARCH filter, FHS, GARCH-EVT
-- [ ] **Phase 5 — Hand-offs:** rolling one-day-ahead forecasts (Person 4), figures (Person 5), one-command run writing tables, figures and `summary.md`
+- [x] **Phase 5 — Hand-offs:** rolling one-day-ahead forecasts (Person 4), figures (Person 5), one-command run writing tables, figures and `summary.md`
 - [ ] **Phase 6 — Write-up:** disagreement narrative, ES rationale, threshold justification, limitations for the report and the app page
 - [ ] Swap in Person 1's data and Person 2's weights; re-run; freeze the numbers with the team
 

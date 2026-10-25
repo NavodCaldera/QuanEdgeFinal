@@ -87,3 +87,17 @@ Primary outputs: Streamlit app, report, tear sheet, presentation, final recommen
 - Use log returns for statistical analysis and explain any use of simple returns.
 - Compare all three VaR methods, report ES, justify EVT threshold selection, and backtest the selected VaR model out of sample.
 - Translate every metric into an actionable decision for a conservative endowment, including what could go wrong and how severe losses could be.
+
+## Risk measurement module (Person 3)
+
+VaR, Expected Shortfall and EVT live in [`quanedge/risk/`](quanedge/risk/). They are built and tested, but run on **placeholder inputs**: a temporary yfinance loader and equal weights stand in until Person 1's dataset and Person 2's weights land.
+
+```bash
+pip install -r requirements.txt
+python -m quanedge.risk.run           # tables, figures and summary in results/risk/ (a few minutes)
+python -m quanedge.risk.run --quick   # fast look: 50 bootstrap resamples, no rolling forecasts
+python -m pytest                      # unit tests against closed forms, simulations and known tails
+```
+
+- Plan, conventions and the interface for Persons 4 and 5: [docs/person3_risk_plan.md](docs/person3_risk_plan.md)
+- Latest numbers, every sentence computed from the tables: [results/risk/summary.md](results/risk/summary.md)
