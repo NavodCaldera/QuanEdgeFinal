@@ -3,10 +3,11 @@ Fit every risk model on one portfolio and tabulate VaR and ES side by side:
 the shape the dashboard needs (brief §6: VaR, ES and the EVT estimate at the
 same confidence level, so the gap between them is visible).
 """
+from functools import cache
 import pandas as pd
 from ..config import CONF_LEVELS, PORTFOLIO_VALUE
 from . import settings as S
-from . import evt, var_es
+from . import conditional, evt, var_es
 from .portfolio import loss_fraction, portfolio_log_returns
 
 LABEL = {
@@ -16,13 +17,17 @@ LABEL = {
     "mc_normal": "Monte Carlo (normal)",
     "mc_t": "Monte Carlo (Student-t)",
     "evt": "EVT (POT-GPD)",
+    "fhs": "Filtered HS (GARCH)",
+    "garch_evt": "GARCH-EVT",
 }
 FAMILY = {
     "historical": "Historical", "normal": "Parametric", "student_t": "Parametric",
     "mc_normal": "Monte Carlo", "mc_t": "Monte Carlo", "evt": "EVT",
+    "fhs": "Conditional", "garch_evt": "Conditional",
 }
 UNCONDITIONAL = ["historical", "normal", "student_t", "mc_normal", "mc_t", "evt"]
-ALL_METHODS = UNCONDITIONAL
+CONDITIONAL = ["fhs", "garch_evt"]          # tomorrow's risk given today's volatility
+ALL_METHODS = UNCONDITIONAL + CONDITIONAL
 
 
 def fit_models(asset_log_returns: pd.DataFrame, weights, methods=None,
@@ -37,6 +42,11 @@ def fit_models(asset_log_returns: pd.DataFrame, weights, methods=None,
     if unknown:
         raise ValueError(f"unknown methods {unknown}; choose from {ALL_METHODS}")
     r = portfolio_log_returns(asset_log_returns, weights)
+
+    @cache
+    def garch():                            # one filter shared by both conditional models
+        return conditional.fit_filter(r)
+
     build = {
         "historical": lambda: var_es.historical(r),
         "normal": lambda: var_es.Normal(r),
@@ -44,6 +54,8 @@ def fit_models(asset_log_returns: pd.DataFrame, weights, methods=None,
         "mc_normal": lambda: var_es.monte_carlo(asset_log_returns, weights, "normal", n_sim, seed),
         "mc_t": lambda: var_es.monte_carlo(asset_log_returns, weights, "t", n_sim, seed),
         "evt": lambda: evt.fit_evt(-r.to_numpy(), threshold_q=evt_threshold_q),
+        "fhs": lambda: conditional.fhs(garch()),
+        "garch_evt": lambda: conditional.garch_evt(garch()),
     }
     return {m: build[m]() for m in methods}
 
