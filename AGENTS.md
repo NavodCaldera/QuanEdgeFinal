@@ -2,7 +2,9 @@
 
 ## 1. Your assignment
 
-You are the quantitative research and software-development assistant for Team Ghosted in the SAIFA Quant Edge 1.0 final challenge. One person owns the whole submission: data, portfolio, risk, validation, stress testing, the app and every document. There is no division of work between people. Build and validate the complete competition submission from the current repository. This file is the single implementation prompt for GPT, Claude, Gemini or another coding assistant. Read it fully, inspect the current project, identify the remaining work, make an ordered plan, and implement that plan in tested stages.
+You are the quantitative research and software-development assistant for the solo Ghosted entry in the SAIFA Quant Edge 1.0 final challenge. One person owns the whole submission: data, portfolio, risk, validation, stress testing, the app and every document. There is no division of work between people. Build and validate the complete competition submission from the current repository. This file is the single implementation prompt for GPT, Claude, Gemini or another coding assistant. Read it fully, inspect the current project, identify the remaining work, make an ordered plan, and implement that plan in tested stages.
+
+Solo ownership is the owner's confirmed choice. Do not introduce a five-person workload, teammate handoffs or dependencies on other members. AI agents may assist with parallel implementation or review, but they do not replace the sole owner's responsibility for validation and defence. The brief's stated entry format remains a source fact; organiser acceptance of a solo entry must be recorded honestly, not assumed. Pending confirmation does not prevent preparation; resolve eligibility before submission.
 
 When this file is supplied in another model's chat, follow the same specification using that model's available tools. If repository files or execution tools are unavailable, state the limitation and provide concrete implementation artifacts where possible. Do not pretend to inspect files, run commands or produce results without doing so.
 
@@ -12,7 +14,7 @@ Preserve working components and extend the existing Python package. `PLAN.md` ho
 
 The client is the Serendib University Endowment Fund, a conservative institutional investor with a USD 10,000,000 portfolio supporting scholarships, research, faculty development and capital projects. Preserve and grow capital over the long term, balance income and sustainable real growth, and prioritize avoiding large losses and maintaining resilience over maximizing expected return.
 
-Define and justify the investment horizon, nominal/real return objective, asset allocation, acceptable loss, concentration limits, risk constraints, rebalancing and monitoring rules. Treat numerical targets as proposed assumptions until the owner accepts them. The assistant may develop a defensible candidate portfolio and recommendation, but final human investment judgement and review must be identified honestly.
+Define and justify the investment horizon, nominal/real return objective, asset allocation, acceptable loss, concentration limits, risk constraints, rebalancing and monitoring rules. Treat numerical targets as proposed assumptions until the owner accepts them. Once accepted they are frozen in the decision log and tagged `prereg-v1` before any post-2016 or recommended-weight evaluation result is computed (PLAN.md sections 13 and 13a); later changes are logged mandate changes. The assistant may develop a defensible candidate portfolio and recommendation, but final human investment judgement and review must be identified honestly.
 
 Only these investments are eligible:
 
@@ -28,7 +30,7 @@ Only these investments are eligible:
 
 One fund or any combination is permitted. Do not add futures, options, unlisted cash instruments or FX overlays to the investable universe based on teaching examples. Make long-only, full-investment and other implementation constraints explicit chosen policy assumptions rather than falsely attributing them to the brief.
 
-Authoritative source: `../Quant edge 1.0 Final Challenge 1.pdf`, 10 pages. Supporting sources: `../Advanced_Risk_Management_English_final.pdf` and matching PPTX (28 pages/slides); `../EDGEFORGE_Polished_Finance_First_Masterclass_2026.pdf` and matching PPTX (99 pages/slides, with additional speaker notes). The pasted competition summary is supplemental. This prompt includes the core requirements so it remains usable when those local references are unavailable.
+Authoritative source: `Quant edge 1.0 Final Challenge 1.pdf` (repository root), 10 pages. Supporting sources: `Advanced_Risk_Management_English_final.pdf` (repository root) and matching PPTX in `../` (28 pages/slides); `EDGEFORGE_Polished_Finance_First_Masterclass_2026.pdf` (repository root) and matching PPTX in `../` (99 pages/slides, with additional speaker notes). The pasted competition summary is supplemental. This prompt includes the core requirements so it remains usable when those local references are unavailable.
 
 The final brief prevails over draft teaching material. In particular, a three-year investment horizon, broader instruments and reversed rubric weights in the masterclass are not final rules. Numerical illustrations in the teaching decks are synthetic, not verified historical estimates.
 
@@ -143,16 +145,16 @@ Changing data, weights, policy, date range, horizon or model settings invalidate
 ## 7. Portfolio construction and performance
 
 Implement and explain:
-- Client policy: horizon, return objective, inflation/spending assumptions where used, tolerable drawdown/loss, concentration, liquidity/rebalancing and risk budgets.
+- Client policy: horizon, return objective, inflation/spending assumptions where used, tolerable drawdown/loss, concentration, liquidity/rebalancing and risk budgets. Use the PLAN.md section 15 conventions: inflation from CPI index ratios (never the index level as a rate), spending once a year after returns and costs, hurdle h = (1+pi*)/(1-s)-1 after costs and before spending, compared with expected geometric return, and a real-capital target 10m x CPI_T/CPI_0 that never adds spending again.
 - Expected returns, volatility, correlation, covariance and diversification. Use consistent frequency and annualization; justify estimators and stability measures.
 - Markowitz mean-variance construction and CAPM concepts, including benchmark, beta, risk-free alignment and expected/realized-return distinctions.
 - Transparent candidate comparison: suitable baselines (for example equal-weight and constrained minimum-variance) plus proposed allocation. Explain feasibility, sensitivity to estimates, diversification and downside trade-offs.
-- Optimization constraints, objective, solver status, budget checks and sensitivity. Verify that weights are feasible; show infeasibility rather than silently relaxing client limits.
+- Optimization constraints, objective (PLAN.md section 13 selection rule), solver status, budget checks, sensitivity and controlled constraint-relaxation comparisons (one limit changed, data, scenarios, estimators, costs, objective and solver fixed). Verify that weights are feasible; show infeasibility rather than silently relaxing client limits.
 - Benchmark-aligned Sharpe, Sortino, Treynor, Jensen's alpha, Information ratio, maximum drawdown, Calmar ratio, cumulative return and relevant annualized return/volatility.
 
 Define each KPI precisely: excess/active return, downside target, sample/annualization choices, benchmark and risk-free proxy, drawdown path and CAGR. Handle zero or negative denominators appropriately; beta near zero makes Treynor unreliable. Information ratio needs tracking error; Calmar uses a consistent annualized return/drawdown period.
 
-Use simple returns to compound wealth and calculate portfolio P&L. Decide how costs and rebalancing enter reported performance; do not imply cost-free replay is a realistic traded strategy. Avoid optimizing on the same full dataset used to claim out-of-sample performance. Final candidate weights should be selected using training/validation evidence, with a locked final evaluation where practical.
+Use simple returns to compound wealth and calculate portfolio P&L. Decide how costs and rebalancing enter reported performance; do not imply cost-free replay is a realistic traded strategy. Freeze the selection procedure before computing post-training results. Produce training-period weights (W_train) and recommended weights (W_rec) from the same procedure, as canonical weight files with a SHA-256 weight hash. All historical replays are retrospective portfolio evaluations: the owner has seen the full sample and the policy was written knowing past crises. Do not describe any period up to the snapshot end as untouched or "genuinely out of sample". Adjusted closes are already net of ETF expense ratios; do not deduct them again from historical returns.
 
 Produce a machine-readable weight file compatible with the risk runner, policy/configuration, effective date, portfolio/benchmark series, KPI table, allocation/return/drawdown charts and a reasoned selection narrative.
 
@@ -188,7 +190,7 @@ Monte Carlo:
 - Record fitted parameters, seed, scenario count and covariance treatment. Do not silently regularize covariance, clip disasters or ignore overflow.
 - Preserve per-asset scenarios and labels for risk attribution.
 - Assess convergence across sizes/seeds and distinguish simulation error from estimation/model uncertainty.
-- Normal asset-log simulation followed by nonlinear portfolio aggregation need not match a normal fit to portfolio log returns exactly; use the one-asset matching-model case for exact-model convergence checks.
+- Normal Monte Carlo converges to the corresponding analytical calculation only when both use the same distribution, parameters and portfolio accounting. Joint normal asset log returns aggregated through simple returns need not produce normally distributed portfolio log returns, so a gap from a normal fit to portfolio log returns is a model difference, not an error. Use the one-asset matching-model case for exact-model convergence checks.
 
 For optional Student-t, distinguish scale from standard deviation, check MLE convergence and boundaries, and require the moments needed by each calculation. Current univariate nu bounds exceed 1; multivariate covariance matching requires nu>2. Shared scenario scale shocks preserve multivariate-t dependence. Do not assume t or EVT always has larger VaR at every confidence.
 
@@ -222,9 +224,11 @@ The bootstrap currently fixes the selected threshold percentile, recomputes its 
 
 Existing GJR-GARCH/FHS/GARCH-EVT models are optional extensions. Check convergence, valid variance recursion, residual dependence and parameter boundaries. The fixed 90th-percentile residual EVT threshold needs its own justification. GARCH forecasts volatility, not return direction; filtering does not automatically eliminate clustering.
 
-## 10. Out-of-sample validation
+## 10. Sequential risk-forecast validation
 
 Generate each day-t forecast using data available through t-1. Preserve training start/end, last parameter-refit date, forecast date, selected settings, data/weight hashes and failures.
+
+Evaluation labels are retrospective portfolio evaluation, sequential risk-forecast evaluation and untouched evaluation, as defined in PLAN.md section 15; every exported result carries exactly one. Each weight vector requires its own forecast file with its weight hash in every row, and backtest statistics must refuse a mismatched hash. A portfolio never inherits another portfolio's traffic light: the app, memo and verdict use W_rec's own forecasts, and any revised or adjusted allocation shows "not evaluated" until its own forecasts exist. No untouched historical data exists (all data through 2026-09-30 was used in the e94c0ae development runs); post-snapshot returns are descriptive monitoring only. Also run the walk-forward procedure check (PLAN.md phase 4).
 
 Existing default rolling implementation: 750 observations, daily historical/normal refits, slow-model refits every 21 observations and daily conditional-volatility updates. Justify final choices. Forecasts include historical, normal, Student-t, EVT, FHS and GARCH-EVT; MC is absent. If MC becomes the selected validation model, implement its actual forecast path rather than substituting normal forecasts.
 
@@ -235,7 +239,7 @@ Implement:
 - Christoffersen independence test: transition counts, LR statistic, p-value and explicit handling of insufficient transitions or degenerate sequences.
 - Basel traffic-light classification with a clearly specified confidence and observation count. The traditional benchmark is 99% one-day VaR over 250 observations; do not reuse its thresholds unaltered for arbitrary sidebar levels or sample lengths. Verify and cite the chosen authoritative calibration or explicitly label an alternative binomial assessment.
 
-Show whether breaches are too frequent, clustered or inconclusive and whether the model is acceptable, questionable or unreliable. Test model selection outside the final evaluation set. In-sample breach counts are descriptive fit checks, not a backtest. A passing coverage test alone does not establish independence or model suitability.
+Show whether breaches are too frequent, clustered or inconclusive and whether the model is acceptable, questionable or unreliable. Name the primary and challenger models and their settings at the `prereg-v1` tag, before computing their backtests on the evaluated weights, and disclose evidence seen earlier (the e94c0ae equal-weight forecasts). Only the primary at 99% gates the verdict (PLAN.md check C4); a risk-model failure leads to the challenger and then to "evaluation incomplete", never to Adjust or Reject. Other models and levels are descriptive. In-sample breach counts are descriptive fit checks, not a backtest. A passing coverage test alone does not establish independence or model suitability.
 
 ## 11. Stress testing and risk contributions
 
@@ -245,7 +249,19 @@ Design at least one clearly labelled hypothetical scenario with justified joint 
 
 For every scenario report portfolio return, USD loss, per-asset impact, largest damage contributors and whether policy limits are breached. Explain why bonds/gold may or may not diversify the scenario rather than promising protection.
 
-Implement and interpret marginal/component VaR, marginal ES, position sizing and risk budgeting where appropriate to the model. Specify derivatives with respect to dollar exposures or funded reallocations: bump-and-renormalize weights measures a different quantity from an independent exposure derivative. Use common random scenarios and test finite-difference sensitivity. Reconcile component sums only where the homogeneity/differentiability assumptions support it.
+Implement and interpret marginal/component VaR, marginal ES, position sizing and risk budgeting where appropriate to the model. Specify derivatives with respect to dollar exposures or funded reallocations: bump-and-renormalize weights measures a different quantity from an independent exposure derivative. Use common random scenarios and test finite-difference sensitivity. For derivative-based (Euler/marginal) VaR/ES, reconcile component sums only where homogeneity and differentiability support it and report the residual; the scenario-based dollar ES decomposition below reconciles exactly by construction. FHS, fitted to portfolio returns, cannot supply attribution: risk budgeting uses joint historical scenarios (multivariate-t Monte Carlo as a check), labelled "historical attribution".
+
+Calculate ES contributions in dollars from joint historical asset-return rows or joint simulated asset scenarios. For portfolio value V, asset weights w_i and scenario simple returns R_i,s:
+```text
+asset_loss_usd[i,s] = -V * w_i * R_i,s
+portfolio_loss_usd[s] = sum_i asset_loss_usd[i,s]
+component_es_usd[i] = sum_s tail_weight[s] * asset_loss_usd[i,s]
+portfolio_es_usd = sum_s tail_weight[s] * portfolio_loss_usd[s]
+sum_i component_es_usd[i] = portfolio_es_usd
+```
+Select the worst portfolio-dollar-loss scenarios with probability mass exactly 1-alpha, then normalize their selected masses to tail weights summing to one. For n equally probable scenarios, this is the worst n*(1-alpha) observations with fractional boundary mass. When portfolio losses tie at the boundary, distribute the remaining selected mass proportionally to the tied scenarios' original probabilities (equally for equally probable scenarios). Apply exactly the same tail weights to every asset and the portfolio; never select a separate tail for each asset's contribution.
+
+Negative asset ES contributions are valid when an asset gains in the portfolio's bad scenarios; do not clip them. Reconcile contributions to dollar ES from these same joint scenarios, confidence and valuation, within numerical tolerance, not to log-unit ES or a separately fitted model's ES. A model fitted only to portfolio returns cannot supply asset attribution by itself: report attribution as unavailable unless joint asset scenarios consistent with that model are supplied. A separately labelled historical attribution may be shown, but must not be presented as that model's decomposition.
 
 Distinguish largest negative asset return from largest weighted P&L contribution. Suggest allocation/risk-limit changes based on measured evidence and rerun affected analysis.
 
@@ -278,14 +294,22 @@ Existing matplotlib factories: `fig_distribution`, `fig_threshold(scan, chosen)`
 ## 13. Streamlit product
 
 Build an understandable investment-committee application with:
-- Sidebar: 90/95/99% confidence, VaR methodology, backtest dates and portfolio weights.
+- Sidebar: 90/95/99% confidence, VaR methodology, backtest dates and portfolio choice (a dropdown of precomputed portfolios by default; free weights in a labelled "Explore" mode).
 - Portfolio panel: recommended/current weights, policy/benchmark context, cumulative return, drawdown and performance KPIs.
 - Risk dashboard: VaR, ES and EVT estimate side by side at matching confidence, horizon, value and portfolio, with status/basis labels and relevant uncertainty.
-- Backtesting: forecasts and exceptions, Kupiec and Christoffersen statistics/p-values, observation coverage and correctly calibrated traffic light or explicit unavailability.
+- Backtesting: forecasts and exceptions, Kupiec and Christoffersen statistics/p-values, observation coverage and correctly calibrated traffic light or explicit unavailability, for the displayed weight hash only.
 - Stress panel: all required historical scenarios plus the hypothetical scenario, dollar/percentage loss and asset attribution.
-- Risk-contribution view and actionable accept/adjust/reject recommendation linked to limits and evidence.
+- Risk-contribution view showing its scenario source, and "attribution unavailable" for portfolio-only models.
+- Actionable accept/adjust/reject recommendation (or "evaluation incomplete") computed by the PLAN.md 13a rule, linked to limits and evidence.
+- A fixed "Frozen recommendation" panel showing W_rec, its weight hash, run ID, verdict and traffic light whatever the sidebar says.
 - A clearly labelled **Assumptions & Limitations** page in plain language.
 - Data/source provenance, as-of dates, development/final status and downloadable evidence as useful.
+
+Result keys and states:
+- `weight_hash` = SHA-256 of canonical JSON of all seven tickers in fixed order with 6-decimal weight strings (omitted tickers are 0.000000). `artifact_key` = SHA-256 of {weight_hash, method, data_snapshot_hash, config_hash, code_rev} keys expensive artifacts; `view_key` = {artifact_key, confidence, eval_start, eval_end} keys cheap derivations. Lookups are scoped to the loaded run's `results/<run_id>/index.json`; the run ID is displayed as provenance and is not hashed.
+- A pure, Streamlit-free function `result_state(view_key, index)` returns MATCHED (precomputed, identical key; badge "run <id>, weights <hash8>"), LIVE (cheap result computed in the app for exactly these inputs; "computed in app, not part of frozen run"), RERUN_REQUIRED ("unavailable for these weights - rerun required" plus the command), FAILED (model status and reason) or INPUT_ERROR (weights not summing to 100% within 0.01 point, or negative; outside-policy weights are allowed but flagged).
+- Cheap, LIVE allowed: weights, replay return and drawdown, KPIs, historical/normal/Student-t VaR and ES, Monte Carlo with 20k scenarios and a fixed seed, stress replays and the hypothetical scenario, historical component ES, and date re-filtering of a MATCHED forecast file. Expensive, MATCHED or RERUN_REQUIRED only: rolling forecasts, Kupiec/Christoffersen/traffic light, bootstrap intervals, EVT threshold uncertainty, the real-capital bootstrap, the walk-forward check and the verdict.
+- The traffic light shows colour only when MATCHED; otherwise grey with its label. The verdict renders only when C1-C5 are all MATCHED for the same weight hash.
 
 Changing weights must invalidate relevant results. A backtest date filter selects evaluation dates while preserving earlier training history. A method unavailable for forecasting must be explained rather than silently substituted. Distinguish exploratory user weights from the recommended portfolio.
 
@@ -298,12 +322,14 @@ Keep unit tests offline using synthetic distributions or versioned snapshots. Us
 Required coverage:
 - Data: returns identity, calendar classification, missing/anomaly handling, as-of macro alignment, risk-free units, manifest hashes and report/data consistency.
 - Portfolio: budget/constraint feasibility, solver failures, benchmark alignment, independent KPI/wealth/drawdown examples and temporal leakage.
-- Risk: tail ties/fractional mass, exact monetary ES, normal/t closed forms, simulation convergence and singular covariance/overflow.
+- Portfolio policy: CPI index-ratio inflation (a CPI level passed as a rate raises an error); h(2.5%, 4%) = 0.067708; a path earning exactly h ends on the real-capital target (no double count); annual (1-s) versus monthly (1-s)^(1/12) spending give the same year-end NAV; money-weighted return equals R for a constant return with draws and equals CAGR without draws; expense ratios not deducted from adjusted-close returns; constraint effect is exactly 0 for a non-binding cap and matches the dual for a small relaxation, with identical scenario-matrix hashes in both solves.
+- Verdict: one test per branch (incomplete, Accept, each Adjust A1-A5 in order, Reject); a property test that random check vectors give exactly one outcome; missing C4 gives incomplete, never Accept or Reject; frozen config values equal the decision-log values at the `prereg-v1` tag.
+- Risk: tail ties/fractional mass, exact monetary ES, normal/t closed forms, simulation convergence and singular covariance/overflow. Normal Monte Carlo: one-asset convergence to the closed form within 4 sampling standard errors at N = 1e4, 1e5, 1e6, with error falling roughly as 1/sqrt(N); weights (1, 0, ..., 0) in the seven-asset simulation equal the one-asset result under common random numbers; two identical assets at rho = 1 need an eigen- or LDL-based sampler because Cholesky fails.
 - EVT: positive/zero/negative shape, support, infinite log ES, threshold failure/fallback, body/tail normalization and sensitivity.
 - Conditional/rolling: recursion, timing/refit boundaries, future-data perturbation, missing forecasts and exact CSV round trips.
-- Validation: known exception sequences, zero/all breaches, transition degeneracy and traffic-light calibration.
-- Stress/attribution: scenario arithmetic, path/rebalancing assumptions, contribution reconciliation and units.
-- App/integration: controls, cache invalidation, missing data, unavailable models and consistent run identifiers.
+- Validation: known exception sequences, zero/all breaches, transition degeneracy and traffic-light calibration; refusal of a forecast file with a mismatched weight hash; walk-forward weights for year Y unchanged by perturbing data dated on or after 1 January Y; the final pipeline refuses post-snapshot data.
+- Stress/attribution: scenario arithmetic, path/rebalancing assumptions and units; dollar ES contribution reconciliation using shared tail weights, noninteger tail counts, boundary ties, negative contributions and explicit unavailable attribution for portfolio-only models.
+- App/integration: controls, cache invalidation, missing data, unavailable models and consistent run identifiers; weight_hash invariant to key order and omitted zeros and changed by a 1e-6 weight change; every result_state branch; AppTest that an edited weight gives a grey light, "rerun required" and no verdict, reverting restores MATCHED, and the frozen-recommendation panel never changes.
 - Artifacts: report length, one-page tear sheet, readable exported figures/deck, consistent final numbers and no broken local links.
 
 Within one consistently defined distribution, quantiles are non-decreasing with confidence; validate ES/quantile relationships under the documented finite-sample conventions. Do not impose a universal ordering between different models. NAV scaling changes dollar risk linearly, not percentage/log risk.
@@ -330,8 +356,8 @@ The memo must explain:
 - Client policy and allocation selection, data provenance/cleaning and assumptions.
 - Markowitz/CAPM, performance, three VaR methods, ES rationale and EVT threshold evidence.
 - Method disagreements, uncertainty and sensitivity.
-- Formal validation, stress losses, attribution and practical risk-budget actions.
-- An actionable accept/adjust/reject recommendation, what can go wrong, how bad losses may become and reliability limits.
+- Formal validation with its evaluation label, stress losses, attribution and practical risk-budget actions.
+- An actionable accept/adjust/reject recommendation computed by the PLAN.md 13a rule, what can go wrong, how bad losses may become and reliability limits.
 
 Explicit limitations: historical sample/regime dependence, sparse extremes, threshold/model uncertainty, mean/covariance estimation, conditional-filter specification, static exposure replay versus strategy, costs/liquidity/price impact, revised macro data, and unsupported effects. High p-values do not prove assumptions; ADF rejection is not proof of stable distribution parameters. VaR is not maximum loss; ES is not a loss cap; tail index alone is not crash probability.
 
@@ -351,7 +377,7 @@ Theory leads retained from prior plans: Artzner et al. (1999), Acerbi and Tasche
 6. **Decision and communication:** turn evidence into a proposed investment action, report, tear sheet and pitch; identify decisions requiring the owner's actual review.
 7. **Final reproducibility:** lock selected inputs/settings, run from documented setup, reconcile artifacts, verify UI and record code/data/run identifiers and remaining limitations.
 
-Completion requires all mandatory analytical layers and app panels, reproducible run instructions, independent numerical evidence, honest model failures, formal out-of-sample tests, required scenarios and attribution, deliverable artifacts and accurate AI disclosure. A passing test suite alone is not final human review or investment approval.
+Completion requires all mandatory analytical layers and app panels, reproducible run instructions, independent numerical evidence, honest model failures, formal sequential risk-forecast tests of the recommended weights' own forecasts, required scenarios and attribution, deliverable artifacts and accurate AI disclosure. A passing test suite alone is not final human review or investment approval.
 
 At the end of each stage, provide a runnable example, schema/units, input/output identifiers, validation evidence, warnings and outstanding dependencies. If the next stage cannot use the output without rewriting calculations, the interface is not accepted.
 
@@ -381,6 +407,26 @@ DOC-003, 26 October 2026:
 - Policy fixes found in that review: the return objective is now a hurdle h = CPI + 4% spending + costs set from the spending need (the earlier frontier-derived target made Reject impossible); AGG is 25-70% and exempt from the 40% single-ETF cap (the earlier text capped AGG at 40%, forcing at least 45% equity).
 - Added: permanent-portfolio-inspired benchmark, constrained volatility risk parity, co-exceedance and ES diversification benefit, shortfall-against-hurdle bootstrap, money-weighted return and time under water, alternatives-considered memo text. NPV/PI dropped as redundant.
 - No code, data or results changed; policy numbers remain proposals awaiting the owner's review.
+
+DOC-004, 26 October 2026:
+- Owner confirmed that the project remains solo. Both prompts now explicitly prohibit a return to five-person work allocation or teammate dependencies; AI review agents remain permitted assistance.
+- Retained the brief's stated entry format as a source fact. Solo eligibility remains unconfirmed in these records; preparation may continue, with confirmation required before submission.
+- Scope: solo ownership and eligibility wording only. Other audit findings remain outstanding; no code, data or results changed.
+- Verification: reviewed both documents for conflicting ownership and eligibility wording; `git diff --check` passed.
+
+DOC-005, 26 October 2026:
+- Adopted the owner's dollar-ES attribution convention in AGENTS.md and PLAN.md. Contributions use joint asset simple-return scenarios and shared normalized tail weights, including fractional boundary mass and proportional allocation across boundary ties.
+- Negative contributions remain valid. Reconciliation is to the same scenario-based dollar ES; portfolio-only fitted models cannot supply asset contributions without consistent joint scenarios.
+- Removed PLAN.md's ambiguous weighted-log-loss conditional-expectation formula and clarified the phase-5 acceptance check. Other audit findings remain outstanding.
+- Verification: targeted formula/wording review and `git diff --check`; documentation only, no numerical implementation or tests run.
+
+DOC-006, 26 October 2026: external audit items 2-7, reviewed by a third pair of AI critic agents who cross-critiqued (PLAN.md section 20). Closes the "other audit findings remain outstanding" notes in DOC-004 and DOC-005.
+- Evaluation labels (retrospective / sequential risk-forecast / untouched); "genuinely out of sample" removed; one forecast file per weight hash, so W_rec has its own backtest and no portfolio inherits another's traffic light; walk-forward procedure check made core. No untouched historical data exists (seen at e94c0ae); post-snapshot data is descriptive only.
+- Spending once a year after returns and costs; inflation from CPI index ratios; h = (1+pi*)/(1-s)-1 = 6.77% after costs, before spending, against expected geometric return; real-capital target 10m x CPI_T/CPI_0; expense ratios not double-counted. Supersedes DOC-003's additive hurdle.
+- Verdict 13a rewritten: frozen checks C1-C5, ordered finite adjustment set A1-A5, "evaluation incomplete" first, exactly one outcome; named selection rule; ES budget measured on the weights' estimation sample; freeze tag `prereg-v1` before any post-2016 result (phase 2 split into 2a/2b).
+- Normal Monte Carlo wording corrected with one-asset convergence tests; app result states keyed by weight/data/config/code hashes, precomputed-portfolio dropdown and frozen-recommendation panel; constraint effects by controlled re-solves (benchmark gaps no longer cited as the gold-cap cost).
+- Disclosed: e94c0ae equal-weight forecasts were seen before naming FHS primary (99%: FHS 65 breaches vs 47.2 expected, Kupiec p about 0.014; GARCH-EVT 52, p about 0.49). Owner to confirm or swap the primary model before the tag.
+- Documentation only; tests specified, not run. Organiser PDFs now committed at the repository root.
 
 For subsequent meaningful updates append a compact entry using:
 ```text

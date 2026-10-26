@@ -1,8 +1,8 @@
 # QuantEdgeFinal: competition plan
 
-Single-owner plan for the SAIFA Quant Edge 1.0 final challenge (Team Ghosted). One person builds and defends everything; AI assistants help with implementation under the disclosure rules in section 9. `AGENTS.md` holds the build specification and the progress record; this file holds the competition facts, the policy choices and the ordered plan.
+Solo-entry plan for the SAIFA Quant Edge 1.0 final challenge (Ghosted). The owner has confirmed the solo approach: one person builds, validates and defends everything. Do not divide work among five people or wait for teammates. AI assistants and review agents may help under the disclosure rules in section 9. `AGENTS.md` holds the build specification and the progress record; this file holds the competition facts, the policy choices and the ordered plan.
 
-Status: final draft, 26 October 2026. Draft 1 was reviewed by two critics (a judge/committee view and a one-person-delivery engineering view) who critiqued each other's findings; section 17 records how their disagreements were settled. The owner's own ideas ("Quant Edge - thoughts") were then integrated and reviewed the same way by a second pair of critics; section 19 records them.
+Status: final draft, 26 October 2026. Draft 1 was reviewed by two critics (a judge/committee view and a one-person-delivery engineering view) who critiqued each other's findings; section 17 records how their disagreements were settled. The owner's own ideas ("Quant Edge - thoughts") were then integrated and reviewed the same way by a second pair of critics; section 19 records them. An external audit on accounting, validation and decision rules was then applied after review by a third pair of critics (section 20).
 
 ## 1. Sources and precedence
 
@@ -12,14 +12,14 @@ Status: final draft, 26 October 2026. Draft 1 was reviewed by two critics (a jud
 | 2 | `EDGEFORGE_Polished_Finance_First_Masterclass_2026.pdf` (+ PPTX with speaker notes) | 99 | Teaching material built from an earlier draft of the brief. Use for judging expectations, not rules. |
 | 3 | `Advanced_Risk_Management_English_final.pdf` (+ PPTX) | 28 | Teaching deck (VaR, ES, EVT, copulas, wavelets). All numbers are synthetic. |
 
-The three files sit in `Final competition/`, beside this repository, and are not committed. The brief's section numbering skips section 4 (3 is followed by 5); no text is missing.
+The three PDFs are committed at the repository root (the PPTX files stay outside the repository, in `Final competition/`). The brief's section numbering skips section 4 (3 is followed by 5); no text is missing.
 
 ## 2. The competition in brief
 
 - **Event:** Quant Edge 1.0, a national STEM quantitative investment research competition for undergraduates in Sri Lanka, informed by the CFA Program curriculum.
 - **Theme:** "From Portfolio Theory to Value at Risk, Expected Shortfall and Extreme Value Theory".
 - **Core idea:** successful investing means sustainable returns while protecting capital and managing downside risk, not maximising return.
-- **Format:** the brief says "teams of five". This entry is run by one person. Solo eligibility must be confirmed in writing by the organisers before build work starts (phase 0).
+- **Format:** the brief says "teams of five"; this is a source requirement, not this project's staffing plan. The owner has chosen a solo entry. Request written organiser confirmation in phase 0 and resolve eligibility before submission. Preparation may continue while confirmation is pending; do not assume approval or convert the project into a five-person workflow.
 - **Role:** we are the quantitative research division of an asset manager competing for a mandate.
 - **Deadline:** not stated in the brief. Confirm with the organisers and record it in phase 0.
 
@@ -85,7 +85,7 @@ Python is required for all analysis. Streamlit is the required interface: the po
 5. Stress-test panel: portfolio impact under each crisis scenario.
 6. A clearly labelled "Assumptions & Limitations" page in plain language. Non-negotiable and explicitly graded.
 
-Plus our additions: recommendation / "three questions" page, candidate comparison, risk contributions, data provenance.
+Plus our additions: recommendation / "three questions" page, candidate comparison, risk contributions, data provenance, and a fixed "Frozen recommendation" panel. Portfolio choice defaults to a dropdown of fully precomputed portfolios; free weights sit in a labelled "Explore" mode where expensive results show "unavailable - rerun required" (phase 6).
 
 **Suggested free-tier toolkit:** pandas, NumPy, SciPy; statsmodels or arch; pyextremes or a hand-written GPD maximum-likelihood fit; matplotlib or Plotly; Streamlit Community Cloud or a university server. Free tools are a fairness requirement.
 
@@ -122,7 +122,7 @@ Every layer is mandatory. How it is implemented (which VaR method, threshold rul
 
 ## 8. Data rules
 
-**Approved sources only:** Yahoo Finance via yfinance (prices, dividend history); FRED (risk-free proxy such as the 3-month T-bill DTB3, CPI CPIAUCSL, 10-year yield DGS10); World Bank / IMF open data (macro context for the memo). An undisclosed or proprietary source is a rubric violation; judges must be able to reproduce the data.
+**Approved sources only:** Yahoo Finance via yfinance (prices, dividend history); FRED (risk-free proxy such as the 3-month T-bill DTB3, CPI CPIAUCSL, 10-year yield DGS10, 10-year breakeven inflation T10YIE as a reasonableness check); World Bank / IMF open data (macro context for the memo). An undisclosed or proprietary source is a rubric violation; judges must be able to reproduce the data.
 
 **Mandatory cleaning discipline:**
 - Adjusted close prices, so dividends and splits do not distort returns.
@@ -154,7 +154,7 @@ Practical rules for one person: keep an AI-use log (date, tool, purpose, files, 
 | Criterion | Weight | Assessed | Plan response |
 |---|---|---|---|
 | Investment decision-making | 30% | Sound, actionable, client-appropriate recommendation; depth across all relevant variables, including optional items | Policy and verdict rule fixed before testing; candidate table; macro add-on; three questions answered |
-| Technical rigour & correctness | 25% | Correct KPIs, VaR, ES, EVT, optional macro variables, statistically sound backtesting | Conventions in section 15; independent checks; honest failures; no look-ahead |
+| Technical rigour & correctness | 25% | Correct KPIs, VaR, ES, EVT, optional macro variables, statistically sound backtesting | Conventions in section 15; independent checks; honest failures; no look-ahead; three evaluation labels (section 15) |
 | Software & interface quality | 15% | Streamlit usability, front-end design, code structure, documentation, reproducibility | One-command pipeline; app reads frozen results; tests; README |
 | Innovation & ambition | 15% | Well-justified extensions, e.g. regime-conditioned risk, risk overlays, alternative EVT threshold rules | Regime-conditioned (FHS) primary model; EVT threshold-rule comparison; reverse stress test |
 | Communication & defence | 15% | Clarity of memo and pitch; answers under questioning | Three questions page; Q&A bank; every number checked by script |
@@ -195,36 +195,63 @@ On 26 October 2026 the working tree was stripped to `.gitattributes`, `.gitignor
 
 For every restored module: the owner writes a short summary of what it does, adds one hand-checked test, and can explain it without notes. Budget about one day of review per 1,000 lines.
 
-## 13. Investment policy (proposals to confirm in phase 2)
+## 13. Investment policy (owner-approved values, frozen in the decision log and tagged `prereg-v1` before any post-2016 result is computed)
+
+The values below are proposals until the owner approves them. Once tagged they are fixed; later changes are logged mandate changes and do not alter the verdict on the original mandate.
 
 | Item | Policy | Notes |
 |---|---|---|
 | Investment horizon | Long-term (the endowment is perpetual); strategic review every 5 years | Defend with spending needs and intergenerational equity |
 | Risk horizon | 1 trading day for VaR, ES and backtesting | Our choice, matched to the daily backtest. Multi-day views use overlapping historical returns, not square-root-of-time scaling |
-| Return objective (hurdle h) | h = US CPI (CPIAUCSL) + 4% spending rate + about 0.1% costs, set from the spending need, not from the frontier | Phase 2 reports the frontier return at the ES budget beside h, so the hurdle can genuinely fail (verdict rule 13a). The 4% spending rate is a stated assumption |
-| Binding risk budget | 1-day 99% ES of at most about 2.5% of NAV (USD 250k), confirmed from candidate portfolios in phase 2 | Optimised directly (CVaR linear programme, Rockafellar-Uryasev) |
-| Constraints | Long-only, fully invested, zero weights allowed; AGG 25-70% (a diversified bond index, so exempt from the single-ETF cap); equity (SPY+EFA+EEM+XLE+XLK) at most 55%; any other single ETF at most 40%; GLD at most 15%; XLE and XLK at most 10% each | Report the shadow cost of the equity cap, GLD cap, AGG floor, AGG cap and ES budget (re-solve with each relaxed). The AGG cap reflects rate-risk concentration (AGG lost about 13% in 2022) |
-| Drawdown limit | 20%, checked after the fact on the GFC replay and on bootstrapped 1-year paths | Not an optimiser constraint (path-dependent, overfits one crisis) |
-| Rebalancing | Quarterly, or when a weight drifts more than 5 points; costs stated | Risk models assume daily rebalancing; state the mismatch |
-| Governance | Drawdown 10% or a yellow backtest zone: review. Drawdown 15% or red zone: de-risk toward the minimum-ES portfolio | Escalation ladder for the memo |
+| Return objective (hurdle h) | h = (1 + π*) / (1 - s) - 1, after costs and before spending; π* = 2.5% a year assumed US CPI inflation; s = 4% of NAV spent once a year; so h = 6.77% | Set from the spending need, not from the frontier, so it can genuinely fail. Compared with the expected geometric return. s and π* are stated assumptions (sensitivity π* 2% and 3.5%; T10YIE and trailing 10-year CPI growth reported as a check); conventions in section 15 |
+| Binding risk budget | 1-day 99% ES of at most B = 2.5% of NAV (USD 250k), fixed | Measured as historical ES99 in dollars on the estimation sample of the weights being judged (the same sample as the optimiser's CVaR constraint). FHS conditional ES is a monitoring figure, not the budget test |
+| Selection rule | Maximise expected arithmetic return subject to CVaR99 ≤ B and all constraints (Rockafellar-Uryasev linear programme, scipy `linprog` with HiGHS); tie-break by a second-stage minimisation of CVaR within 1e-8 of the optimum | Unique and reproducible. The optimiser ranks on arithmetic return; check C3 tests the geometric return (gap about σ²/2, roughly 0.3 points) |
+| Constraints | Long-only, fully invested, zero weights allowed; AGG 25-70% (a diversified bond index, so exempt from the single-ETF cap); equity (SPY+EFA+EEM+XLE+XLK) at most 55%; any other single ETF at most 40%; GLD at most 15%; XLE and XLK at most 10% each | Constraint effects are measured by controlled re-solves (section 15), never by benchmark gaps. The AGG cap reflects rate-risk concentration (AGG lost about 13% in 2022) |
+| Drawdown limit | 20%, checked after the fact on the GFC replay (verdict check C5) and reported on bootstrapped 1-year paths (not a gate) | Not an optimiser constraint (path-dependent, overfits one crisis) |
+| Rebalancing | Quarterly, or when a weight drifts more than 5 points; cost 5 bp one-way per unit of turnover; ETF expense ratios are already in adjusted prices | Risk models and backtests assume daily rebalancing to constant weights; the label on every backtest states the mismatch |
+| Governance | Drawdown 10% or a yellow backtest zone: review. Drawdown 15% or red zone: de-risk toward the minimum-CVaR de-risk portfolio | Escalation ladder for the memo. The de-risk portfolio is precomputed and validated with its own forecasts like any candidate |
 | Benchmarks | 40/60 and 60/40 SPY/AGG; equal weight; permanent-portfolio-inspired SPY 25 / AGG 50 / GLD 25 (Browne 1987; AGG stands in for the long-Treasury and cash legs); unconstrained volatility risk parity | Outside policy, for comparison only, rebalanced quarterly, fixed in the decision log before results are seen. In-policy variant 35% equity / 50% AGG / 15% GLD. A cash-leg variant (DTB3) only if organisers confirm cash is eligible |
 
-### 13a. Verdict rule (fixed in the decision log before phase 4 runs)
+### 13a. Verdict rule (frozen with section 13 and tagged `prereg-v1` before any post-2016 result is computed)
 
-- **Accept the mandate as proposed** if all hold: a policy portfolio within the ES99 budget (point estimate; bootstrap interval reported beside it) has an expected return that clears the hurdle h; primary backtest in the green zone with conditional-coverage p > 0.05; worst historical stress loss and the GFC replay drawdown within 20%.
-- **Adjust the risk limit** (stating the new limit, weights or spending rate) if any one test fails, the zone is yellow, or clearing h needs a stated wider ES budget or a spending rate below 4%.
-- **Reject** only if no policy-feasible portfolio clears h at any risk level within the tolerance.
+**Original mandate (fixed):** the section 13 constraints, B = 2.5% of NAV, s = 4%, π* = 2.5%, drawdown limit 20%.
+
+**Acceptance checks, all required, each computed for one weight vector with its own matching results:**
+- **C1 feasibility:** the solver succeeded and every constraint holds within 1e-6.
+- **C2 risk budget:** historical 1-day ES99 in dollars on the weights' estimation sample ≤ B (point estimate; bootstrap interval shown, not gating).
+- **C3 return:** expected geometric annual return after costs ≥ h, from the frozen estimator.
+- **C4 risk model:** the pre-named primary model at 99%, run on this weight hash's own sequential forecasts. The Basel zone on the last 250 forecasts is not red (yellow is disclosed and triggers the governance "review"). Kupiec and conditional-coverage p > 0.05 on forecasts from 2017 to the snapshot end. Forecasts exist for at least 95% of days. If the primary fails, the pre-named challenger is evaluated once; if both fail, the outcome is "evaluation incomplete: no validated risk model". A model failure never produces Adjust or Reject, because no change of weights or limits can fix it. Results for 2008-2016 and the share of red rolling 250-day windows are reported, not gating.
+- **C5 stress:** worst historical-scenario loss and GFC replay drawdown both within 20%.
+
+Shortfall probability, bootstrapped 1-year drawdowns, other models and other confidence levels are reported but do not gate (so no multiple-testing correction applies to the gate).
+
+**Permitted adjustment set (fixed, finite, tried in this order; the first alternative that passes C1-C5 with its own forecasts wins):**
+- **A1** the other pre-listed in-policy phase-2a candidates, in ascending training ES99 (minimum CVaR, minimum variance, near-parity risk budget, constrained maximum Sharpe): "adjust weights within the mandate".
+- **A2** GLD cap raised to 20%, frozen procedure re-run.
+- **A3** spending s lowered to 3.5% (the spending floor; h becomes 6.22%, and the fund spends USD 50k a year less).
+- **A4** B raised to the lower of 3.0% of NAV and the 60/40 benchmark's training ES99, never below B (that number is computed and written into the log at freeze).
+- **A5** A2, A3 and A4 together.
+
+Risk is raised last, in line with "avoiding large losses is more important than maximizing gains". Long-only, full investment, the universe, the AGG range, the equity cap, the XLE/XLK and single-ETF caps and the 20% drawdown limit are not relaxable. Any change outside this set needs the owner's explicit, logged agreement.
+
+**Decision, evaluated in order (exactly one outcome):**
+1. **Evaluation incomplete** if any C1-C5 result for the portfolio being judged is missing, failed to compute or has insufficient forecasts. This blocks submission: fix it, or (for the risk-model case above) state it in the memo with an interim action. It is never shown to the committee as a bare status.
+2. **Accept the mandate as proposed** if the recommended weights W_rec pass C1-C5.
+3. **Adjust** if Accept fails and some A1-A5 alternative passes: name the first one, its weights and limits, and the check it fixes. A1 is "adjust the weights"; A2-A5 are "adjust the risk limit / spending".
+4. **Reject** if every A1-A5 alternative was fully evaluated and none passes.
+
+With h at 6.77% and equity capped at 55%, Adjust or Reject is a realistic outcome; prepare the dollar trade-off (each 0.5% of spending is USD 50k a year of scholarships).
 
 ## 14. Work plan
 
 Fix phase timeboxes as shares of the time left once the deadline is known. Two milestones are hard: the **thin slice** at about 15% of the time and the **minimum viable submission** at about 60%.
 
 ### Phase 0: setup and decisions (day 1)
-- Get written organiser confirmation of solo eligibility and the deadline; record both.
+- Request written organiser confirmation of solo eligibility and the deadline; record confirmed or pending status in AGENTS.md section 17. Continue solo preparation while eligibility is pending, but require confirmation before submission.
 - Ask whether a cash sleeve counts as eligible.
 - Python environment, pinned `requirements.txt` (with streamlit and plotly), package skeleton, `pytest`.
 - Execute D-01 (section 12). Start the AI-use log and the decision log.
-- **Done when:** `python -m pytest` passes on the restored modules and the deadline is recorded.
+- **Done when:** `python -m pytest` passes on the restored modules, the deadline is recorded and solo eligibility status is explicitly recorded. Pending eligibility remains an open submission dependency, not a teammate dependency.
 
 ### Phase 1: data
 - Fresh snapshot: adjusted prices and dividends for the seven ETFs; DTB3, CPIAUCSL, DGS10 from FRED.
@@ -235,16 +262,21 @@ Fix phase timeboxes as shares of the time left once the deadline is known. Two m
 Snapshot data → provisional policy weights → historical VaR/ES → Kupiec → one stress replay → `results/<run_id>/` → a stub app with all six mandatory pages, including Assumptions & Limitations.
 - **Done when:** one command produces a run folder and the app opens on it.
 
-### Phase 2: portfolio construction (Layer 1)
-- Expected returns with shrinkage or a CAPM equilibrium view; sample and shrinkage covariance; correlations.
-- Efficient frontier under policy; candidates: minimum variance, constrained maximum Sharpe, constrained risk-budget portfolio (volatility equal risk contribution solved in scipy, reported as "near-parity" with its risk-contribution dispersion), minimum CVaR under the ES budget, plus the benchmarks (section 13).
+### Phase 2a: portfolio construction on training data (Layer 1), then freeze
+- Expected returns with shrinkage or a CAPM equilibrium view (state which; the cost rule in section 15 depends on it); sample and shrinkage covariance; correlations.
+- Efficient frontier under policy; the recommended portfolio comes from the section 13 selection rule. Other candidates (the A1 list): minimum CVaR (also the governance de-risk portfolio), minimum variance, constrained risk-budget portfolio (volatility equal risk contribution solved in scipy, reported as "near-parity" with its risk-contribution dispersion), constrained maximum Sharpe; plus the benchmarks (section 13).
 - KPIs, defined in section 15, including distribution yield.
-- Selection on the training period (2005-2016) only; record the effective date.
-- **Candidate table (required artifact):** expected return, volatility, ES99 USD, maximum drawdown, worst stress USD, distribution yield, diversification ratio and its ES analogue, shadow costs, frontier return versus hurdle h, and "each +1% expected return costs USD X of ES99". On the test period (2017 onward) only: money-weighted return under the 4% spending rule and time-weighted CAGR, both against h; time under water (peak to trough, trough to recovery, "not recovered by [date]" where the sample ends first).
-- **Done when:** weights are feasible, KPIs match hand calculations, the trade-off is quantified, and the return objective and ES budget are confirmed.
+- Training-only candidate table: expected arithmetic and geometric return versus h, volatility, ES99 USD, maximum drawdown, worst stress USD, distribution yield, diversification ratio and its ES analogue, constraint effects (controlled re-solves, section 15), and "each +1% expected return costs USD X of ES99".
+- Freeze: write the selection procedure (objective, estimators, constraints, solver, tie-break), the section 13 values, the 13a checks and adjustment set, and the primary and challenger risk models into the decision log; commit and tag `prereg-v1`.
+- **Done when:** weights are feasible, KPIs match hand calculations, the trade-off is quantified, and the tag exists with values matching the config.
+
+### Phase 2b: weights and retrospective columns (after the tag)
+- From the same frozen procedure: **W_train** on 2005-2016 and **W_rec**, the recommendation, on all data to the snapshot end; also every A1-A5 alternative and the de-risk portfolio. Each is stored as a canonical weight file (6-decimal weights summing to exactly 1, any rounding residual on the largest weight) with a SHA-256 weight hash and an effective date.
+- Retrospective evaluation, 2017 to snapshot end (labelled retrospective, section 15): money-weighted return under the spending rule and time-weighted CAGR, both against the realised-inflation hurdle; time under water (peak to trough, trough to recovery, "not recovered by [date]" where the sample ends first).
+- **Done when:** all weight files and hashes exist and the retrospective columns carry their label.
 
 ### Phase 3: risk measurement (Layers 2-4)
-- VaR at 90/95/99%: historical, parametric normal (Student-t as a variant), Monte Carlo with multivariate t as the primary simulation (normal Monte Carlo only reproduces the parametric result).
+- VaR at 90/95/99%: historical, parametric normal (Student-t as a variant), Monte Carlo with multivariate t as the primary simulation. Normal Monte Carlo converges to the corresponding analytical calculation only when both use the same distribution, parameters and portfolio accounting; joint normal asset log returns aggregated through simple returns need not give normal portfolio log returns, so a gap from the portfolio-level normal fit is a model difference, not an error. Basic convergence check: a matching one-asset case.
 - ES for each, with dollar ES averaged from dollar losses.
 - EVT: peaks over threshold with GPD; threshold from mean excess, parameter stability and goodness of fit; compare at least two threshold rules (innovation).
 - Disagreement analysis: why methods differ (fat tails, sample extremes, distribution assumptions).
@@ -253,11 +285,13 @@ Snapshot data → provisional policy weights → historical VaR/ES → Kupiec �
 - **Done when:** every model matches independent calculations on known distributions and the risk table states units, basis and status.
 
 ### Phase 4: validation (Layer 5)
-- Name the primary model in the decision log before running: FHS at 99%, with GARCH-EVT as challenger.
+- Primary and challenger models are named at the `prereg-v1` tag. Proposal: FHS at 99% primary, GARCH-EVT challenger; the owner confirms or swaps them before the tag. Disclose that the e94c0ae equal-weight development forecasts were seen before this choice: at 99% over 4,719 days, FHS had 65 breaches against 47.2 expected (Kupiec p ≈ 0.014, a fail) and GARCH-EVT 52 (p ≈ 0.49).
 - Rolling one-day forecasts: 750-day window, refit every 21 days, EVT threshold re-chosen inside each window, no future data.
-- **Primary backtest:** training-period weights over the test period 2017 onward (genuinely out of sample). **Secondary:** final weights as hypothetical P&L over the full rolling period, labelled "in-sample allocation, out-of-sample risk forecast". The app's traffic light shows the primary test.
-- Kupiec, Christoffersen independence, conditional coverage; traffic light at 99%; binomial p-values at 90/95%.
-- **Done when:** tests reproduce known breach sequences, edge cases pass, and a future-data perturbation test shows no look-ahead.
+- **One forecast set per allocation.** Every weight vector that is reported, benchmarked or recommended gets its own rolling forecast file with its weight hash in every row; backtest functions refuse a file whose hash differs from the portfolio evaluated. The app, memo and verdict show W_rec's own results, labelled "sequential risk forecast; allocation chosen with data through [snapshot end]". W_train's results sit beside them as evidence that the procedure was not tuned to 2017 onward; they never stand in for W_rec. A revised allocation (including any Adjust alternative) shows "not evaluated" until its own forecasts exist.
+- **Walk-forward procedure check (core).** Re-run the frozen procedure each January from 2017 on data to the previous 31 December and hold the weights for the year. This is the only historically investable record, labelled "walk-forward procedure evaluation".
+- **Untouched data.** No untouched historical period exists: all data to 2026-09-30 was used in the e94c0ae development runs. Returns after the frozen snapshot are fetched once, after the final run is tagged, into a separate dated snapshot, and shown only as "post-snapshot monitoring, n days, descriptive" with the exact binomial probability of the breach count and no traffic light.
+- Kupiec, Christoffersen independence, conditional coverage; traffic light at 99% on the last 250 forecasts and on rolling 250-day windows; binomial p-values at 90/95%.
+- **Done when:** tests reproduce known breach sequences, edge cases pass, a future-data perturbation test shows no look-ahead, and a mismatched weight hash is refused.
 
 ### Phase 5: stress, macro and risk budgeting (8.6)
 - Historical replays, buy-and-hold, SPY peak to trough: GFC 9 Oct 2007 - 9 Mar 2009; COVID 19 Feb - 23 Mar 2020; rate shock 3 Jan - 12 Oct 2022.
@@ -265,20 +299,22 @@ Snapshot data → provisional policy weights → historical VaR/ES → Kupiec �
 - Reverse stress test: the smallest shock that breaches the 20% drawdown limit.
 - Per-asset impact, largest contributors, policy-limit breaches.
 - Macro add-on (half a day, core): rolling 252-day SPY-AGG correlation showing the 2022 flip; portfolio sensitivity to DGS10 changes.
-- Diversification in stress (owner's idea, core): co-exceedance, the share of SPY's worst 1% days on which AGG and GLD also lost, against each asset's base rate of losing days with a binomial interval; ES diversification benefit in USD (sum of weighted standalone ES minus portfolio ES, non-negative by subadditivity).
-- Shortfall against the hurdle (core, about 1 day): monthly returns resampled jointly with CPI in 12-month blocks, 10,000 paths, 4% spending; probability that real NAV after spending is below USD 10m at 5 and 10 years, and the median USD gap versus NAV grown at h; recommended portfolio plus two benchmarks; overlapping paths labelled illustrative. Fallback if time runs out: the deterministic frontier-return-versus-h comparison.
-- Component ES as the primary risk allocation, parametric Euler VaR as a cross-check; risk budget versus capital weight; resulting allocation changes.
-- **Done when:** every scenario reports return, USD loss and attribution, and component ES sums to the total.
+- Diversification in stress (owner's idea, core): co-exceedance, the share of SPY's worst 1% days on which AGG and GLD also lost, against each asset's base rate of losing days with a binomial interval; ES diversification benefit in USD: the sum of each position's standalone dollar ES (each with its own worst-tail selection, same scenarios and confidence) minus portfolio dollar ES, non-negative by subadditivity. This is not the component decomposition, which uses one shared tail.
+- Real-capital survival (core, about 1 day): monthly asset simple returns and monthly CPI ratios resampled jointly in non-circular 12-month blocks, each block one simulated year; 10,000 paths, fixed seed; quarterly rebalancing at the stated cost; spending applied once at each block end per section 15. Report the probability that NAV after spending ends below the real-capital target USD 10m × CPI_T / CPI_0 at 5 and 10 years, and the median real surplus or shortfall against that same target, with Monte Carlo standard errors. Spending is never added to the target. W_rec plus the 40/60 and permanent-portfolio benchmarks; labelled illustrative (about 260 months of history; the blocks include the retrospective period). Fallback if time runs out: the deterministic comparison of expected geometric return after costs with h.
+- Component ES as the primary risk allocation, from joint historical scenarios with multivariate-t Monte Carlo as a check, labelled "historical attribution". FHS, the primary backtest model, is fitted to portfolio returns and reports attribution as unavailable; the memo states that the budget is the policy measure (unconditional ES) and FHS is the monitoring and backtest model. Parametric Euler VaR as a cross-check; risk budget versus capital weight; resulting allocation changes.
+- **Done when:** every stress scenario reports return, USD loss and attribution; asset ES contributions from joint scenarios sum to the matching portfolio dollar ES using identical tail weights, including fractional boundary mass and ties. Negative contributions remain visible; portfolio-only models without consistent joint asset scenarios explicitly report attribution as unavailable.
 
 ### Phase 6: full app
 - All six mandatory elements plus recommendation, candidate table, risk contributions and provenance.
-- App reads frozen `results/<run_id>/`; recomputes only cheap items on sidebar changes with `st.cache_data`.
+- App reads frozen `results/<run_id>/`. Portfolio choice defaults to a dropdown of precomputed portfolios (W_rec, W_train, the A1-A5 alternatives, the de-risk portfolio and the benchmarks), all with matching results. Free weights live in a labelled "Explore" mode.
+- Result states (AGENTS.md section 13): each panel either loads precomputed results whose key matches all material inputs, computes a cheap result live for exactly these inputs (labelled "computed in app, not part of frozen run"), or shows "unavailable - rerun required" with the command. Cheap: weights, replay return and drawdown, KPIs, historical/normal/t VaR and ES, small fixed-seed Monte Carlo, stress replays, historical component ES. Expensive (precomputed or unavailable only): rolling forecasts, Kupiec/Christoffersen/traffic light, bootstrap intervals, EVT threshold uncertainty, the real-capital bootstrap, the walk-forward check and the verdict. The traffic light shows colour only for a matched result, otherwise grey with its label.
+- A separate fixed "Frozen recommendation" panel always shows W_rec, its weight hash, run ID, verdict and traffic light, whatever the sidebar says.
 - `streamlit.testing.AppTest` smoke test.
-- **Done when:** `streamlit run app.py` works from a fresh clone and every control changes the right outputs.
+- **Done when:** `streamlit run app.py` works from a fresh clone; editing any weight in Explore mode turns the backtest, intervals and verdict to "rerun required", and returning to W_rec restores the matched results (AppTest).
 
 ### Phase 7: minimum viable submission (milestone, about 60% of the time)
 - Memo v1 (D3), tear sheet (D4a), one-page committee memo (D4b), AI disclosure, README, full app.
-- Memo additions from the owner's ideas: an "alternatives considered" paragraph (pairs trading and market-neutral rejected, section 19); one figure of rebalanced versus buy-and-hold returns on the test period after costs, labelled as a policy cost/benefit, not alpha; a sidebar mapping the five capital-budgeting steps onto the investment policy statement and the pipeline.
+- Memo additions from the owner's ideas: an "alternatives considered" paragraph (pairs trading and market-neutral rejected, section 19); one figure of rebalanced versus buy-and-hold returns over 2017 to the snapshot end after costs (retrospective), labelled as a policy cost/benefit, not alpha; a sidebar mapping the five capital-budgeting steps onto the investment policy statement and the pipeline.
 - Pitch deck outline (12 slides mirroring D4b) and the Q&A bank.
 - **Done when:** a complete, submittable package exists.
 
@@ -287,24 +323,31 @@ Snapshot data → provisional policy weights → historical VaR/ES → Kupiec �
 - Stretch: regime-conditioned risk budget (calm vs stress weights); ES-based equal risk contribution (cvxpy, 1-1.5 days); drawdown-control overlay within the seven ETFs. (The spending-sustainability analysis moved into phase 5 as the shortfall-against-hurdle test.)
 
 ### Phase 9: final run, documents and defence
-- Lock config; one command `python -m quanedge.pipeline --config config/final.yaml` writes `results/<run_id>/` with input hashes, git SHA and package versions.
+- Lock config; one command `python -m quanedge.pipeline --config config/final.yaml` writes `results/<run_id>/` with input hashes, weight hashes, git SHA and package versions; the pipeline refuses data dated after the snapshot end. Tag the commit `final-run-<run_id>`, then fetch the post-snapshot monitoring data (phase 4).
 - Generate memo and tear-sheet tables and figures from the run; a script checks every number in the documents against it.
 - Fresh clone → install → pipeline → app. Deploy to Streamlit Community Cloud if practical; confirm judges can access the repository.
 - Full pitch deck after the shortlist; rehearse the Q&A bank.
 
-**Cut list (first to go if time runs short):** World Bank context, KPSS, multi-day views, ES-based risk parity, simulated-null and Forbes-Rigobon conditional correlations, the DTB3 cash-leg benchmark, the second alternative optimiser, extra EVT threshold rules, the shortfall bootstrap (fall back to the deterministic hurdle comparison), deployment (local one-command run is allowed). Never cut: the six app elements, the three questions, the macro add-on, formal backtests, the verdict rule, the hurdle test, the permanent-portfolio benchmark, time under water.
+**Cut list (first to go if time runs short):** World Bank context, KPSS, multi-day views, ES-based risk parity, simulated-null and Forbes-Rigobon conditional correlations, the DTB3 cash-leg benchmark, the second alternative optimiser, extra EVT threshold rules, the real-capital bootstrap (fall back to the deterministic hurdle comparison), the T10YIE reasonableness check, Holm-adjusted p-values for descriptive models, deployment (local one-command run is allowed). Never cut: the six app elements, the three questions, the macro add-on, formal backtests of W_rec's own forecasts, the walk-forward procedure check, the verdict rule and freeze tag, the hurdle test, the permanent-portfolio benchmark, time under water.
 
 ## 15. Technical conventions (defence-critical)
 
+- **Evaluation labels.** Every result carries exactly one. (1) *Retrospective portfolio evaluation*: how a fixed allocation would have performed historically. The owner has seen all of 2005-2026 and the policy was written knowing 2008, 2011-2015 and 2022, so any replay of any weights is retrospective, even when the optimiser saw only 2005-2016. (2) *Sequential risk-forecast evaluation*: each day-t forecast for a stated weight vector uses only returns to t-1; the label states the allocation's data cut-off ("allocation chosen with data through D") and the daily-rebalanced replay. (3) *Untouched evaluation*: data excluded from policy, allocation and model selection; here only post-snapshot returns qualify (phase 4). The brief's "out-of-sample backtesting" is met by label (2). "Genuinely out of sample" is not used. A portfolio never inherits another portfolio's traffic light.
+- **Inflation:** π over [t0, t1] = CPI_t1 / CPI_t0 - 1 from CPIAUCSL index levels; annualised (CPI_t1 / CPI_t0)^(12/m) - 1 over m months. The CPI level is never used as a rate. The forward hurdle uses the assumed π*; retrospective comparisons use realised π.
+- **Costs:** adjusted closes are already net of each ETF's expense ratio, so it is not deducted again from historical returns. Expected returns built from historical ETF returns are net; a CAPM-equilibrium view built from index premia is gross, so subtract the weighted expense ratio (a config assertion names which applies). Extra cost c is rebalancing at 5 bp one-way per unit of turnover. "After costs" means after c, and every return compared with h is after costs.
+- **Spending:** s = 4% of NAV once a year, at each anniversary, after that year's returns and costs: NAV_y = NAV_{y-1} × (1 + R_y,net) × (1 - s), draw D_y = s × NAV_{y-1} × (1 + R_y,net). Real endowments smooth spending (for example a 12-quarter average); listed under Limitations.
+- **Hurdle:** h = (1 + π*) / (1 - s) - 1, after costs and before spending; 1.025 / 0.96 - 1 = 6.77%. It is the exact break-even: (1 + R_net)(1 - s) ≥ 1 + π if and only if R_net ≥ h. h is a compound rate, so compare it with the expected geometric return (exp of the mean annual log return, minus 1, or about μ - σ²/2), never the arithmetic mean; the candidate table shows both.
+- **Real-capital target:** Target_T = USD 10m × CPI_T / CPI_0, compared with NAV_T after the year-T draw. Shortfall probability = P(NAV_T < Target_T); median real surplus = median(NAV_T × CPI_0 / CPI_T) - USD 10m, in today's dollars.
 - **Losses:** positive L is a loss; L = -log(1 + R_p), with R_p the weighted sum of asset simple returns.
 - **VaR / ES:** VaR is the loss quantile; ES is the quantile integral over [a, 1] divided by 1 - a, with fractional mass at ties; dollar ES averages dollar losses.
 - **Kupiec / Christoffersen:** use 0·log 0 = 0 for zero breaches or no consecutive breaches, with tests; conditional coverage against chi-squared with 2 degrees of freedom.
 - **Traffic light:** 250 days at 99%: green 0-4 exceptions, yellow 5-9, red 10 or more; also shown on rolling 250-day windows. At 90% and 95%, show "Basel zones not applicable" and the exact binomial p-value.
 - **EVT at 90%:** if the selected threshold sits above the 90th percentile, the GPD tail does not cover 90%; show the empirical-body estimate and flag it.
 - **KPIs:** SPY is the CAPM market for beta, Treynor and Jensen's alpha; Information ratio against the 40/60 benchmark (tracking error stated); Sortino with a 0% target and downside deviation over all days; Calmar = CAGR / |MDD| over a stated window; annualise from simple returns; DTB3 converted to bond-equivalent yield, then daily.
-- **Component risk:** component ES = E[w_i L_i | L ≥ VaR], tested to reconcile to total ES.
+- **Component risk (dollar ES):** for each joint historical day or simulated scenario s, asset dollar loss is `-V * w_i * R_i,s`, using simple returns, and portfolio dollar loss is the sum across assets. Select the worst portfolio-loss scenarios with probability mass exactly `1-alpha`, including fractional boundary observations, and normalize the selected masses to tail weights summing to one. Allocate remaining mass at a tied boundary proportionally to the tied scenarios' original probabilities (equally for equally probable scenarios). Average every asset's losses with these same tail weights. Asset contributions must sum to portfolio dollar ES computed from the same scenarios and tail weights, not to log-unit ES or a separately fitted model's estimate. Negative contributions are valid and must not be clipped. Attribution requires joint asset scenarios: a portfolio-return-only model cannot provide asset contributions by itself. Test reconciliation, fractional tail counts, ties, negative contributions and unavailable attribution; see AGENTS.md section 11 for the formula contract.
 - **Diversification ratio:** DR = Σ w_i σ_i / √(w'Σw) (Choueifaty-Coignard), same covariance and window as the optimiser; tests: one asset gives 1, N equal-volatility uncorrelated assets at equal weight give √N.
-- **Money-weighted return:** the IRR of the cash flows -USD 10m, the yearly 4% spending draws and terminal NAV; test: equals CAGR when there are no draws. Not CAGR, and never computed from expected returns.
+- **Money-weighted return:** XIRR (actual/365) of -USD 10m at the start, +D_y at each anniversary and +NAV at the end date (before any draw on that date). Draws are investor cash flows, so it is compared with the realised-inflation hurdle h_real = (1 + π_ann) / (1 - s) - 1 on the same after-cost basis, as is time-weighted CAGR. Tests: a constant annual net return R with draws gives an IRR of exactly R; no draws gives IRR = CAGR. Never computed from expected returns.
+- **Constraint effect:** solve A = the frozen procedure under the original constraints; solve B = the identical setup with one limit changed (GLD 15% → 40%, where the single-ETF cap takes over, with 20% and 25% also shown; equity 55% → 65%, 60% as sensitivity; AGG floor 25% → 0%; AGG cap 70% → 100%; B 2.5% → 3.0%). Hold everything else fixed: training data, the same scenario matrix (identical rows), estimators, costs, objective, solver and tolerances. Report the change in the objective, expected arithmetic and geometric return, ES99 in USD, the weight changes, whether the limit binds in A (if not, the effect is exactly 0), and the linear programme's dual value as a local cross-check. Call it the "estimated effect of relaxing the [X] cap (in-sample, estimator-dependent)". A gap between the recommendation and a benchmark such as the permanent portfolio is an overall comparison and isolates no constraint.
 - **Time under water:** trading days from the pre-crisis peak to the trough and from the trough back to that peak; "not recovered by [date]" if the sample ends first.
 - **Volatility risk parity:** test w ∝ 1/σ for a diagonal covariance and equal contributions within 1e-6.
 
@@ -312,17 +355,19 @@ Snapshot data → provisional policy weights → historical VaR/ES → Kupiec �
 
 | Risk | Mitigation |
 |---|---|
-| Solo entry not eligible | Written confirmation in phase 0, before any build |
+| Solo entry not eligible | Request written confirmation in phase 0; preparation can continue, but resolve eligibility before submission. Do not assume approval or change the solo workload |
 | Unknown deadline | Confirm immediately; timebox phases as shares of time left |
 | App arrives last | Thin slice at 15%, minimum viable submission at 60% |
-| Overfitting the allocation | Select on 2005-2016; primary backtest on 2017 onward |
+| Overfitting the allocation | Frozen, tagged procedure; W_train (2005-2016) shown beside W_rec; walk-forward procedure check; every replay labelled retrospective |
+| Verdict tuned after seeing results | Section 13a checks, adjustment set and values frozen at `prereg-v1` before any post-2016 result |
+| App showing results for the wrong weights | Results keyed by weight hash; expensive panels "rerun required" until matched; separate frozen-recommendation panel |
 | EVT instability | Threshold sensitivity, minimum exceedances, visible failures |
 | Look-ahead | Future-data perturbation tests; in-window threshold choice |
 | Numbers drift between app and documents | One frozen run feeds everything; checker script |
 | Defending AI-written code | Restore only what is used; owner summaries and hand tests; disclosure |
 | yfinance blocked on Streamlit Cloud | App reads frozen results only |
 
-**Questions to prepare with numeric answers:** Why not 100% AGG or minimum variance? AGG lost about 13% in 2022 alongside equities; what protects the fund? Why a 1-day VaR for a perpetual fund, and how many 99% breaches per year should the committee expect (about 2.5)? What does a GFC repeat cost in dollars, and in years of scholarships? Why USD and US CPI for a Sri Lankan endowment? How is EVT shown at 90%? What happens when a limit is breached? Who chose the weights, you or the AI? What costs and expense ratios are assumed? Why does the primary model differ from the simplest one? Why cap gold at 15% when the permanent portfolio holds 25% (no income, a drawdown of about 45% in 2011-2015, single-commodity concentration, and the reported GLD-cap shadow cost)? Why not pairs trading or market-neutral (section 19)? Is gold negatively correlated with stocks (no: roughly uncorrelated, which still diversifies)?
+**Questions to prepare with numeric answers:** Why not 100% AGG or minimum variance? AGG lost about 13% in 2022 alongside equities; what protects the fund? Why a 1-day VaR for a perpetual fund, and how many 99% breaches per year should the committee expect (about 2.5)? What does a GFC repeat cost in dollars, and in years of scholarships? Why USD and US CPI for a Sri Lankan endowment? How is EVT shown at 90%? What happens when a limit is breached? Who chose the weights, you or the AI? What costs and expense ratios are assumed? Why does the primary model differ from the simplest one? Why cap gold at 15% when the permanent portfolio holds 25% (no income, a drawdown of about 45% in 2011-2015, single-commodity concentration, and the estimated effect of relaxing the gold cap from the controlled re-solve)? Why not pairs trading or market-neutral (section 19)? Is gold negatively correlated with stocks (no: roughly uncorrelated, which still diversifies)? Is 2017 onward really out of sample (no: the allocation evaluation is retrospective; the risk forecasts are sequential; here is the walk-forward check)? Why trust FHS when it failed Kupiec in the development runs (the disclosed evidence and the pre-named challenger)? Your budget comes from a model you did not backtest? (The budget is the policy measure, unconditional historical ES; FHS is the monitoring and backtest model; both are reported.) Why 6.77% and not CPI + 4% (spending comes out of a grown NAV, so the rates compound)?
 
 ## 17. Review record: how the critics' disagreements were settled
 
@@ -330,29 +375,30 @@ Snapshot data → provisional policy weights → historical VaR/ES → Kupiec �
 |---|---|---|---|
 | Drawdown limit | Hard policy limit | Ex-post check only | Not in the optimiser; a pass/fail test in the verdict rule |
 | ES test in verdict | Strict | Point estimate; intervals would always force Adjust | Point estimate, interval shown beside it |
-| Backtest weights | Training weights out of sample | Today's weights (bank practice) | Both; the training-weight test is primary |
+| Backtest weights | Training weights out of sample | Today's weights (bank practice) | Superseded (section 20): each allocation has its own sequential backtest; W_rec's results drive the app and verdict, W_train's are supporting evidence |
 | Restoring old code | Only what feeds outputs | Restore all with tests | Only what feeds outputs, each reviewed and hand-tested |
 | Pitch deck | Skeleton before submission | After shortlist | Outline and Q&A before submission; full deck after shortlist |
 | AGG cap | 25-70% | At least 25%, no cap | Revised in the second review: AGG 25-70%, exempt from the 40% single-ETF cap (the first version capped AGG at 40% by accident, which forced at least 45% equity) |
 | Macro | Core, including CPI betas | Half day; CPI regression too thin | Half-day core: rolling stock-bond correlation and DGS10 sensitivity |
-| Spending Monte Carlo | Innovation #1 | Stretch | Stretch |
+| Spending Monte Carlo | Innovation #1 | Stretch | Superseded: core real-capital survival test (phase 5) |
 
 ## 18. Requirement checklist
 
 - [ ] Solo eligibility and deadline confirmed in writing
 - [ ] Horizon, allocation, return objective, risk constraints defined and defended
 - [ ] Suitability for a conservative investor shown; income (yield) reported
-- [ ] Return vs risk trade-off quantified (candidate table, shadow costs)
+- [ ] Return vs risk trade-off quantified (candidate table, controlled constraint effects)
 - [ ] Assumptions stated
 - [ ] Markowitz + CAPM; Sharpe, Sortino, Treynor, Jensen, IR, MDD, Calmar
 - [ ] Three VaR methods at 95% and 99%; disagreement explained
 - [ ] ES with rationale
 - [ ] EVT with justified threshold; stressed-period performance
-- [ ] Out-of-sample Kupiec, Christoffersen, traffic light
+- [ ] Sequential risk-forecast Kupiec, Christoffersen and traffic light for the recommended weights (own forecast file); walk-forward procedure check; evaluation label on every result
 - [ ] Marginal/component VaR/ES risk budgeting and position sizing
 - [ ] Three historical stresses + one hypothetical (+ reverse stress)
 - [ ] Optional macro risks (stock-bond correlation, rates)
-- [ ] Verdict rule fixed before testing; accept / adjust / reject given
+- [ ] Policy values, checks C1-C5 and adjustment set A1-A5 frozen and tagged `prereg-v1` before post-2016 results; verdict computed by the 13a rule
+- [ ] App: precomputed-portfolio dropdown, result states keyed by weight hash, frozen-recommendation panel
 - [ ] App: sidebar, portfolio, risk dashboard, backtest, stress, Assumptions & Limitations
 - [ ] Data rules: adjusted close, calendars, log returns, flags, ADF, reproducible
 - [ ] Repo, one-command app, 7-15 page memo, tear sheet, one-page committee memo, pitch deck
@@ -373,11 +419,41 @@ The owner's guiding caveat goes into the memo word for word: buying negatively c
 | Risk parity | Adapt: volatility equal risk contribution, constrained by policy ("near-parity", dispersion reported) as a candidate; unconstrained version as a benchmark | Phase 2 | Core; ES-based parity is stretch |
 | Pairs trading | Reject: short positions carry borrow cost, margin and unbounded loss unsuited to a loss-averse committee; no stable cointegrated pair among seven ETFs (pairs are factor bets such as SPY/XLK); turnover breaks the static-weight backtest. Long-only cousin kept: rebalancing sells relative winners, shown as rebalanced versus buy-and-hold after costs | Phase 7 memo | Memo text plus one figure |
 | Market-neutral investing | Reject: removes the market return the fund needs; earns roughly cash minus costs, below the hurdle h. The low-beta alternative is the existing minimum-variance candidate | Phase 7 memo, Q&A | Memo text only |
-| Permanent portfolio | Adapt as a benchmark: SPY 25 / AGG 50 / GLD 25 (Browne 1987; no long-Treasury or cash fund in the universe), outside policy, plus in-policy 35/50/15; its gap to the recommendation evidences the GLD-cap shadow cost | Section 13, phase 2 | Core; cash-leg variant is cut-list |
-| Capital budgeting (definition, types, five steps) | Adapt as framing, not structure: candidates are mutually exclusive investments; step 3 "cost of capital" becomes the hurdle h = CPI + 4% spending + costs; step 5 "reviewing prior decisions" becomes the backtest and escalation ladder. One sidebar in the memo maps the steps onto the investment policy statement | Sections 13 and 13a, phase 7 | Core (memo text) |
+| Permanent portfolio | Adapt as a benchmark: SPY 25 / AGG 50 / GLD 25 (Browne 1987; no long-Treasury or cash fund in the universe), outside policy, plus in-policy 35/50/15; an overall comparison only (the gold-cap effect comes from the controlled re-solve, section 15) | Section 13, phase 2 | Core; cash-leg variant is cut-list |
+| Capital budgeting (definition, types, five steps) | Adapt as framing, not structure: candidates are mutually exclusive investments; step 3 "cost of capital" becomes the hurdle h = (1 + π*) / (1 - s) - 1; step 5 "reviewing prior decisions" becomes the backtest and escalation ladder. One sidebar in the memo maps the steps onto the investment policy statement | Sections 13 and 13a, phase 7 | Core (memo text) |
 | Payback period | Adapt as time under water in each crisis | Phase 2 | Core |
 | Accounting rate of return | Adapt as distribution yield (income over average NAV) | Phase 2 | Core (already a KPI) |
-| IRR | Adapt as money-weighted return under the 4% spending rule, against h, test period only | Phase 2 | Core |
-| NPV, profitability index | Drop: for a fairly priced liquid fund, NPV computed in advance only restates expected return, and realised NPV at h is a dollar transform of money-weighted return minus h; PI = 1 + NPV / USD 10m adds nothing. The dollar view survives as the median USD gap in the shortfall test | - | Dropped |
+| IRR | Adapt as money-weighted return under the spending rule, against the realised-inflation hurdle, retrospective (2017 to snapshot end) | Phase 2 | Core |
+| NPV, profitability index | Drop: for a fairly priced liquid fund, NPV computed in advance only restates expected return, and realised NPV at h is a dollar transform of money-weighted return minus h; PI = 1 + NPV / USD 10m adds nothing. The dollar view survives as the median real surplus over the real-capital target | - | Dropped |
 
-Review record (second critic pair): both agreed the hurdle must come from the spending need, which also fixed a circularity in the first version of section 13 that made Reject impossible, and they found the accidental 40% cap on AGG. They differed on keeping a realised NPV (dropped as redundant), on the AGG ceiling (60% vs 70%; 70% chosen, with its shadow cost reported) and on co-exceedance versus a simulated-null correlation test (co-exceedance chosen as plainer and cheaper; the simulated null is on the cut list).
+Review record (second critic pair): both agreed the hurdle must come from the spending need, which also fixed a circularity in the first version of section 13 that made Reject impossible, and they found the accidental 40% cap on AGG. They differed on keeping a realised NPV (dropped as redundant), on the AGG ceiling (60% vs 70%; 70% chosen, with its constraint effect reported) and on co-exceedance versus a simulated-null correlation test (co-exceedance chosen as plainer and cheaper; the simulated null is on the cut list).
+
+## 20. External audit: accounting, validation and decision rules
+
+Source: an audit supplied by the owner with seven recommendations, reviewed by a third pair of critics (committee view and implementation view) who cross-critiqued. All seven were adopted; item 1 (dollar ES contributions) had already been applied (AGENTS.md DOC-005).
+
+| Audit item | Where it now lives |
+|---|---|
+| 1. Dollar ES contributions with shared tail weights | Section 15 component risk; phase 5; AGENTS.md section 11 |
+| 2. Retrospective vs sequential vs untouched evaluation; no inherited traffic light | Section 15 evaluation labels; phases 2b and 4 |
+| 3. Spending counted once; CPI as an inflation rate; hurdle on a stated cost basis | Sections 13 and 15; phase 5 real-capital survival |
+| 4. Mutually exclusive Accept / Adjust / Reject; frozen adjustment set; "evaluation incomplete" | Section 13a; phase 2a freeze |
+| 5. Normal Monte Carlo convergence wording | Phase 3; AGENTS.md sections 8 and 14 |
+| 6. App result states for edited weights | Section 5; phase 6; AGENTS.md section 13 |
+| 7. Gold-cap effect by controlled re-solve | Section 15 constraint effect; section 19 |
+
+How the critics' disagreements were settled:
+
+| Issue | Committee view | Implementation view | Decision |
+|---|---|---|---|
+| Untouched historical holdout | Sealed final 250 days at first, then withdrawn | None exists; later proposed a code-enforced holdout labelled "previously viewed" | No historical holdout: all data to 2026-09-30 was seen at e94c0ae. Untouched means post-snapshot monitoring only; the walk-forward check carries the anti-overfitting case |
+| Freeze point | Before phase 4 | Before any post-2016 result | Before any post-2016 result: phase 2 split into 2a, tag `prereg-v1`, 2b |
+| Forward inflation | T10YIE at first, then a fixed 2.5% | Fixed 2.5% at first, then T10YIE at the snapshot | Fixed π* = 2.5% (reproducible, cannot drift with the snapshot date); T10YIE and trailing CPI as a check |
+| Gold cap as adjustment | At most 20% (25% is the permanent-portfolio weight we argue against) | 25% at first | 20% as adjustment A2; 20%, 25% and 40% all reported as constraint effects |
+| Adjustment order | Re-weight, gold, spending, risk budget, all together | Risk budget earlier | Committee order (raise risk last), made finite: A1-A5 |
+| Backtest gate | Green zone | Not red; failed model ≠ failed mandate | Not red plus coverage tests; challenger once; both fail → evaluation incomplete, never Reject |
+| Selection objective | Maximise geometric return | Not a linear programme | Maximise arithmetic return under CVaR ≤ B; C3 tests geometric return |
+| App weights | Dropdown of precomputed portfolios | Free weights under a state machine | Both: dropdown by default, free weights in Explore mode under the state machine |
+| Run ID in cache key (audit item 6) | - | Exclude; scope lookups to the run | Excluded; run ID shown as provenance |
+
+Points the audit missed that are now fixed: no named selection rule; the "minimum CVaR under the ES budget" candidate was contradictory (now the de-risk portfolio); ES budget model unstated; expense ratios double-counted on adjusted prices; arithmetic vs geometric return against a compound hurdle; Basel window undefined over a 2,400-day sample; FHS cannot attribute risk to assets; the de-risk portfolio needed its own validation; section 17 still called the spending Monte Carlo a stretch. Open owner decision: confirm FHS or swap to GARCH-EVT as the primary model before the tag (phase 4 disclosure).
