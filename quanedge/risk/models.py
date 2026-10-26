@@ -96,7 +96,9 @@ def risk_table(models: dict, alphas=CONF_LEVELS, value: float = PORTFOLIO_VALUE)
     *_pct are percentage points of portfolio value and *_usd dollars of
     simple loss.  ES in % and USD averages each tail loss in dollars
     (es_fraction); it is not converted from log ES.  es_over_var is in log
-    units and left blank when VaR is not positive.
+    units and left blank when VaR is not positive.  'basis' says whether an
+    EVT number comes from the GPD tail or from the empirical body below the
+    threshold (blank for the other models).
     """
     if not (np.isfinite(value) and value > 0):
         raise ValueError(f"portfolio value must be a positive number, got {value!r}")
@@ -110,6 +112,7 @@ def risk_table(models: dict, alphas=CONF_LEVELS, value: float = PORTFOLIO_VALUE)
                 "var_pct": 100 * loss_fraction(v), "es_pct": 100 * ef,
                 "var_usd": value * loss_fraction(v), "es_usd": value * ef,
                 "es_over_var": e / v if v > 0 else np.nan,
+                "basis": m.basis(a) if hasattr(m, "basis") else "",
                 "status": getattr(m, "status", "ok"),
             })
     return pd.DataFrame(rows)

@@ -111,6 +111,15 @@ def test_short_samples_make_the_demanding_models_unavailable():
     assert not isinstance(models["historical"], Unavailable)
 
 
+def test_evt_rows_say_whether_the_gpd_tail_or_the_empirical_body_answers():
+    model = evt.fit_evt(stats.t.rvs(4, size=4000, random_state=12), threshold_q=0.93)
+    table = risk_table({"evt": model, "normal": var_es.Normal(np.zeros(10) + np.arange(10) * 1e-3)}).set_index(
+        ["method", "alpha"])["basis"]
+    assert table[("evt", 0.90)] == "empirical body below the EVT threshold"     # 90% sits below the 93rd percentile
+    assert table[("evt", 0.95)] == table[("evt", 0.99)] == "GPD tail"
+    assert table[("normal", 0.99)] == ""
+
+
 def test_infinite_log_es_is_flagged_and_dollar_es_stays_finite():
     model = evt.EVT(np.linspace(0, 1, 1000), evt.GPDFit(u=0.9, xi=1.2, sigma=0.05, n_exceed=100, n=1000))
     assert model.es(0.99) == np.inf and 0 < model.es_fraction(0.99) < 1

@@ -94,6 +94,9 @@ class Conditional(LossModel):
     def es(self, alpha: float) -> float:
         return float(-self.filter.mu + self.filter.sigma_next * self.base.es(alpha))
 
+    def basis(self, alpha: float) -> str:
+        return self.base.basis(alpha) if hasattr(self.base, "basis") else ""
+
     def tail_mean(self, alpha: float, transform) -> float:
         mu, s = self.filter.mu, self.filter.sigma_next
         return self.base.tail_mean(alpha, lambda x: transform(-mu + s * x))

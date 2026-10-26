@@ -125,6 +125,10 @@ class EVT(LossModel):
         self.params = {"u": fit.u, "threshold_q": 1 - self.zeta, "n_exceed": fit.n_exceed,
                        "xi": fit.xi, "xi_se": fit.se[0], "sigma": fit.sigma, "threshold_rule": rule}
 
+    def basis(self, alpha: float) -> str:
+        """Which part of the model answers at this level: the label the dashboard shows beside the EVT number."""
+        return "GPD tail" if 1 - check_alpha(alpha) <= self.zeta else "empirical body below the EVT threshold"
+
     def _tail_var(self, p: float) -> float:
         """GPD quantile for an exceedance probability p <= zeta."""
         f = self.fit
