@@ -34,13 +34,13 @@ def test_filter_recovers_dynamics_and_forecasts_with_the_recursion():
 
 def test_filter_removes_clustering_but_not_fat_tails():
     r = gjr_series(seed=1)
-    checks = diagnostics.assumption_checks(r, z=conditional.fit_filter(r).z).set_index("test")
-    assert checks.loc["Ljung-Box Q(10) on r^2", "supported"] == "no"       # raw returns cluster
-    assert checks.loc["Ljung-Box Q(10) on z^2", "supported"] == "yes"      # residuals do not
-    assert checks.loc["Jarque-Bera on z", "supported"] == "no"             # but they are still fat-tailed
+    checks = diagnostics.assumption_checks(r, z=conditional.fit_filter(r).z).set_index("test")["conclusion"]
+    assert checks["Ljung-Box Q(10) on r^2"].startswith("null rejected")      # raw returns cluster
+    assert checks["Ljung-Box Q(10) on z^2"].startswith("null not rejected")  # no evidence left in the residuals
+    assert checks["Jarque-Bera on z"].startswith("null rejected")            # but they are still fat-tailed
 
 
-def test_conditional_var_scales_with_tomorrows_volatility():
+def test_conditional_var_scales_with_next_day_volatility():
     z = np.random.default_rng(2).standard_t(4, 4000)
     calm, storm = (conditional.GarchFilter(0.0, 0, 0, 0, 0, np.ones(4000), z, s) for s in (0.005, 0.02))
     for build in (conditional.fhs, conditional.garch_evt):
@@ -57,11 +57,11 @@ def test_all_models_fit_on_a_portfolio():
     assert (table["es"] >= table["var"]).all()
 
 
-def test_assumption_checks_on_iid_normal_data_support_the_normal():
+def test_assumption_checks_on_iid_normal_data_are_worded_for_what_a_test_shows():
     r = np.random.default_rng(5).normal(0, 0.01, 3000)
-    checks = diagnostics.assumption_checks(r).set_index("test")
-    assert checks.loc["Jarque-Bera", "supported"] == "yes"
-    assert checks.loc["ADF (H0: unit root)", "supported"] == "yes"
+    checks = diagnostics.assumption_checks(r).set_index("test")["conclusion"]
+    assert checks["Jarque-Bera"] == "null not rejected at 5%: no evidence against it (not proof)"
+    assert checks["ADF"] == "null rejected at 5%: supports the assumption"
 
 
 def test_block_bootstrap_keeps_blocks_contiguous():

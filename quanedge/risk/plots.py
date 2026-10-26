@@ -10,7 +10,9 @@ context.  Only the palette's first three hues ever appear together: that set
 stays distinguishable for every pair under red-green colour blindness.  Aqua
 is below 3:1 contrast on the light surface, so aqua lines always carry a
 direct label.  VaR -> ES is one hue in two shades (light -> dark = deeper
-into the tail).
+into the tail).  Axis labels say which loss unit is shown: log loss (the
+modelling unit) or simple loss (share of portfolio value).  Models that
+could not be fitted are skipped or labelled unavailable, never drawn as zero.
 """
 from functools import wraps
 import matplotlib
@@ -22,7 +24,7 @@ from matplotlib.figure import Figure
 from scipy import stats
 from ..config import PORTFOLIO_VALUE
 from .evt import gpd_cdf, gpd_ppf
-from .models import LABEL
+from .models import LABEL, Unavailable
 from .portfolio import loss_fraction
 
 INK, INK2, MUTED = "#0b0b0b", "#52514e", "#898781"
@@ -99,33 +101,35 @@ def _end_labels(ax, ends, x_text, min_gap):
 
 @_styled
 def fig_distribution(r: pd.Series, models: dict) -> Figure:
-    """(a) density of daily returns on a log scale against normal and Student-t fits; (b) normal QQ plot."""
+    """(a) density of daily log returns on a log scale against normal and Student-t fits; (b) normal QQ plot."""
     x = 100 * r.to_numpy(dtype=float)
-    nm, st = models["normal"], models["student_t"]
+    nm, st = models.get("normal"), models.get("student_t")
     fig = Figure(figsize=(10, 3.9), layout="constrained")
     ax1, ax2 = fig.subplots(1, 2, gridspec_kw={"width_ratios": [1.5, 1]})
 
     dens, edges = np.histogram(x, bins=90, density=True)
     mid, keep = (edges[:-1] + edges[1:]) / 2, dens > 0
     grid = np.linspace(x.min(), x.max(), 600)
-    pdf_n = stats.norm.pdf(grid, 100 * nm.mu, 100 * nm.sigma)
-    pdf_t = stats.t.pdf(grid, st.nu, 100 * st.loc, 100 * st.scale)
     floor = dens[keep].min() / 4
     _dot(ax1, mid[keep], dens[keep], BLUE, size=20, label="Observed days")
-    ax1.plot(grid, pdf_n, color=ORANGE, label="Normal fit")
-    ax1.plot(grid, pdf_t, color=MUTED, lw=1.4, label=f"Student-t fit (ν = {st.nu:.1f})")
+    if hasattr(nm, "mu"):
+        pdf_n = stats.norm.pdf(grid, 100 * nm.mu, 100 * nm.sigma)
+        ax1.plot(grid, pdf_n, color=ORANGE, label="Normal fit")
+        i = _first_visible(grid, pdf_n, floor * 20)
+        _line_label(ax1, grid[i], pdf_n[i], "Normal", 18, -8)
+    if hasattr(st, "nu"):
+        pdf_t = stats.t.pdf(grid, st.nu, 100 * st.loc, 100 * st.scale)
+        ax1.plot(grid, pdf_t, color=MUTED, lw=1.4, label=f"Student-t fit (ν = {st.nu:.1f})")
+        i = _first_visible(grid, pdf_t, floor * 3)
+        _line_label(ax1, grid[i], pdf_t[i], "Student-t", 6, 16)
     ax1.set_yscale("log")
     ax1.set_ylim(floor, dens.max() * 3)
     ax1.xaxis.set_major_formatter(_pct(0))
-    ax1.set_xlabel("Daily portfolio return")
+    ax1.set_xlabel("Daily portfolio log return")
     ax1.set_ylabel("Density (log scale)")
-    ax1.set_title("(a) Distribution of daily returns", pad=14)
+    ax1.set_title("(a) Distribution of daily log returns", pad=14)
     _subtitle(ax1, f"skewness {stats.skew(x):.2f} · excess kurtosis {stats.kurtosis(x):.1f} "
                    f"(normal: 0 and 0)")
-    i = _first_visible(grid, pdf_n, floor * 20)
-    _line_label(ax1, grid[i], pdf_n[i], "Normal", 18, -8)
-    i = _first_visible(grid, pdf_t, floor * 3)
-    _line_label(ax1, grid[i], pdf_t[i], "Student-t", 6, 16)
     ax1.legend(loc="upper right")
 
     z = np.sort((x - x.mean()) / x.std(ddof=1))
@@ -143,34 +147,47 @@ def fig_distribution(r: pd.Series, models: dict) -> Figure:
 
 
 @_styled
-def fig_threshold(scan: pd.DataFrame, chosen_q: float) -> Figure:
-    """EVT threshold diagnostics: mean excess, xi stability, KS distance, with the chosen threshold."""
-    q = 100 * scan["q"].to_numpy()
-    fig = Figure(figsize=(10, 3.3), layout="constrained")
-    ax = fig.subplots(1, 3, sharex=True)
-    ax[0].plot(q, 100 * scan["mean_excess"], color=BLUE)
-    ax[0].yaxis.set_major_formatter(_pct(2))
-    ax[0].set_title("(a) Mean excess loss", pad=14)
-    _subtitle(ax[0], "roughly linear once the GPD holds")
+def fig_threshold(scan: pd.DataFrame, chosen: pd.Series) -> Figure:
+    """
+    EVT threshold diagnostics against the threshold u itself (log-loss %):
+    mean excess, tail index, modified scale and KS distance, with the chosen
+    threshold (a row from evt.select_threshold) marked.
+    """
+    s = scan[scan["fit_ok"]]
+    u, cu = 100 * s["u"].to_numpy(), 100 * float(chosen["u"])
+    fig = Figure(figsize=(10, 6.2), layout="constrained")
+    (a1, a2), (a3, a4) = fig.subplots(2, 2, sharex=True)
+    a1.plot(u, 100 * s["mean_excess"], color=BLUE)
+    a1.yaxis.set_major_formatter(_pct(2))
+    a1.set_title("(a) Mean excess over u (log loss)", pad=14)
+    _subtitle(a1, "roughly linear in u once the GPD holds")
 
-    lo, hi = scan["xi"] - 1.96 * scan["xi_se"], scan["xi"] + 1.96 * scan["xi_se"]
-    ax[1].fill_between(q, lo, hi, color=BLUE, alpha=0.10, lw=0)
-    ax[1].plot(q, scan["xi"], color=BLUE)
-    ax[1].set_title("(b) Tail index ξ with 95% interval", pad=14)
-    _subtitle(ax[1], "flat once the GPD holds")
+    lo, hi = s["xi"] - 1.96 * s["xi_se"], s["xi"] + 1.96 * s["xi_se"]
+    a2.fill_between(u, lo, hi, color=BLUE, alpha=0.10, lw=0)
+    a2.plot(u, s["xi"], color=BLUE)
+    a2.set_title("(b) Tail index ξ with 95% interval", pad=14)
+    _subtitle(a2, "flat once the GPD holds")
 
-    stable = scan["stable"].to_numpy()
-    ax[2].plot(q, scan["ks"], color=AXIS, lw=1)
-    _dot(ax[2], q[stable], scan["ks"][stable], BLUE, size=22, label="ξ stable")
-    _dot(ax[2], q[~stable], scan["ks"][~stable], MUTED, size=22, label="ξ not stable")
-    ax[2].set_title("(c) KS distance to fitted GPD", pad=14)
-    _subtitle(ax[2], "rule: lowest KS among stable thresholds")
-    ax[2].legend(loc="upper left")
-    for a in ax:
-        a.axvline(100 * chosen_q, color=INK2, lw=1)
-        a.set_xlabel("Threshold (percentile of daily losses)")
-    ax[1].text(100 * chosen_q, 0.02, f" chosen: {100 * chosen_q:g}th", transform=ax[1].get_xaxis_transform(),
-               color=INK2, fontsize=8)
+    a3.plot(u, 100 * s["sigma_star"], color=BLUE)
+    a3.yaxis.set_major_formatter(_pct(2))
+    a3.set_title("(c) Modified scale σ − ξu (log loss)", pad=14)
+    _subtitle(a3, "flat once the GPD holds")
+
+    stable = s["stable"].to_numpy()
+    a4.plot(u, s["ks"], color=AXIS, lw=1)
+    _dot(a4, u[stable], s["ks"][stable], BLUE, size=22, label="ξ stable")
+    _dot(a4, u[~stable], s["ks"][~stable], MUTED, size=22, label="ξ not stable")
+    a4.set_title("(d) KS distance to fitted GPD", pad=14)
+    _subtitle(a4, "rule: lowest KS among stable thresholds")
+    a4.legend(loc="upper left")
+    for a in (a1, a2, a3, a4):
+        a.axvline(cu, color=INK2, lw=1)
+        a.xaxis.set_major_locator(mticker.MultipleLocator(0.5))
+        a.xaxis.set_major_formatter(_pct(1))
+    for a in (a3, a4):
+        a.set_xlabel("Threshold u (daily log loss)")
+    a2.text(cu, 0.03, f" chosen: {100 * float(chosen['q']):g}th pct, {int(chosen['n_exceed'])} exceedances",
+            transform=a2.get_xaxis_transform(), color=INK2, fontsize=8)
     return fig
 
 
@@ -193,10 +210,10 @@ def fig_evt_fit(evt_model, normal_model) -> Figure:
     ax1.set_yscale("log")
     ax1.set_ylim(floor, emp.max() * 2)
     ax1.xaxis.set_major_formatter(_pct(0))
-    ax1.set_xlabel("Daily loss")
+    ax1.set_xlabel("Daily log loss")
     ax1.set_ylabel("Probability of a loss at least this large")
     ax1.set_title("(a) Tail of daily losses beyond the threshold", pad=14)
-    _subtitle(ax1, f"u = {100 * f.u:.2f}% loss · {f.n_exceed} exceedances · "
+    _subtitle(ax1, f"u = {100 * f.u:.2f}% log loss · {f.n_exceed} exceedances · "
                    f"ξ = {f.xi:.2f} (s.e. {f.se[0]:.2f})")
     i = int(len(grid) * 0.85)
     _line_label(ax1, 100 * grid[i], gpd[i], "EVT", 4, 16)
@@ -212,8 +229,8 @@ def fig_evt_fit(evt_model, normal_model) -> Figure:
     _line_label(ax2, v, v, "perfect GPD fit", -78, 18)
     ax2.xaxis.set_major_formatter(_pct(0))
     ax2.yaxis.set_major_formatter(_pct(0))
-    ax2.set_xlabel("GPD quantile of the excess")
-    ax2.set_ylabel("Observed excess over u")
+    ax2.set_xlabel("GPD quantile of the excess (log loss)")
+    ax2.set_ylabel("Observed excess over u (log loss)")
     ax2.set_title("(b) GPD QQ plot of excesses", pad=14)
     _subtitle(ax2, "on the line = the GPD describes the tail")
     return fig
@@ -241,7 +258,8 @@ def fig_comparison(table: pd.DataFrame, levels=(0.95, 0.99), value: float = PORT
         ax.xaxis.set_major_formatter(mticker.FuncFormatter(_usd))
         ax.set_xlabel(f"Loss on USD {value / 1e6:.0f}m")
     first = np.atleast_1d(axes)[0]
-    first.set_yticks(y, [LABEL.get(m, m) for m in methods])
+    missing = set(table.loc[table["var_usd"].isna(), "method"])
+    first.set_yticks(y, [LABEL.get(m, m) + (" (unavailable)" if m in missing else "") for m in methods])
     first.tick_params(axis="y", labelcolor=INK2, length=0)
     handles, labels = first.get_legend_handles_labels()
     fig.legend(handles, labels, loc="outside upper right", ncols=2)
@@ -252,8 +270,9 @@ def fig_comparison(table: pd.DataFrame, levels=(0.95, 0.99), value: float = PORT
 def fig_tail_curve(models: dict, value: float = PORTFOLIO_VALUE) -> Figure:
     """VaR as the confidence level rises from 90% to 99.9%: where the models part company."""
     p = np.geomspace(0.10, 0.001, 120)
-    featured = [m for m in ("historical", "normal", "evt") if m in models]
-    context = [m for m in ("student_t", "mc_t", "garch_evt") if m in models]
+    usable = {m for m, mod in models.items() if not isinstance(mod, Unavailable)}
+    featured = [m for m in ("historical", "normal", "evt") if m in usable]
+    context = [m for m in ("student_t", "mc_t", "garch_evt") if m in usable]
     fig = Figure(figsize=(8, 4.4), layout="constrained")
     ax = fig.subplots()
     ends = []
@@ -271,7 +290,7 @@ def fig_tail_curve(models: dict, value: float = PORTFOLIO_VALUE) -> Figure:
     ymax = max(e[0] for e in ends)
     _end_labels(ax, ends, x_text=0.00075, min_gap=0.055 * ymax)
     ax.set_xlabel("Confidence level")
-    ax.set_ylabel("One-day VaR (% of portfolio)")
+    ax.set_ylabel("One-day VaR (% of portfolio value, simple loss)")
     ax.set_title("VaR by confidence level", pad=14)
     _subtitle(ax, f"USD {value / 1e6:.0f}m portfolio · grey = other models, for context")
     return fig
@@ -307,12 +326,12 @@ def fig_rolling(fc: pd.DataFrame, alpha: float = 0.99, methods=("historical", "g
     ax1, ax2, ax3 = fig.subplots(3, 1, gridspec_kw={"height_ratios": [2.4, 0.55, 1.9]})
     for ax, d in ((ax1, fc), (ax3, fc.loc[zoom[0]:zoom[1]])):
         l = loss.loc[d.index]
-        ax.vlines(d.index, 0, l.clip(lower=0), color=AXIS, lw=0.6 if ax is ax1 else 1.6, label="Daily loss")
+        ax.vlines(d.index, 0, l.clip(lower=0), color=AXIS, lw=0.6 if ax is ax1 else 1.6, label="Daily log loss")
         for m in methods:
             v = 100 * d[f"var_{m}_{lvl}"]
-            hits = l > v
-            name = f"{LABEL.get(m, m)}: {int(hits.sum())} breaches ({100 * hits.mean():.1f}%)" if ax is ax1 \
-                else LABEL.get(m, m)
+            hits, valid = l > v, v.notna()            # days without a forecast are not counted as passes
+            name = (f"{LABEL.get(m, m)}: {int(hits.sum())} breaches in {int(valid.sum()):,} days "
+                    f"({100 * hits.sum() / max(valid.sum(), 1):.1f}%)") if ax is ax1 else LABEL.get(m, m)
             ax.plot(d.index, v, color=COLOR.get(m, MUTED), lw=1.2 if ax is ax1 else 1.8, label=name)
             if ax is ax3:
                 _dot(ax, d.index[hits], l[hits], COLOR.get(m, MUTED), size=24)
@@ -322,7 +341,7 @@ def fig_rolling(fc: pd.DataFrame, alpha: float = 0.99, methods=("historical", "g
         ax.xaxis.set_major_locator(loc)
         ax.xaxis.set_major_formatter(mdates.ConciseDateFormatter(loc))
         ax.grid(axis="x", visible=False)
-    ax1.set_title(f"Rolling one-day {alpha:.0%} VaR forecasts vs realised losses", pad=14)
+    ax1.set_title(f"Rolling one-day {alpha:.0%} VaR forecasts vs realised losses (log loss)", pad=14)
     _subtitle(ax1, f"expected breach rate {100 * (1 - alpha):.0f}% · each forecast uses only earlier data")
     ax1.legend(loc="upper right")
     for k, m in enumerate(methods):

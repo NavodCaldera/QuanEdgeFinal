@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 from matplotlib.figure import Figure
 
-from quanedge.risk import plots
+from quanedge.risk import evt, plots
 from quanedge.risk.models import fit_models, risk_table
 from quanedge.risk.portfolio import portfolio_log_returns
 from quanedge.risk.rolling import rolling_forecasts
@@ -21,7 +21,7 @@ def test_all_figures_render():
                                                                    reps=20))
     fc = rolling_forecasts(r, alphas=(0.99,), methods=["historical", "garch_evt"], window=750, refit=250)
     figs = [plots.fig_distribution(r, models),
-            plots.fig_threshold(models["evt"].scan, 0.9),
+            plots.fig_threshold(models["evt"].scan, evt.select_threshold(models["evt"].scan)),
             plots.fig_evt_fit(models["evt"], models["normal"]),
             plots.fig_comparison(table),
             plots.fig_tail_curve(models),

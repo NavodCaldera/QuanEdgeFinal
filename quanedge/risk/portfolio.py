@@ -17,11 +17,13 @@ from ..config import PORTFOLIO_VALUE
 
 
 def weight_vector(weights, columns) -> np.ndarray:
-    """{ticker: weight} -> array in the column order of the return data."""
+    """{ticker: weight} -> array in the column order of the return data; omitted tickers get weight 0."""
     w = pd.Series(weights, dtype=float)
     unknown = sorted(set(w.index) - set(columns))
     if unknown:
         raise ValueError(f"weights given for assets not in the data: {unknown}")
+    if not np.isfinite(w.to_numpy()).all():
+        raise ValueError("weights must be finite numbers")
     w = w.reindex(columns, fill_value=0.0).to_numpy()
     if not np.isclose(w.sum(), 1.0, atol=1e-6):
         raise ValueError(f"weights sum to {w.sum():.6f}, not 1")
@@ -30,7 +32,10 @@ def weight_vector(weights, columns) -> np.ndarray:
 
 def portfolio_log_returns(asset_log_returns: pd.DataFrame, weights) -> pd.Series:
     w = weight_vector(weights, asset_log_returns.columns)
-    simple = np.expm1(asset_log_returns.to_numpy()) @ w
+    simple = np.expm1(asset_log_returns.to_numpy(dtype=float)) @ w
+    if np.any(simple <= -1):
+        raise ValueError("portfolio value falls to zero or below on some day, so its log return is undefined "
+                         "(possible only with short or levered weights)")
     return pd.Series(np.log1p(simple), index=asset_log_returns.index, name="portfolio")
 
 

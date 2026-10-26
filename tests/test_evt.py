@@ -3,7 +3,8 @@ import numpy as np
 import pytest
 from scipy import stats
 
-from quanedge.risk import evt
+from quanedge.risk import evt, settings as S
+from quanedge.risk.validation import ModelFitError
 
 
 def test_gpd_mle_recovers_parameters_and_matches_scipy():
@@ -89,3 +90,52 @@ def test_es_exceeds_var_at_every_sidebar_level():
     model = evt.fit_evt(stats.t.rvs(3, size=5000, random_state=5))
     for a in (0.90, 0.95, 0.99, 0.999):
         assert np.isfinite(model.es(a)) and model.es(a) >= model.var(a)
+
+
+# ---------------- failure states and the threshold rule's edges ----------------
+def test_gpd_fit_failures_are_explicit():
+    with pytest.raises(ModelFitError):
+        evt.fit_gpd(np.r_[np.zeros(100), np.ones(5)], 0.5)            # 5 exceedances: too few
+    with pytest.raises(ModelFitError):
+        evt.fit_gpd(np.r_[np.zeros(100), np.full(30, 2.0)], 0.5)       # constant excesses
+
+
+def test_empty_scan_keeps_its_columns_and_selection_fails_clearly():
+    scan = evt.threshold_scan(np.random.default_rng(0).standard_t(4, 100))   # no candidate reaches 50 exceedances
+    assert scan.empty and {"q", "u", "xi", "ks", "stable", "fit_ok"} <= set(scan.columns)
+    with pytest.raises(ModelFitError):
+        evt.select_threshold(scan)
+
+
+def test_top_thresholds_cannot_pass_stability_by_comparing_with_themselves():
+    scan = evt.threshold_scan(stats.t.rvs(4, size=20000, random_state=8))
+    assert not scan[scan["fit_ok"]]["stable"].iloc[-S.EVT_STABILITY_MIN_HIGHER:].any()
+
+
+def test_fallback_is_flagged_when_no_threshold_is_stable():
+    scan = evt.threshold_scan(stats.t.rvs(4, size=20000, random_state=9))
+    scan["stable"] = False
+    assert evt.select_threshold(scan)["rule"].startswith("FALLBACK")
+
+
+def _worst_mass_mean(values, weights, mass):
+    """Brute force: average of the largest values carrying total probability 'mass'."""
+    order = np.argsort(values)[::-1]
+    v, w = values[order], weights[order]
+    cum = np.cumsum(w)
+    k = int(np.searchsorted(cum, mass))
+    taken = cum[k - 1] if k else 0.0
+    return (np.dot(v[:k], w[:k]) + (mass - taken) * v[k]) / mass
+
+
+def test_hybrid_es_matches_a_brute_force_mixture():
+    """Body: each observed loss below u with mass 1/n; tail: the GPD discretised into 400,000 equal-mass points."""
+    losses = stats.t.rvs(4, size=4000, random_state=11)
+    m = evt.fit_evt(losses, threshold_q=0.9)
+    f, n, M = m.fit, len(losses), 400_000
+    values = np.r_[losses[losses <= f.u], f.u + evt.gpd_ppf((np.arange(M) + 0.5) / M, f.xi, f.sigma)]
+    weights = np.r_[np.full((losses <= f.u).sum(), 1 / n), np.full(M, m.zeta / M)]
+    assert weights.sum() == pytest.approx(1)
+    for a in (0.80, 0.85, 0.95, 0.99):                    # two levels in the body, two in the tail
+        assert m.es(a) == pytest.approx(_worst_mass_mean(values, weights, 1 - a), rel=2e-3)
+        assert m.es_fraction(a) == pytest.approx(_worst_mass_mean(-np.expm1(-values), weights, 1 - a), rel=2e-3)
