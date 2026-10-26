@@ -376,6 +376,12 @@ DOC-002, 26 October 2026:
 - Section 4 now states that the tree was stripped and the implementation lives at e94c0ae; restore per PLAN.md D-01.
 - No code, data or results changed. Policy numbers in PLAN.md section 13 are proposals awaiting the owner's review.
 
+DOC-003, 26 October 2026:
+- Integrated the owner's ideas (Google Doc "Quant Edge - thoughts": diversification techniques and NIBM capital-budgeting slides) into `PLAN.md` section 19, after review by a second pair of AI critic agents who cross-critiqued.
+- Policy fixes found in that review: the return objective is now a hurdle h = CPI + 4% spending + costs set from the spending need (the earlier frontier-derived target made Reject impossible); AGG is 25-70% and exempt from the 40% single-ETF cap (the earlier text capped AGG at 40%, forcing at least 45% equity).
+- Added: permanent-portfolio-inspired benchmark, constrained volatility risk parity, co-exceedance and ES diversification benefit, shortfall-against-hurdle bootstrap, money-weighted return and time under water, alternatives-considered memo text. NPV/PI dropped as redundant.
+- No code, data or results changed; policy numbers remain proposals awaiting the owner's review.
+
 For subsequent meaningful updates append a compact entry using:
 ```text
 Date/time and task ID:
