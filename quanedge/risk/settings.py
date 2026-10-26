@@ -3,11 +3,11 @@ Every modelling choice of the risk workstream (VaR, ES, EVT) lives here, so it
 can be changed in one place and defended in the report.
 """
 import numpy as np
-from ..config import TICKERS
+from ..config import END_DATE, START_DATE, TICKERS
 
 # ---------------- Development inputs (replace when Persons 1 and 2 deliver) ----------------
-DEV_START = "2005-01-01"      # first full year in which all seven ETFs trade (GLD listed 18 Nov 2004)
-DEV_END = "2026-10-01"        # fixed end date -> identical data on every run (yfinance end is exclusive)
+DEV_START = START_DATE        # single source of truth: quanedge.config (first full year with all seven ETFs)
+DEV_END = END_DATE            # fixed end date -> identical data on every run (yfinance end is exclusive)
 DEV_WEIGHTS = {t: 1 / len(TICKERS) for t in TICKERS}   # neutral placeholder, NOT a recommendation
 
 # ---------------- VaR / ES ----------------
