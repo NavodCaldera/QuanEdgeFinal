@@ -1,8 +1,0 @@
-assumption,used_by,test,null_hypothesis,statistic,p_value,conclusion
-Returns are normal,"normal, mc_normal",Jarque-Bera,returns are normal,51241.1,0,null rejected at 5%: evidence against the assumption
-No autocorrelation in returns,all unconditional models,Ljung-Box Q(10) on r,no autocorrelation up to lag 10,88.8751,8.94896e-15,null rejected at 5%: evidence against the assumption
-Constant volatility (no clustering),all unconditional models,Ljung-Box Q(10) on r^2,no autocorrelation in squared returns up to lag 10,4810.91,0,null rejected at 5%: evidence against the assumption
-Constant volatility (no clustering),all unconditional models,ARCH-LM(10),no ARCH effects,1538.6,0,null rejected at 5%: evidence against the assumption
-Returns are stationary,all models,ADF,unit root (non-stationary),-16.6159,1.71482e-29,null rejected at 5%: supports the assumption
-GARCH filter removed the clustering,"fhs, garch_evt",Ljung-Box Q(10) on z^2,no autocorrelation in squared residuals up to lag 10,12.0361,0.282651,null not rejected at 5%: no evidence against it (not proof)
-GARCH residuals are normal,(why fhs/garch_evt model the residual tail),Jarque-Bera on z,residuals are normal,1332.96,3.56766e-290,null rejected at 5%: evidence against the assumption
