@@ -1,0 +1,4 @@
+check,rule,findings
+STALE_PRICE_STREAK,>= 3 consecutive trading days with zero log return,0
+SHARP_TWO_DAY_REVERSAL,|r| >= 6% on two consecutive days with opposite signs,29
+VOLATILITY_REGIME_SHIFT,ICSS variance-break test per ticker (informational),7

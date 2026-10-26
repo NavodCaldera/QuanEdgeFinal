@@ -1,0 +1,285 @@
+{
+  "manifest_version": "1.0.0",
+  "generated_at_utc": "2026-10-26T06:55:09.314105+00:00",
+  "team": "Team Ghosted",
+  "competition": "SAIFA Quant Edge 1.0",
+  "client": "The Serendib University Endowment Fund (USD 10 Million)",
+  "workstream": "Person 1 \u2014 Data Engineering & Reproducibility Lead",
+  "environment": {
+    "python_version": "3.12.0 (v3.12.0:0fb18b02c8, Oct  2 2023, 09:45:56) [Clang 13.0.0 (clang-1300.0.29.30)]",
+    "platform": "macOS-26.6.1-arm64-arm-64bit",
+    "pandas_version": "3.0.2",
+    "numpy_version": "2.4.4",
+    "yfinance_version": "1.7.0",
+    "statsmodels_version": "0.14.6"
+  },
+  "investable_universe": [
+    "SPY",
+    "EFA",
+    "EEM",
+    "AGG",
+    "GLD",
+    "XLE",
+    "XLK"
+  ],
+  "files": {
+    "cache/prices_dev.csv": {
+      "relative_path": "cache/prices_dev.csv",
+      "size_bytes": 756339,
+      "sha256": "11e0d7c6f77669896ad35355a67e6bbed725d6f652d9a375e34d901ae1869eee",
+      "rows": 5470,
+      "columns": [
+        "SPY",
+        "EFA",
+        "EEM",
+        "AGG",
+        "GLD",
+        "XLE",
+        "XLK"
+      ],
+      "start_date": "2005-01-03",
+      "end_date": "2026-09-30"
+    },
+    "clean/anomaly_log.csv": {
+      "relative_path": "clean/anomaly_log.csv",
+      "size_bytes": 91685,
+      "sha256": "2f30d2d3a4b3b3f0d8d6b3caab64134045a22b09e9c5936202a127efcb2e1328",
+      "rows": 242,
+      "columns": [
+        "ticker",
+        "log_return",
+        "simple_return_pct",
+        "z_score",
+        "category",
+        "corroborating_assets",
+        "historical_context",
+        "label_source",
+        "disposition"
+      ],
+      "start_date": "2006-05-15",
+      "end_date": "2026-06-05"
+    },
+    "clean/calendar_audit.csv": {
+      "relative_path": "clean/calendar_audit.csv",
+      "size_bytes": 10925,
+      "sha256": "1d77c4c7bcbdcec9061cc85c85c1c926f3d2bda63d2cdd9a5995ecf3dceae4bb",
+      "rows": 203,
+      "columns": [
+        "weekday",
+        "classification",
+        "reason"
+      ],
+      "start_date": "2005-01-17",
+      "end_date": "2026-09-07"
+    },
+    "clean/data_quality_checks.csv": {
+      "relative_path": "clean/data_quality_checks.csv",
+      "size_bytes": 250,
+      "sha256": "639fd3a6a63f836f7c4221e65f38be9f3dbd0c3411bea3bab051c8df6f28d2b3",
+      "rows": 3,
+      "columns": [
+        "rule",
+        "findings"
+      ]
+    },
+    "clean/data_quality_log.csv": {
+      "relative_path": "clean/data_quality_log.csv",
+      "size_bytes": 10060,
+      "sha256": "d07265c1504895125af1eb5d2670e0412a14798dd17255308609725e5d8dc208",
+      "rows": 36,
+      "columns": [
+        "ticker",
+        "start_date",
+        "end_date",
+        "metric",
+        "value",
+        "detail",
+        "disposition"
+      ]
+    },
+    "clean/log_returns.csv": {
+      "relative_path": "clean/log_returns.csv",
+      "size_bytes": 884436,
+      "sha256": "03c9c1695ecc30e6dae20e130dd53414ef1ea7070f3a880146f726d35928fb9e",
+      "rows": 5469,
+      "columns": [
+        "SPY",
+        "EFA",
+        "EEM",
+        "AGG",
+        "GLD",
+        "XLE",
+        "XLK"
+      ],
+      "start_date": "2005-01-04",
+      "end_date": "2026-09-30"
+    },
+    "clean/macro_clean.csv": {
+      "relative_path": "clean/macro_clean.csv",
+      "size_bytes": 789855,
+      "sha256": "082d2010e99c1e2e1c98e1e509137fb4204bbf37edc9d7b54a9b05431f0187b1",
+      "rows": 5470,
+      "columns": [
+        "DTB3",
+        "DGS10",
+        "CPIAUCSL",
+        "FEDFUNDS",
+        "VIXCLS",
+        "DTB3_bey",
+        "rf_daily_effective",
+        "rf_daily_simple",
+        "rf_daily_log",
+        "term_spread_10y_3m"
+      ],
+      "start_date": "2005-01-03",
+      "end_date": "2026-09-30"
+    },
+    "clean/macro_ffill_log.csv": {
+      "relative_path": "clean/macro_ffill_log.csv",
+      "size_bytes": 8153,
+      "sha256": "b11ed5955e51beef77eceec181fd84a085f0704b82abbaa431eba6abcc9aeb6b",
+      "rows": 78,
+      "columns": [
+        "series",
+        "day_of_week",
+        "filled_from_date",
+        "action"
+      ],
+      "start_date": "2005-10-10",
+      "end_date": "2025-11-11"
+    },
+    "clean/prices_clean.csv": {
+      "relative_path": "clean/prices_clean.csv",
+      "size_bytes": 754502,
+      "sha256": "c082a34778daecf734a50f7c6af1b52126b717f5a43ea889c0e7f6eed97aff45",
+      "rows": 5470,
+      "columns": [
+        "SPY",
+        "EFA",
+        "EEM",
+        "AGG",
+        "GLD",
+        "XLE",
+        "XLK"
+      ],
+      "start_date": "2005-01-03",
+      "end_date": "2026-09-30"
+    },
+    "clean/simple_returns.csv": {
+      "relative_path": "clean/simple_returns.csv",
+      "size_bytes": 884246,
+      "sha256": "abaeec7078300183d5e78f26c216066b0747a4f69d35dc2d9779c50e09638429",
+      "rows": 5469,
+      "columns": [
+        "SPY",
+        "EFA",
+        "EEM",
+        "AGG",
+        "GLD",
+        "XLE",
+        "XLK"
+      ],
+      "start_date": "2005-01-04",
+      "end_date": "2026-09-30"
+    },
+    "clean/stationarity_tests.csv": {
+      "relative_path": "clean/stationarity_tests.csv",
+      "size_bytes": 2447,
+      "sha256": "4e1e148100408a20f764ec3dd02144acc29d2a7e144cd856d555faa0fab44588",
+      "rows": 22,
+      "columns": [
+        "series_type",
+        "adf_stat",
+        "adf_p_value",
+        "adf_lags",
+        "adf_crit_5pct",
+        "adf_stat_lag5",
+        "adf_p_value_lag5",
+        "kpss_stat",
+        "kpss_p_value",
+        "kpss_p_capped",
+        "arch_lm_p_value",
+        "verdict"
+      ]
+    },
+    "clean/worldbank_macro.csv": {
+      "relative_path": "clean/worldbank_macro.csv",
+      "size_bytes": 2973,
+      "sha256": "bdfe9b3a845bf85610ac05015f8514e8cea791bfba63e5d888efdc6a2e344e3e",
+      "rows": 66,
+      "columns": [
+        "FP.CPI.TOTL.ZG",
+        "NY.GDP.MKTP.KD.ZG"
+      ],
+      "start_date": "1960-01-01",
+      "end_date": "2025-01-01"
+    },
+    "raw/fred_CPIAUCSL.csv": {
+      "relative_path": "raw/fred_CPIAUCSL.csv",
+      "size_bytes": 16522,
+      "sha256": "5c8f525a1dbae3cbb58ad71eab03547979706fcbc077e15d3d1d10f78ca12f28",
+      "rows": 957,
+      "columns": [
+        "CPIAUCSL"
+      ],
+      "start_date": "1947-01-01",
+      "end_date": "2026-09-01"
+    },
+    "raw/fred_DGS10.csv": {
+      "relative_path": "raw/fred_DGS10.csv",
+      "size_bytes": 267459,
+      "sha256": "3b23debc5287390d41812384911836c1a220e0f70a3bd3ac2d46213662980b57",
+      "rows": 16908,
+      "columns": [
+        "DGS10"
+      ],
+      "start_date": "1962-01-02",
+      "end_date": "2026-10-22"
+    },
+    "raw/fred_DTB3.csv": {
+      "relative_path": "raw/fred_DTB3.csv",
+      "size_bytes": 299469,
+      "sha256": "d743cdbc40330aeac6061ba6d29fe00d0d53f022c22093dc5278ea8ed595010e",
+      "rows": 18994,
+      "columns": [
+        "DTB3"
+      ],
+      "start_date": "1954-01-04",
+      "end_date": "2026-10-22"
+    },
+    "raw/fred_FEDFUNDS.csv": {
+      "relative_path": "raw/fred_FEDFUNDS.csv",
+      "size_bytes": 13848,
+      "sha256": "d2873edc7dc829a9430e7a143e24d81ed9ffe681714cd2d99dfacc41d91fee35",
+      "rows": 867,
+      "columns": [
+        "FEDFUNDS"
+      ],
+      "start_date": "1954-07-01",
+      "end_date": "2026-09-01"
+    },
+    "raw/fred_VIXCLS.csv": {
+      "relative_path": "raw/fred_VIXCLS.csv",
+      "size_bytes": 160787,
+      "sha256": "ad6b6b29377d84d37c8e9bd6f3b9b280082bf6d21fa60c0b10aa0e0ad4f7cc98",
+      "rows": 9603,
+      "columns": [
+        "VIXCLS"
+      ],
+      "start_date": "1990-01-02",
+      "end_date": "2026-10-22"
+    },
+    "raw/worldbank_usa.csv": {
+      "relative_path": "raw/worldbank_usa.csv",
+      "size_bytes": 2973,
+      "sha256": "bdfe9b3a845bf85610ac05015f8514e8cea791bfba63e5d888efdc6a2e344e3e",
+      "rows": 66,
+      "columns": [
+        "FP.CPI.TOTL.ZG",
+        "NY.GDP.MKTP.KD.ZG"
+      ],
+      "start_date": "1960-01-01",
+      "end_date": "2025-01-01"
+    }
+  }
+}
