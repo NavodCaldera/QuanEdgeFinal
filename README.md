@@ -94,10 +94,13 @@ VaR, Expected Shortfall and EVT live in [`quanedge/risk/`](quanedge/risk/). They
 
 ```bash
 pip install -r requirements.txt
-python -m quanedge.risk.run           # tables, figures and summary in results/risk/ (a few minutes)
-python -m quanedge.risk.run --quick   # fast look: 50 bootstrap resamples, no rolling forecasts
+python -m quanedge.risk.run           # tables, figures, summary and manifest in results/risk/ (a few minutes)
+python -m quanedge.risk.run --quick   # fast look in results/risk_quick/: 50 resamples, no rolling forecasts
+python -m quanedge.risk.run --returns returns.csv --weights weights.json --out results/risk_final
 python -m pytest                      # unit tests against closed forms, simulations and known tails
 ```
+
+`--returns` takes daily asset log returns (dates in the first column, one column per permitted ticker) and `--weights` a JSON object such as `{"SPY": 0.3, "AGG": 0.7}`: that is how Person 1's dataset and Person 2's weights plug in. A run replaces its output folder only once it has finished, and `manifest.json` records its inputs, hashes, settings and model statuses.
 
 - Detailed Person 3 instructions, remaining work, conventions, testing and team handoffs: [docs/person-3/AGENTS.md](docs/person-3/AGENTS.md)
 - Project-wide agent instructions: [AGENTS.md](AGENTS.md)

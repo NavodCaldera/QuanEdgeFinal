@@ -35,11 +35,11 @@ Mandatory methods are historical VaR, a justified parametric VaR, Monte Carlo Va
 
 Existing optional extensions are `student_t`, `mc_t`, `fhs` and `garch_evt`. They are useful candidates, not competition requirements. Bootstrap intervals, numerical convergence and sensitivity checks are project validation choices supporting reliability. Do not sacrifice correctness of the required methods to add more models.
 
-## Current implementation snapshot (26 October 2026)
+## Implementation snapshot (26 October 2026, commit 13c0619)
 
-`quanedge/risk/` contains eight models, portfolio aggregation, diagnostics, bootstrap intervals, rolling forecasts, plots and a command-line runner. Five test files exercise these components. Saved outputs contain 24 risk rows (eight methods times three levels), 38 threshold candidates, 4,719 forecast dates, nine CSV tables and seven PNG figures.
+`quanedge/risk/` contains eight models, portfolio aggregation, input validation, diagnostics, bootstrap intervals, rolling forecasts, plots and a command-line runner. Seven test files exercise these components. A full run writes 24 risk rows (eight methods times three levels), 38 threshold candidates, 4,719 forecast dates, ten CSV tables, seven PNG figures and a `manifest.json`. Treat these counts as a dated record; the latest run's manifest is authoritative.
 
-The cached price file contains 5,470 rows from 3 January 2005 to 30 September 2026. Differencing gives 5,469 return observations starting 4 January 2005. These describe the cached development snapshot, not independently verified source provenance. Equal weights are temporary. The prior plan marked implementation phases complete but left write-up and final input replacement open; this pack also identifies correctness and robustness review work.
+The cached price file contains 5,470 rows from 3 January 2005 to 30 September 2026. Differencing gives 5,469 return observations starting 4 January 2005. These describe the cached development snapshot, not independently verified source provenance. Equal weights are temporary. The prior plan marked implementation phases complete but left write-up and final input replacement open; this pack identified correctness and robustness work, whose status is tracked in the [implementation plan](05-implementation-plan.md).
 
 ## Deliverable boundary
 

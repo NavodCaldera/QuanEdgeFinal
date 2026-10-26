@@ -6,7 +6,7 @@ Use portfolio log losses L=-r_p. For threshold u, fit positive exceedances Y=L-u
 
 The GPD has positive scale sigma and shape xi; its support satisfies 1+xi*y/sigma>0. At xi=0 use the exponential limit. Negative xi implies a finite upper endpoint for excesses. Implement support and limit checks and verify against [SciPy's GPD reference](https://scipy.github.io/devdocs/tutorial/stats/continuous_genpareto.html), using the installed version's API.
 
-Check finite positive excesses, enough distinct data, nonzero dispersion, optimizer convergence, finite likelihood and valid fitted support. Current fitting consumes optimizer parameters without checking success. Return useful status information rather than silently accepting failures. Test parameter estimates and log likelihood against an independent implementation on synthetic known tails.
+Check finite positive excesses, enough distinct data, nonzero dispersion, optimizer convergence, finite likelihood and valid fitted support. Since 70153ba `fit_gpd` checks exceedance count, distinct values, convergence, a finite likelihood and support, and raises `ModelFitError` otherwise; failed scan candidates stay in the table with `fit_ok = False` and a reason. Test parameter estimates and log likelihood against an independent implementation on synthetic known tails.
 
 ## Threshold selection
 
@@ -16,11 +16,11 @@ Current stability flag checks whether a candidate's xi falls within the approxim
 
 Required work:
 
-1. Plot mean excess against actual threshold u. The existing plot uses threshold percentile, on which apparent linearity is not the standard mean-excess diagnostic.
-2. Plot xi and uncertainty across thresholds, plus modified-scale stability, exceedance counts and KS distance. `sigma_star` is already tabulated but not plotted.
+1. Plot mean excess against actual threshold u. *Done: `fig_threshold` plots every diagnostic against u (70153ba).*
+2. Plot xi and uncertainty across thresholds, plus modified-scale stability, exceedance counts and KS distance. *Done: the modified scale is panel (c) of `fig_threshold`.*
 3. Define a defensible stability region and minimum count, balancing bias at low thresholds against variance at high thresholds.
-4. Inspect whether the last candidate passes vacuously because it is compared only with itself. Require meaningful evidence across neighbouring thresholds or explicitly describe the limitation.
-5. Define behaviour for empty scans, invalid fits, no acceptable stable region and ties. Existing empty scans can fail with missing columns. A fallback to all candidates must be flagged, not called successful stability validation.
+4. Inspect whether the last candidate passes vacuously because it is compared only with itself. Require meaningful evidence across neighbouring thresholds or explicitly describe the limitation. *Done: stability needs at least `EVT_STABILITY_MIN_HIGHER` (3) higher thresholds, so the top three candidates cannot be stable.*
+5. Define behaviour for empty scans, invalid fits, no acceptable stable region and ties. A fallback to all candidates must be flagged, not called successful stability validation. *Done: an empty scan keeps its columns and selection raises `ModelFitError`; the fallback rule text starts with FALLBACK; ties go to the lower threshold.*
 6. Compare the chosen rule with fixed 90th/95th-percentile candidates where sample counts permit. Report risk-estimate sensitivity, not only the selected xi.
 7. Choose thresholds entirely within training data for rolling forecasts and freeze selection rules before final validation.
 
@@ -39,7 +39,7 @@ xi >= 1: finite log ES does not exist
 
 Check support, continuity, numerical stability near xi=0, and the bounded endpoint when xi<0. The exceedance rate zeta is essential: fitting a conditional tail without it cannot yield unconditional portfolio VaR.
 
-Current `EVT` combines an empirical body with a GPD tail. Retain this approach only after validating its probability normalization, body/tail boundary, ties and ES integration. At sidebar levels below the tail cutoff label the result as an empirical-body/hybrid estimate, not a pure extrapolated EVT quantile. An alternative is an explicit unavailable pure-tail result with an explanation; coordinate the display with Person 5 so the required dashboard remains understandable.
+`EVT` combines an empirical body with a GPD tail. Its probability normalization, body/tail boundary and ES integration are checked against a brute-force discretised mixture (`tests/test_evt.py`, 70153ba); the body uses the historical estimators, so ties are handled the same way. At sidebar levels below the tail cutoff the `risk_table` column `basis` reads "empirical body below the EVT threshold" instead of "GPD tail" (13c0619), so the dashboard can label it. An alternative is an explicit unavailable pure-tail result with an explanation; coordinate the display with Person 5 so the required dashboard remains understandable.
 
 For dollar/percentage ES integrate transformed losses over the full relevant quantile tail, including the empirical-body portion where applicable. An infinite log ES requires a separate status; see the valuation contract for why monetary ES is a different calculation.
 

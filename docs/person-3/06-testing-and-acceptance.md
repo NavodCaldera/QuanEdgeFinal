@@ -8,9 +8,11 @@ Run from the repository root with the documented Python environment:
 python -m pytest -q
 ```
 
-Existing tests cover portfolio aggregation and weights, loss conversions, normal/t formulas, simulation convergence, GPD likelihood and formulas, threshold selection on synthetic data, conditional filtering, block resampling, plot rendering and forecast timing. Passing those tests establishes only those covered behaviours. In particular, they do not establish exact monetary ES, robust failure handling, final data provenance or investment suitability.
+Existing tests cover portfolio aggregation and weights, loss conversions, normal/t formulas, simulation convergence, GPD likelihood and formulas, threshold selection on synthetic data, conditional filtering, block resampling, plot rendering and forecast timing. Since 70153ba the suite also covers exact empirical and monetary ES, input validation, visible failure states, EVT edge cases, forecast metadata and precision, and the runner's manifest and all-or-nothing publication (`tests/test_contracts.py`, `tests/test_run.py` and additions to the others). Passing tests establishes only the covered behaviours: not final data provenance, not human review, and not investment suitability.
 
 Documentation-review baseline on 26 October 2026: `python -m pytest -q -p no:cacheprovider` completed with **31 passed in 62.81 seconds** in the existing workspace Python environment. This was an automated baseline run, not human sign-off or execution of the additional tests specified below. The analysis pipeline and saved results were not regenerated during this documentation task.
+
+Implementation-plan baseline on 26 October 2026 (code commit 13c0619): **65 passed** with `python -m pytest -q -p no:cacheprovider`, followed by a full `python -m quanedge.risk.run` whose `manifest.json` records the code commit and settings. Automated evidence again, not human sign-off.
 
 ## Required numerical tests
 

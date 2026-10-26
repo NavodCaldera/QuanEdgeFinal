@@ -12,17 +12,18 @@ If weights are changed, invalidate affected risk estimates, forecasts and saved 
 
 ## Person 4: validation, stress and risk-budget owner
 
-Current callable interface:
+Callable interface:
 
 ```python
-from quanedge.risk import portfolio_log_returns, rolling_forecasts, breach_summary
+from quanedge.risk import portfolio_log_returns, rolling_forecasts, breach_summary, load_forecasts
 
 r = portfolio_log_returns(asset_log_returns, weights)
-fc = rolling_forecasts(r)  # requires sufficient training history
+fc = rolling_forecasts(r)  # needs window + 1 days; rejects unsupported methods and bad settings
 counts = breach_summary(fc, start="2020-01-01", end="2020-12-31")
+fc = load_forecasts("results/risk/tables/rolling_forecasts.csv")  # the saved full run, bit for bit
 ```
 
-These examples show the existing API, not a guarantee of completed input checks. Forecasts use `return`, `var_{method}_{level}` and `es_{method}_{level}`, all in log-return/loss units. Breach is `-return > forecast_var`. Give Person 4 full precision, a defined tie rule, actual training/refit dates, rolling settings, data/weight hashes, and failure/missing-day flags. Failed forecasts cannot count as non-breaches in the denominator.
+Forecasts use `return`, `var_{method}_{level}` and `es_{method}_{level}`, all in log-return/loss units, plus `train_start`, `train_end` and `refit_train_end`. A breach is `-return > forecast_var` (strict). What Person 4 needs is in place: full precision through `save_forecasts`/`load_forecasts`, training and refit dates, rolling settings and data/weight hashes in `manifest.json`, and failed refits listed there with their forecasts left NaN. `breach_summary` excludes NaN days from the denominator, because failed forecasts cannot count as non-breaches.
 
 The default rolling methods are historical, normal, Student-t, EVT, FHS and GARCH-EVT. MC methods are absent. Agree the selected method before formal validation; implement its actual forecasting path if it is not supported. Filter a precomputed forecast series by evaluation dates; do not trim away required training history before producing the series.
 
@@ -47,7 +48,7 @@ Fit once and query confidence where possible. Cache by dataset, weights, as-of d
 
 Provide matching-confidence, matching-horizon VaR/ES/EVT views, log versus dollar-unit metadata, empirical-body versus extrapolated-tail labels, conditional versus unconditional labels, warnings and model availability. Keep expensive bootstrap/rolling work outside each sidebar rerun where practical, with visible run provenance. Map the selected backtest date range to valid forecasts. Do not display absent formal tests as a green traffic light.
 
-Existing plot functions are `fig_distribution`, `fig_threshold`, `fig_evt_fit`, `fig_comparison`, `fig_tail_curve`, `fig_uncertainty`, and `fig_rolling`. They return matplotlib Figure objects for `st.pyplot`. Some currently assume specific models/columns; either document prerequisites or handle selected-model subsets explicitly. Reconcile every figure with the associated table and run identifier.
+Plot functions are `fig_distribution`, `fig_threshold`, `fig_evt_fit`, `fig_comparison`, `fig_tail_curve`, `fig_uncertainty`, and `fig_rolling`. They return matplotlib Figure objects for `st.pyplot`. Prerequisites: `fig_threshold(scan, chosen)` takes a scan and the row from `select_threshold`; `fig_evt_fit` needs fitted EVT and normal models; `fig_rolling` needs forecast columns for its methods. Unavailable models are skipped or labelled "(unavailable)". `risk_table` carries `status` and, for EVT rows, `basis` (GPD tail or empirical body) for the labels this section asks for. Reconcile every figure with the associated table and run identifier.
 
 ## Handoff checklist
 

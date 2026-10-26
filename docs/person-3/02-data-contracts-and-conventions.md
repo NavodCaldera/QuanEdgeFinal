@@ -35,24 +35,27 @@ For a continuous model and monotone g, monetary VaR is V*g(VaR of L). Monetary E
 ES_USD(alpha) = V/(1-alpha) * integral_alpha^1 g(Q_L(p)) dp
 ```
 
-The current `risk_table` and `with_intervals` transform log ES using g. In general, g(E[L in tail]) is not E[g(L) in tail]. Treat those current dollar/percentage ES fields as approximations pending correction. Calculate exact monetary ES by transformed tail scenarios or validated quadrature/closed form. Apply the same definition within every bootstrap replicate before constructing monetary confidence intervals.
+In general, g(E[L in tail]) is not E[g(L) in tail]. Since commit 70153ba every model provides `es_fraction(alpha)`, the exact monetary ES as a fraction of NAV: transformed tail scenarios for samples (historical, Monte Carlo, FHS), the closed form for the normal, and quadrature over the quantile otherwise (Student-t, EVT tail). `risk_table` and `with_intervals` use it, and every bootstrap replicate recomputes it before the monetary intervals are formed.
 
-Because g is concave, transforming a finite log-tail mean gives an upper bound under the consistent tail distribution. Measure the difference rather than asserting it is negligible. An infinite log ES must remain flagged; converting infinity through g to 100% does not produce a valid exact monetary ES. For positive-wealth long-only portfolios, monetary losses are bounded above by NAV even when the chosen log-loss model has infinite mean. Keep these facts and units distinct.
+Because g is concave, transforming a finite log-tail mean gives an upper bound under the consistent tail distribution. Measure the difference rather than asserting it is negligible: the run summary reports the largest overstatement the shortcut would cause. An infinite log ES must remain flagged; converting infinity through g to 100% does not produce a valid exact monetary ES. For positive-wealth long-only portfolios, monetary losses are bounded above by NAV even when the chosen log-loss model has infinite mean. Keep these facts and units distinct.
 
 ## Existing public outputs and required extensions
 
-Keep `.var(alpha)`, `.es(alpha)`, `.params` and current model identifiers stable while coordinating any new exact monetary APIs. Existing risk-table fields:
+Keep `.var(alpha)`, `.es(alpha)`, `.es_fraction(alpha)`, `.params`, `.status` and the model identifiers stable; coordinate any change with Persons 4 and 5. Risk-table fields:
 
-| Fields | Current meaning |
+| Fields | Meaning |
 |---|---|
 | `method`, `label`, `family`, `alpha` | Identity and confidence |
-| `var`, `es` | Decimal log-loss statistics |
-| `var_pct`, `var_usd` | Transformed VaR in percentage points and USD |
-| `es_pct`, `es_usd` | Currently transformed log ES; requires corrected computation or explicit approximation label |
-| `es_over_var` | Ratio in log-loss units; undefined/unstable near zero VaR |
+| `var`, `es` | Decimal log-loss statistics (`es` is infinite when an EVT tail has xi >= 1) |
+| `var_pct`, `var_usd` | VaR converted to percentage points and USD (exact: g is monotone) |
+| `es_pct`, `es_usd` | Exact monetary ES from `es_fraction` |
+| `es_over_var` | Ratio in log-loss units; blank when VaR is not positive |
+| `basis` | For EVT rows: whether the GPD tail or the empirical body below the threshold answers |
+| `status` | `ok`, `warning: ...` or `failed: ...`; failed models carry NaN, never zero |
 | `var_lo`, `var_hi`, `es_lo`, `es_hi` | Bootstrap bounds in log-loss units |
-| corresponding `_pct`, `_usd` bounds | Current transformed bounds; revisit ES bounds as above |
+| `es_frac_lo`, `es_frac_hi`, `reps_ok`, `reps_failed` | Bootstrap bounds of monetary ES as a fraction of NAV; successful and failed resamples |
+| corresponding `_pct`, `_usd` bounds | VaR bounds converted from log loss; ES bounds from the per-resample monetary ES |
 
-Add metadata, either in a stable result object or companion manifest: schema version, as-of date, training dates, sample size, horizon, value, weights, portfolio/data hashes, conditional/unconditional flag, configuration, seed, data mode, fit status, warnings and unit definitions. Preserve missing/unavailable values explicitly, never as zero.
+Each run folder's `manifest.json` carries the metadata: schema version, as-of dates, sample size, horizon, value, weights, input and weight hashes, configuration, seeds, data mode, model statuses, threshold rule, bootstrap failures and unit definitions. Missing or unavailable values stay explicit, never zero.
 
-Forecast outputs use realised `return` in log units and columns such as `var_evt_99` and `es_evt_99`. Include training-end date and last refit date so Person 4 can audit timing. Use full numeric precision internally and enough CSV precision to preserve breach decisions; current `%.6g` export needs round-trip testing. Compare strict loss > VaR for breach counts, with tie policy documented separately from ES tail-mass treatment.
+Forecast outputs use realised `return` in log units and columns such as `var_evt_99` and `es_evt_99`, plus `train_start`, `train_end` and `refit_train_end` so Person 4 can audit timing. Save and reload them with `rolling.save_forecasts` / `rolling.load_forecasts` (17 significant digits, round-trip parsing): pandas' default CSV round trip can move a value by one unit in the last place. Breach counts use strict loss > VaR, and days without a forecast are excluded from the denominator.

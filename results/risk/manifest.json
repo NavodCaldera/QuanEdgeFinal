@@ -1,0 +1,313 @@
+{
+  "schema_version": 1,
+  "run_id": "20261026T072825Z",
+  "mode": "full",
+  "started_utc": "2026-10-26T07:28:25+00:00",
+  "finished_utc": "2026-10-26T07:31:50+00:00",
+  "runtime_seconds": 205.0,
+  "output_dir": "E:\\SAIFA Quant Edge 1.0\\Final competition\\QuanEdgeFinal\\results\\risk",
+  "code": {
+    "git_commit": "13c06197ee99d8785d5269fb0242bbb24640210b",
+    "uncommitted_code_changes": false
+  },
+  "environment": {
+    "python": "3.12.9",
+    "packages": {
+      "numpy": "2.4.4",
+      "pandas": "3.0.2",
+      "scipy": "1.17.1",
+      "arch": "8.0.0",
+      "statsmodels": "0.14.6",
+      "matplotlib": "3.10.8"
+    }
+  },
+  "inputs": {
+    "data_mode": "temporary development cache from yfinance, standing in for Person 1's dataset",
+    "source_file": "E:\\SAIFA Quant Edge 1.0\\Final competition\\QuanEdgeFinal\\data\\cache\\prices_dev.csv",
+    "source_sha256": "6d6f03d21881b5cf31fe7ae9f4428f8c9cf5dab56adc0a37bdcc3d66d87120d4",
+    "first_date": "2005-01-04",
+    "last_date": "2026-09-30",
+    "n_days": 5469,
+    "assets": [
+      "SPY",
+      "EFA",
+      "EEM",
+      "AGG",
+      "GLD",
+      "XLE",
+      "XLK"
+    ],
+    "weights_mode": "placeholder equal weights, not a recommendation",
+    "weights": {
+      "SPY": 0.14285714285714285,
+      "EFA": 0.14285714285714285,
+      "EEM": 0.14285714285714285,
+      "AGG": 0.14285714285714285,
+      "GLD": 0.14285714285714285,
+      "XLE": 0.14285714285714285,
+      "XLK": 0.14285714285714285
+    },
+    "weights_sha256": "bfc34c8effe8d7816505070f449d91d3481e3d420a56f69ed10580c2235cd4d8",
+    "development": true
+  },
+  "conventions": {
+    "horizon": "1 trading day",
+    "portfolio_value_usd": 10000000,
+    "confidence_levels": [
+      0.9,
+      0.95,
+      0.99
+    ],
+    "aggregation": "asset log returns -> simple returns -> weighted sum -> portfolio log return",
+    "rebalancing": "weights held fixed every day (daily rebalanced, no costs): today's portfolio replayed",
+    "var_quantile": "numpy 'linear' interpolation (Hyndman-Fan type 7)",
+    "es": "exact average of the worst (1 - alpha) probability mass"
+  },
+  "units": {
+    "alpha": "confidence level as a probability (0.99, not 99)",
+    "var, es": "one-day loss in log-return units (0.01 = a log loss of 0.01); positive = loss",
+    "*_pct": "percentage points of portfolio value lost (simple loss)",
+    "*_usd": "US dollars lost on the portfolio value",
+    "es_pct, es_usd and their bounds": "exact: each tail loss averaged in dollars, not the dollar value of log ES",
+    "rolling_forecasts return, var_*, es_*": "log-return units; a breach is a day with -return > var"
+  },
+  "settings": {
+    "TICKERS": [
+      "SPY",
+      "EFA",
+      "EEM",
+      "AGG",
+      "GLD",
+      "XLE",
+      "XLK"
+    ],
+    "DEV_START": "2005-01-01",
+    "DEV_END": "2026-10-01",
+    "DEV_WEIGHTS": {
+      "SPY": 0.14285714285714285,
+      "EFA": 0.14285714285714285,
+      "EEM": 0.14285714285714285,
+      "AGG": 0.14285714285714285,
+      "GLD": 0.14285714285714285,
+      "XLE": 0.14285714285714285,
+      "XLK": 0.14285714285714285
+    },
+    "HEADLINE_LEVELS": [
+      0.95,
+      0.99
+    ],
+    "QUANTILE_METHOD": "linear",
+    "N_SIM": 100000,
+    "MC_T_NU_BOUNDS": [
+      2.1,
+      100.0
+    ],
+    "T_NU_BOUNDS": [
+      1.05,
+      200.0
+    ],
+    "MIN_OBS": 30,
+    "MC_CONVERGENCE_SIZES": [
+      10000,
+      25000,
+      50000,
+      100000,
+      200000
+    ],
+    "MC_CONVERGENCE_SEEDS": 3,
+    "SEED": 20261026,
+    "EVT_THRESHOLD_GRID": [
+      0.8,
+      0.805,
+      0.81,
+      0.815,
+      0.82,
+      0.825,
+      0.83,
+      0.835,
+      0.84,
+      0.845,
+      0.85,
+      0.855,
+      0.86,
+      0.865,
+      0.87,
+      0.875,
+      0.88,
+      0.885,
+      0.89,
+      0.895,
+      0.9,
+      0.905,
+      0.91,
+      0.915,
+      0.92,
+      0.925,
+      0.93,
+      0.935,
+      0.94,
+      0.945,
+      0.95,
+      0.955,
+      0.96,
+      0.965,
+      0.97,
+      0.975,
+      0.98,
+      0.985
+    ],
+    "EVT_MIN_EXCEED": 50,
+    "EVT_STABILITY_Z": 1.96,
+    "EVT_STABILITY_MIN_HIGHER": 3,
+    "GPD_MIN_FIT": 10,
+    "GARCH_EVT_THRESHOLD_Q": 0.9,
+    "GARCH_MIN_OBS": 250,
+    "BOOT_REPS": 500,
+    "BOOT_BLOCK": 20,
+    "BOOT_N_SIM": 20000,
+    "CI_LEVEL": 0.95,
+    "ROLL_WINDOW": 750,
+    "ROLL_REFIT": 21,
+    "ROLL_MIN_WINDOW": 250
+  },
+  "seeds": {
+    "monte_carlo": 20261026,
+    "bootstrap": 20261026,
+    "mc_convergence": [
+      20261026,
+      20261027,
+      20261028
+    ]
+  },
+  "models": {
+    "historical": {
+      "status": "ok",
+      "params": {
+        "n": 5469
+      }
+    },
+    "normal": {
+      "status": "ok",
+      "params": {
+        "mu": 0.00038165268964304933,
+        "sigma": 0.010010623435604268
+      }
+    },
+    "student_t": {
+      "status": "ok",
+      "params": {
+        "nu": 2.9093016910410547,
+        "loc": 0.0007398411210181567,
+        "scale": 0.005900827087747229
+      }
+    },
+    "mc_normal": {
+      "status": "ok",
+      "params": {
+        "n_sim": 100000,
+        "seed": 20261026
+      }
+    },
+    "mc_t": {
+      "status": "ok",
+      "params": {
+        "n_sim": 100000,
+        "seed": 20261026,
+        "nu": 4.129905419046003
+      }
+    },
+    "evt": {
+      "status": "ok",
+      "params": {
+        "u": 0.0072077590772091004,
+        "threshold_q": 0.8498811482903639,
+        "n_exceed": 821,
+        "xi": 0.21184061771261464,
+        "xi_se": 0.042293529173059244,
+        "sigma": 0.005959088742947192,
+        "threshold_rule": "lowest KS distance among stable thresholds"
+      }
+    },
+    "fhs": {
+      "status": "ok",
+      "params": {
+        "mu": 0.0003154803295299471,
+        "omega": 1.4975499076613834e-06,
+        "alpha": 0.020221125657116184,
+        "gamma": 0.12655942272145276,
+        "beta": 0.8955052858759661,
+        "persistence": 0.9790061228938087,
+        "sigma_next": 0.0075856176181023395,
+        "z_n": 5469
+      }
+    },
+    "garch_evt": {
+      "status": "ok",
+      "params": {
+        "mu": 0.0003154803295299471,
+        "omega": 1.4975499076613834e-06,
+        "alpha": 0.020221125657116184,
+        "gamma": 0.12655942272145276,
+        "beta": 0.8955052858759661,
+        "persistence": 0.9790061228938087,
+        "sigma_next": 0.0075856176181023395,
+        "z_u": 1.2548027939505861,
+        "z_threshold_q": 0.8999817151215944,
+        "z_n_exceed": 547,
+        "z_xi": 0.053303540619820386,
+        "z_xi_se": 0.0450360073021051,
+        "z_sigma": 0.6364465005259052,
+        "z_threshold_rule": "fixed percentile q = 0.9"
+      }
+    }
+  },
+  "evt_threshold": {
+    "rule": "lowest KS distance among stable thresholds",
+    "q": 0.85,
+    "u": 0.0072077590772091004,
+    "n_exceed": 821
+  },
+  "bootstrap": {
+    "resamples": 500,
+    "block_days": 20,
+    "mc_scenarios": 20000,
+    "level": 0.95,
+    "failed_resamples": {
+      "evt": 0.0,
+      "historical": 0.0,
+      "mc_normal": 0.0,
+      "mc_t": 0.0,
+      "normal": 0.0,
+      "student_t": 0.0
+    }
+  },
+  "rolling": {
+    "window": 750,
+    "refit_every": 21,
+    "forecast_days": 4719,
+    "first_forecast": "2007-12-27 00:00:00",
+    "last_forecast": "2026-09-30 00:00:00",
+    "fit_failures": []
+  },
+  "files": [
+    "figures/fig1_distribution.png",
+    "figures/fig2_evt_threshold.png",
+    "figures/fig3_evt_tail_fit.png",
+    "figures/fig4_var_es_comparison.png",
+    "figures/fig5_var_by_confidence.png",
+    "figures/fig6_estimate_uncertainty.png",
+    "figures/fig7_rolling_var.png",
+    "manifest.json",
+    "summary.md",
+    "tables/assumption_checks.csv",
+    "tables/evt_threshold_scan.csv",
+    "tables/in_sample_breaches.csv",
+    "tables/mc_convergence.csv",
+    "tables/mc_simulation_error.csv",
+    "tables/model_parameters.csv",
+    "tables/risk_table.csv",
+    "tables/rolling_breaches.csv",
+    "tables/rolling_forecasts.csv",
+    "tables/worst_days.csv"
+  ]
+}

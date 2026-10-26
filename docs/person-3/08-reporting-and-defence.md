@@ -22,7 +22,7 @@ Every reported risk number must identify confidence, horizon, portfolio, value, 
 | VaR/ES comparison and uncertainty plots | Tail severity and estimation precision |
 | Rolling forecasts and exceptions | Prior-data forecasts, timing and clustered exceptions; formal evaluation from Person 4 |
 
-Retain `worst_days.csv` as descriptive evidence. Its worst-asset field currently means the lowest asset return, not the highest weighted loss contribution. A threshold sensitivity band is not automatically a confidence interval. Blank intervals for conditional methods mean not estimated, not zero uncertainty.
+Retain `worst_days.csv` as descriptive evidence. It separates `lowest_return_asset` (the asset that fell most) from `top_loss_contributor` (the largest weight x return loss); they differ when weights differ. A threshold sensitivity band is not automatically a confidence interval. Blank intervals for conditional methods mean not estimated, not zero uncertainty.
 
 ## Interpretation and decision contribution
 

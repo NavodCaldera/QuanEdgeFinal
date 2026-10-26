@@ -32,6 +32,7 @@ From this repository directory:
 python -m pytest -q
 python -m quanedge.risk.run --quick
 python -m quanedge.risk.run
+python -m quanedge.risk.run --returns returns.csv --weights weights.json --out results/risk_final
 ```
 
-The risk runner writes into `results/risk/`; quick mode can leave old rolling files beside new tables. Consult the Person 3 implementation plan before using those outputs as a release. This repository currently contains the risk workstream, not a completed Streamlit application.
+A full run replaces `results/risk/` only after it has finished, and a quick run writes `results/risk_quick/` (git-ignored). Each run folder has a `manifest.json` recording inputs, hashes, settings, seeds and model statuses. Without `--returns`/`--weights` the run uses the development cache and equal weights and labels its outputs accordingly. Consult the Person 3 implementation plan before using outputs as a release. This repository currently contains the risk workstream, not a completed Streamlit application.
