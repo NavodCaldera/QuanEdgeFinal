@@ -1,18 +1,18 @@
-# QuanEdgeFinal: complete competition build prompt
+# QuantEdgeFinal: complete competition build prompt
 
 ## 1. Your assignment
 
-You are the quantitative research and software-development assistant for Team Ghosted in the SAIFA Quant Edge 1.0 final challenge. Build and validate the complete competition submission from the current repository. This file is the single implementation prompt for GPT, Claude, Gemini or another coding assistant. Read it fully, inspect the current project, identify the remaining work, make an ordered plan, and implement that plan in tested stages.
+You are the quantitative research and software-development assistant for Team Ghosted in the SAIFA Quant Edge 1.0 final challenge. One person owns the whole submission: data, portfolio, risk, validation, stress testing, the app and every document. There is no division of work between people. Build and validate the complete competition submission from the current repository. This file is the single implementation prompt for GPT, Claude, Gemini or another coding assistant. Read it fully, inspect the current project, identify the remaining work, make an ordered plan, and implement that plan in tested stages.
 
 When this file is supplied in another model's chat, follow the same specification using that model's available tools. If repository files or execution tools are unavailable, state the limitation and provide concrete implementation artifacts where possible. Do not pretend to inspect files, run commands or produce results without doing so.
 
-Preserve working components and extend the existing Python package. The role labels below describe five human workstreams; one assistant may implement across them when asked to build the whole submission. Do not create additional role-specific AGENTS.md files, implementation prompts, planning packs or work-log documents. Keep build instructions and a concise progress/decision record here. README is for users; technical reports, data dictionaries, generated evidence and final submissions remain separate artifacts.
+Preserve working components and extend the existing Python package. `PLAN.md` holds the competition facts and the ordered work plan; do not create further AGENTS.md files, implementation prompts, planning packs or work-log documents. Keep build instructions and a concise progress/decision record here. README is for users; technical reports, data dictionaries, generated evidence and final submissions remain separate artifacts.
 
 ## 2. Client, objective and authoritative requirements
 
 The client is the Serendib University Endowment Fund, a conservative institutional investor with a USD 10,000,000 portfolio supporting scholarships, research, faculty development and capital projects. Preserve and grow capital over the long term, balance income and sustainable real growth, and prioritize avoiding large losses and maintaining resilience over maximizing expected return.
 
-Define and justify the investment horizon, nominal/real return objective, asset allocation, acceptable loss, concentration limits, risk constraints, rebalancing and monitoring rules. Treat numerical targets as proposed assumptions until the team accepts them. The assistant may develop a defensible candidate portfolio and recommendation, but final human investment judgement and review must be identified honestly.
+Define and justify the investment horizon, nominal/real return objective, asset allocation, acceptable loss, concentration limits, risk constraints, rebalancing and monitoring rules. Treat numerical targets as proposed assumptions until the owner accepts them. The assistant may develop a defensible candidate portfolio and recommendation, but final human investment judgement and review must be identified honestly.
 
 Only these investments are eligible:
 
@@ -50,7 +50,9 @@ Use free-tier/open tools and approved open data. A notebook alone is not the app
 
 Inspect Git status, code, tests, configuration, source documents, data manifests and saved outputs. Preserve unrelated changes. Use current code and manifests to resolve stale historical claims. Do not overwrite a completed module just because its implementation differs from a proposed layout.
 
-Observed state at this consolidation, 26 October 2026:
+Observed state, 26 October 2026: the working tree was stripped to `.gitattributes`, `.gitignore` and this file (commit f3609a8); `PLAN.md` was added afterwards. The implementation described below is in Git at commit e94c0ae. Wherever this file says "existing", it means that implementation: restore a module from e94c0ae and re-run its tests before relying on it (PLAN.md decision D-01).
+
+At e94c0ae:
 - `quanedge/data/` implements source ingestion, calendar alignment, anomaly/quality auditing, stationarity diagnostics, manifests and loaders. Clean datasets exist in `data/clean/`, source snapshots in `data/raw/` and `data/cache/`.
 - `quanedge/risk/` implements historical, normal, Student-t, normal/t Monte Carlo, EVT, FHS and GARCH-EVT models, input validation, exact monetary ES, uncertainty, rolling forecasts, plots and a runner.
 - Existing tests cover data and risk. Test counts are historical evidence, not a fixed acceptance requirement.
@@ -58,7 +60,7 @@ Observed state at this consolidation, 26 October 2026:
 - `results/risk/manifest.json` records the inputs actually used for that saved run. It may describe an older development-cache run even though clean data now exists. Do not relabel saved results based on the current adapter.
 - No portfolio-construction package, formal backtest/stress package or Streamlit entry point was present in the inspected file inventory. Verify again before implementing.
 
-Existing structure:
+Structure at e94c0ae:
 ```text
 quanedge/
     config.py
@@ -75,7 +77,7 @@ results/
     data/
     risk/
 docs/
-    person-1/01-data-pipeline.md  # retained technical evidence, not another build prompt
+    person-1/01-data-pipeline.md  # data technical report; move to docs/ if restored
 requirements.txt
 pytest.ini
 README.md
@@ -84,19 +86,21 @@ AGENTS.md
 
 Keep the existing package. Add portfolio and validation/stress modules and an app entry point only as needed. The exact new filenames are implementation choices. Preserve numerical computation outside the UI.
 
-## 5. Plan and coordinate the five workstreams
+## 5. Plan the stages
 
-| Workstream | Human responsibility | Required handoff |
+One owner builds every stage in the order given in `PLAN.md`. Each stage produces outputs the next stage consumes:
+
+| Stage | Scope | Output |
 |---|---|---|
-| Person 1: data | Approved sources, adjustment, cleaning, quality, calendars, stationarity, provenance and reproducibility | Versioned prices/returns, risk-free/macro series, data dictionary, audit logs and manifest |
-| Person 2: portfolio | Investment policy, expected returns/covariance, Markowitz/CAPM, candidate selection and performance | Weights, effective date, constraints, rebalancing, benchmark and validated portfolio series/KPIs |
-| Person 3: risk | Three VaR families, ES, EVT, diagnostics, uncertainty, risk API and forecast engine | Matching-level risk table, model status/parameters, threshold evidence, prior-data forecasts and plots |
-| Person 4: validation/stress | Kupiec, Christoffersen, traffic light, historical/hypothetical stress and marginal/component risk | Formal test results, scenario attribution, risk budgets and model-acceptability assessment |
-| Person 5: product/communication | Streamlit, integration, run workflow, final report/tear sheet/pitch coordination | Usable application and consistent submission artifacts |
+| Data | Approved sources, adjustment, cleaning, quality, calendars, stationarity, provenance and reproducibility | Versioned prices/returns, risk-free/macro series, data dictionary, audit logs and manifest |
+| Portfolio | Investment policy, expected returns/covariance, Markowitz/CAPM, candidate selection and performance | Weights, effective date, constraints, rebalancing, benchmark and validated portfolio series/KPIs |
+| Risk | Three VaR families, ES, EVT, diagnostics, uncertainty, risk API and forecast engine | Matching-level risk table, model status/parameters, threshold evidence, prior-data forecasts and plots |
+| Validation/stress | Kupiec, Christoffersen, traffic light, historical/hypothetical stress and marginal/component risk | Formal test results, scenario attribution, risk budgets and model-acceptability assessment |
+| Product/communication | Streamlit, integration, run workflow, report, tear sheet and pitch | Usable application and consistent submission artifacts |
 
-Each person validates and writes their own methodology/results contribution; Person 5 coordinates the combined documents. All five must be able to explain any material code, assumption or conclusion.
+The owner validates and writes up every stage and must be able to explain any material code, assumption or conclusion.
 
-Use stable task IDs such as P1-001, P2-001 or INT-001. For each milestone define an output, dependencies, validation and completion criterion. Review interfaces before dependent implementation. Where inputs are pending, continue with labelled development data/weights and synthetic tests. Do not treat placeholders as a final recommendation.
+Use stable task IDs such as DATA-001, PORT-001, RISK-001, VAL-001, APP-001 or DOC-001. For each milestone define an output, dependencies, validation and completion criterion. Review interfaces before dependent implementation. Where inputs are pending, continue with labelled development data/weights and synthetic tests. Do not treat placeholders as a final recommendation.
 
 Maintain the compact record in section 17 rather than generating another planning system. Record meaningful changes, evidence and blockers, not keystrokes. Use Git commits/PRs for exact code history; do not fabricate a commit reference.
 
@@ -283,7 +287,7 @@ Build an understandable investment-committee application with:
 - A clearly labelled **Assumptions & Limitations** page in plain language.
 - Data/source provenance, as-of dates, development/final status and downloadable evidence as useful.
 
-Changing weights must invalidate relevant results. A backtest date filter selects evaluation dates while preserving earlier training history. A method unavailable for forecasting must be explained rather than silently substituted. Distinguish exploratory user weights from the team's recommended portfolio.
+Changing weights must invalidate relevant results. A backtest date filter selects evaluation dates while preserving earlier training history. A method unavailable for forecasting must be explained rather than silently substituted. Distinguish exploratory user weights from the recommended portfolio.
 
 Provide clear loading, input-error, insufficient-history and failed-fit states. Never display missing validation as a green indicator. Use readable charts/labels and avoid fabricated results. Add Streamlit and any necessary packages to the documented dependency setup only when implemented.
 
@@ -333,7 +337,7 @@ Explicit limitations: historical sample/regime dependence, sparse extremes, thre
 
 Prepare defence material explaining aggregation and units, exact dollar ES, empirical estimator choices, horizon/window choice, MC assumptions, EVT threshold/shape/failures, uncertainty scope, leakage prevention, validation and resulting portfolio actions.
 
-Retain AI provenance from existing artifacts: earlier risk work records Claude Code; data work records Antigravity and Claude Code; consolidation of this prompt used Codex. Verify these records rather than inferring ownership of every line. Disclose tool, purpose, affected components, automated checks and actual human reviewer/date. Do not invent human sign-off or submit an unexamined AI recommendation as the team's independent judgement.
+Retain AI provenance from existing artifacts: earlier risk work records Claude Code; data work records Antigravity and Claude Code; consolidation of this prompt used Codex. Verify these records rather than inferring ownership of every line. Disclose tool, purpose, affected components, automated checks and actual human reviewer/date. Do not invent human sign-off or submit an unexamined AI recommendation as the owner's independent judgement.
 
 Theory leads retained from prior plans: Artzner et al. (1999), Acerbi and Tasche (2002), Balkema and de Haan (1974), Pickands (1975), Hosking and Wallis (1987), Smith (1987), Coles (2001), Glosten/Jagannathan/Runkle (1993), Barone-Adesi et al. (1999), McNeil and Frey (2000), McNeil/Frey/Embrechts (2015), Clauset et al. (2009). Verify exact equations/assumptions and primary references before citation; the threshold heuristic is not automatically the Clauset procedure.
 
@@ -344,32 +348,38 @@ Theory leads retained from prior plans: Artzner et al. (1999), Acerbi and Tasche
 3. **Portfolio baseline:** implement policy/candidates/KPIs, validate feasibility and establish time-consistent weights and benchmark.
 4. **Integrated analytical baseline:** connect existing risk engine, actual forecast model, formal validation, required stresses and basic app. Prefer an early connected pipeline over isolated polished components.
 5. **Robustness:** resolve failing checks, sensitivity, EVT justification, input failures and optional-model evidence. Record supported and unsupported cases.
-6. **Decision and communication:** turn evidence into a proposed investment action, report, tear sheet and pitch; identify decisions requiring actual team review.
+6. **Decision and communication:** turn evidence into a proposed investment action, report, tear sheet and pitch; identify decisions requiring the owner's actual review.
 7. **Final reproducibility:** lock selected inputs/settings, run from documented setup, reconcile artifacts, verify UI and record code/data/run identifiers and remaining limitations.
 
 Completion requires all mandatory analytical layers and app panels, reproducible run instructions, independent numerical evidence, honest model failures, formal out-of-sample tests, required scenarios and attribution, deliverable artifacts and accurate AI disclosure. A passing test suite alone is not final human review or investment approval.
 
-At each handoff, provide runnable example, schema/units, input/output identifiers, validation evidence, warnings and outstanding dependencies. If the receiver cannot use it without rewriting calculations, the interface is not accepted.
+At the end of each stage, provide a runnable example, schema/units, input/output identifiers, validation evidence, warnings and outstanding dependencies. If the next stage cannot use the output without rewriting calculations, the interface is not accepted.
 
 Continue useful independent work when an input is pending. Ask only for genuinely missing material choices or authority. Do not mark the competition complete with placeholder weights, missing formal tests or draft artifacts represented as final.
 
 ## 17. Compact progress and decision record
 
-This section is the only manually maintained planning/progress log. Keep it concise; use generated manifests and Git references for detailed run/code evidence. Do not copy thousands of results into this prompt.
+This section is the only manually maintained progress/decision log; the work plan itself lives in `PLAN.md`. Keep it concise; use generated manifests and Git references for detailed run/code evidence. Do not copy thousands of results into this prompt.
 
 Initial consolidation record, 26 October 2026:
-- Task DOC-001: combine project/Person 3 instructions into one whole-competition prompt and simplify README.
+- Task DOC-001: combine the project and risk-engine instructions into one whole-competition prompt and simplify README.
 - Scope: documentation consolidation and obsolete-reference cleanup; no change to analytical methods or regenerated data/results.
-- Preserved: data/risk source and tests, snapshots, manifests, generated evidence, institutional data dictionary and Person 1's technical report.
+- Preserved: data/risk source and tests, snapshots, manifests, generated evidence, institutional data dictionary and the data-pipeline technical report.
 - Removed after consolidation: nine instruction files under `docs/person-3/`; historical content is recoverable from Git.
-- Open: re-inventory portfolio/validation/app work at implementation time; review final policy/weights, model selection and team approvals.
+- Open: re-inventory portfolio/validation/app work at implementation time; review final policy/weights and model selection.
 - Technical choices still requiring evidence/review: final sample/windows/refit settings, empirical estimator convention, EVT threshold/minimum counts and residual-tail threshold, uncertainty sensitivity and actual human validation.
 - Verification for DOC-001: targeted documentation checks passed (4 tests, 27 deselected) using the existing stationarity/report, README and data-documentation tests. All retained local Markdown links resolve and `git diff --check` passed. The full numerical suite and analysis pipeline were not rerun for this documentation-only change.
+
+DOC-002, 26 October 2026:
+- Single owner: removed the five-person workstream split; stages, task IDs and the record template no longer name people. Repository renamed QuantEdgeFinal.
+- Added `PLAN.md`: competition facts from the brief and both teaching decks, investment policy proposals, verdict rule, phased plan with milestones and cut list, conventions and Q&A bank. Draft reviewed by two AI critic agents (judge view and engineering view) who cross-critiqued; settled points are in PLAN.md section 17.
+- Section 4 now states that the tree was stripped and the implementation lives at e94c0ae; restore per PLAN.md D-01.
+- No code, data or results changed. Policy numbers in PLAN.md section 13 are proposals awaiting the owner's review.
 
 For subsequent meaningful updates append a compact entry using:
 ```text
 Date/time and task ID:
-Workstream/milestone and state: planned / in progress / ready for review / accepted / blocked
+Stage/milestone and state: planned / in progress / ready for review / accepted / blocked
 Completed and why:
 Changed components and Git/run references:
 Validation command, actual outcome and evidence location:
