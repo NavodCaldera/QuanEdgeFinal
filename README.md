@@ -99,5 +99,6 @@ python -m quanedge.risk.run --quick   # fast look: 50 bootstrap resamples, no ro
 python -m pytest                      # unit tests against closed forms, simulations and known tails
 ```
 
-- Plan, conventions and the interface for Persons 4 and 5: [docs/person3_risk_plan.md](docs/person3_risk_plan.md)
+- Detailed Person 3 instructions, remaining work, conventions, testing and team handoffs: [docs/person-3/AGENTS.md](docs/person-3/AGENTS.md)
+- Project-wide agent instructions: [AGENTS.md](AGENTS.md)
 - Latest numbers, every sentence computed from the tables: [results/risk/summary.md](results/risk/summary.md)
