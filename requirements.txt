@@ -7,3 +7,4 @@ yfinance==1.7.0
 arch==8.0.0
 statsmodels==0.14.6
 pytest==9.1.1
+certifi==2026.10.23

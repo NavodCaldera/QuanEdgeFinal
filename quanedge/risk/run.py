@@ -115,7 +115,9 @@ def load_inputs(returns_path=None, weights_path=None, refresh: bool = False):
         data_mode = f"provided returns file {source.name}"
     else:
         x = dev_data.load_log_returns(refresh)
-        source, data_mode = dev_data.PRICE_FILE, "temporary development cache from yfinance, standing in for Person 1's dataset"
+        source = dev_data.active_price_file(refresh)
+        data_mode = ("Person 1's clean dataset (data/clean/prices_clean.csv)" if source == dev_data.CLEAN_PRICE_FILE
+                     else "temporary development cache from yfinance, standing in for Person 1's dataset")
     check_dated_history(x)
     if weights_path:
         raw = json.loads(Path(weights_path).read_text(encoding="utf-8"))
