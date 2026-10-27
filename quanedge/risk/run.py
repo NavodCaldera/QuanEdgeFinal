@@ -6,10 +6,10 @@ The risk workstream in one command:
     python -m quanedge.risk.run --returns returns.csv --weights weights.json --out results/risk_final
 
 --returns takes daily asset log returns (dates in the first column, one
-column per permitted ticker) and --weights a JSON object {ticker: weight}:
-the adapters for Data's approved dataset and Portfolio's weights.  Without
-them the run uses the TEMPORARY development cache and placeholder equal
-weights, and every output says so.
+column per permitted ticker). --weights is required and accepts either a
+JSON mapping {ticker: weight} or a canonical pipeline weight artifact.
+Without --returns, the approved clean dataset is used. No placeholder
+allocation or development-price fallback is permitted.
 
 A run is built in a hidden sibling folder and replaces the output folder only
 once every file has been written, so a failed run never mixes old and new
@@ -109,6 +109,8 @@ def _md_table(df: pd.DataFrame) -> list[str]:
 
 def load_inputs(returns_path=None, weights_path=None, refresh: bool = False):
     """Asset log returns, weights, and a record of where both came from."""
+    if not weights_path:
+        raise ValueError("--weights is required; no placeholder allocation is permitted")
     if returns_path:
         source = Path(returns_path)
         x = pd.read_csv(source, index_col=0, parse_dates=True)
@@ -121,13 +123,19 @@ def load_inputs(returns_path=None, weights_path=None, refresh: bool = False):
     check_dated_history(x)
     if weights_path:
         raw = json.loads(Path(weights_path).read_text(encoding="utf-8"))
+        expected_hash = raw.get("weight_hash") if "weights" in raw else None
+        raw = raw["weights"] if "weights" in raw else raw
         weights, weights_mode = {str(k): float(v) for k, v in raw.items()}, f"provided weights file {Path(weights_path).name}"
     else:
         raise ValueError("--weights is required; no placeholder allocation is permitted")
+    from ..portfolio import weight_hash
+    canonical_hash = weight_hash(weights)
+    if expected_hash is not None and expected_hash != canonical_hash:
+        raise ValueError("weight artifact hash mismatch")
     info = {"data_mode": data_mode, "source_file": str(source), "source_sha256": _sha256(source),
             "first_date": x.index[0].date(), "last_date": x.index[-1].date(), "n_days": len(x),
             "assets": list(map(str, x.columns)), "weights_mode": weights_mode, "weights": weights,
-            "weights_sha256": hashlib.sha256(json.dumps(weights, sort_keys=True).encode()).hexdigest(),
+            "weights_sha256": canonical_hash,
             "development": not (returns_path and weights_path)}
     return x, weights, info
 

@@ -55,3 +55,14 @@ def test_inputs_outside_the_permitted_universe_are_rejected(inputs):
     pd.read_csv(inputs / "returns.csv", index_col=0).rename(columns={"GLD": "BTC"}).to_csv(inputs / "returns.csv")
     with pytest.raises(ValueError, match="permitted universe"):
         run.main(args(inputs, inputs / "run"))
+
+
+def test_pipeline_weight_artifact_is_accepted_and_verified(inputs):
+    from quanedge.portfolio import weight_hash
+    weights={"SPY":.5,"AGG":.3,"GLD":.2}
+    artifact={"weights":weights,"weight_hash":weight_hash(weights),"effective_date":"2026-09-30"}
+    path=inputs/"canonical.json";path.write_text(json.dumps(artifact))
+    _,loaded,meta=run.load_inputs(inputs/"returns.csv",path)
+    assert loaded==weights and meta["weights_sha256"]==artifact["weight_hash"]
+    artifact["weight_hash"]="wrong";path.write_text(json.dumps(artifact))
+    with pytest.raises(ValueError,match="hash mismatch"):run.load_inputs(inputs/"returns.csv",path)

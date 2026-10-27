@@ -99,6 +99,17 @@ def complete(run):
     # A directly comparable rebalancing chart/table, clearly retrospective.
     if bundle["portfolios"][chosen].get("weights"):
         w=bundle["portfolios"][chosen]["weights"]
+        sensitivities=[]
+        for shrink in [0.,.25,.5,.75,1.]:
+            for years in [5,10,None]:
+                sample=returns if years is None else returns.loc[returns.index>end-pd.DateOffset(years=years)]
+                mu,cov=estimates(sample,dict(cfg,mean_shrinkage=shrink))
+                v=np.array([w[t] for t in TICKERS]);net=float(v@mu-cfg["cost"]*cfg["expected_annual_turnover"])
+                geometric=float(np.expm1(np.log1p(net)-v@cov@v/2))
+                sensitivities.append({"mean_shrinkage":shrink,"lookback_years":years or "all", "expected_arithmetic":net,
+                                      "expected_geometric":geometric,"weight_hash":bundle["portfolios"][chosen]["weight_hash"],
+                                      "note":"fixed reported allocation; descriptive sensitivity, not re-selection"})
+        pd.DataFrame(sensitivities).to_csv(run/"estimator_sensitivity.csv",index=False)
         x=returns.loc[cfg["evaluation_start"]:]
         pd.DataFrame({"quarterly_or_drift_after_costs":replay(x,w,cfg["cost"],cfg["drift"]).wealth,
                       "buy_and_hold":replay(x,w,buy_hold=True).wealth}).to_csv(run/"rebalancing_comparison.csv")
