@@ -1,0 +1,709 @@
+{
+  "status": "ok",
+  "weights": {
+    "SPY": 0.339755,
+    "EFA": 0.0,
+    "EEM": 0.0,
+    "AGG": 0.360245,
+    "GLD": 0.2,
+    "XLE": 0.0,
+    "XLK": 0.1
+  },
+  "weight_hash": "cefbf7a2edcbff9d3ab7700e7226fc8ddf7b70e3af2c6b66b920628a340878f1",
+  "expected_arithmetic": 0.10020275611673779,
+  "expected_geometric": 0.09488736562877802,
+  "volatility": 0.0984173869089344,
+  "es99": 0.024999989352251395,
+  "duals": [
+    -0.0,
+    -0.9311713261761076
+  ],
+  "scenario_hash": "08e98e2da60e3a7693dffadefc17c086163b6285a7f8fbb8ed2e84f5d125e338",
+  "checks": {
+    "C1": true,
+    "C2": true,
+    "C3": true,
+    "C4": true,
+    "C5": false
+  },
+  "policy": {
+    "schema_version": 1,
+    "snapshot_end": "2026-09-30",
+    "training_end": "2016-12-31",
+    "evaluation_start": "2017-01-01",
+    "value": 10000000,
+    "inflation": 0.025,
+    "spending": 0.04,
+    "es_budget": 0.025,
+    "drawdown_limit": 0.2,
+    "gold_cap": 0.2,
+    "equity_cap": 0.55,
+    "agg_min": 0.25,
+    "agg_max": 0.7,
+    "single_cap": 0.4,
+    "sector_cap": 0.1,
+    "cost": 0.0005,
+    "expected_annual_turnover": 1.0,
+    "drift": 0.05,
+    "seed": 20261026,
+    "mean_shrinkage": 0.5,
+    "covariance": "LedoitWolf",
+    "return_basis": "historical_etf_net",
+    "primary": "fhs",
+    "challenger": "garch_evt",
+    "window": 750,
+    "refit": 21,
+    "n_sim": 100000,
+    "bootstrap_reps": 500,
+    "bootstrap_block": 20,
+    "survival_paths": 10000,
+    "policy_accepted": true,
+    "human_validation": "pending",
+    "solo_eligibility": "pending",
+    "deadline": "unknown"
+  },
+  "performance": {
+    "cagr": 0.08998597963389665,
+    "cumulative_return": 5.506888353844092,
+    "annual_volatility": 0.09775036769859735,
+    "sharpe": 0.7494036131006324,
+    "sortino": 1.3381058675741189,
+    "beta": 0.45555862190968727,
+    "treynor": 0.16078869719827363,
+    "jensen_alpha": 0.02616393783973539,
+    "information_ratio": 0.6518496797007418,
+    "maximum_drawdown": -0.27124042157298955,
+    "calmar": 0.3317572621073435,
+    "max_underwater_days": 493,
+    "recovered_at_end": false,
+    "observations": 5469,
+    "money_weighted_return": 0.08585478337437524,
+    "distribution_yield": 0.01888349715646321
+  },
+  "stress": [
+    {
+      "scenario": "GFC",
+      "status": "ok",
+      "start": "2007-10-09",
+      "end": "2009-03-09",
+      "return": -0.16444176570437563,
+      "loss_usd": 1644417.6570437562,
+      "drawdown": -0.2366068688990587,
+      "breach": true,
+      "contributions_usd": {
+        "SPY": 1875089.263536032,
+        "EFA": 0.0,
+        "EEM": 0.0,
+        "AGG": -266292.5022472149,
+        "GLD": -478314.52271866583,
+        "XLE": 0.0,
+        "XLK": 513935.418473605
+      },
+      "assumption": "buy-and-hold from scenario start, no trades or transaction costs"
+    },
+    {
+      "scenario": "COVID",
+      "status": "ok",
+      "start": "2020-02-19",
+      "end": "2020-03-23",
+      "return": -0.157785402528465,
+      "loss_usd": 1577854.02528465,
+      "drawdown": -0.16763288885150518,
+      "breach": false,
+      "contributions_usd": {
+        "SPY": 1145560.9506397003,
+        "EFA": 0.0,
+        "EEM": 0.0,
+        "AGG": 48424.324275211315,
+        "GLD": 72336.65560582848,
+        "XLE": 0.0,
+        "XLK": 311532.09476391
+      },
+      "assumption": "buy-and-hold from scenario start, no trades or transaction costs"
+    },
+    {
+      "scenario": "Rates 2022",
+      "status": "ok",
+      "start": "2022-01-03",
+      "end": "2022-10-12",
+      "return": -0.1828054130937298,
+      "loss_usd": 1828054.130937298,
+      "drawdown": -0.18321334636816322,
+      "breach": false,
+      "contributions_usd": {
+        "SPY": 832276.9981966725,
+        "EFA": 0.0,
+        "EEM": 0.0,
+        "AGG": 517847.13396723825,
+        "GLD": 146616.71958247502,
+        "XLE": -0.0,
+        "XLK": 331313.2791909124
+      },
+      "assumption": "buy-and-hold from scenario start, no trades or transaction costs"
+    },
+    {
+      "scenario": "Hypothetical joint inflation shock",
+      "status": "ok",
+      "shocks": {
+        "SPY": -0.25,
+        "EFA": -0.28595247171158805,
+        "EEM": -0.28895954348566566,
+        "AGG": -0.1,
+        "GLD": 0.0,
+        "XLE": -0.34123707228639183,
+        "XLK": -0.18959550985240495
+      },
+      "return": -0.1399228009852405,
+      "loss_usd": 1399228.009852405,
+      "contributions_usd": {
+        "SPY": 849387.4999999999,
+        "EFA": 0.0,
+        "EEM": 0.0,
+        "AGG": 360245.0,
+        "GLD": -0.0,
+        "XLE": 0.0,
+        "XLK": 189595.50985240494
+      },
+      "breach": false,
+      "assumption": "deterministic, no calibrated probability; stressed training covariance conditional mean"
+    }
+  ],
+  "attribution": {
+    "source": "historical attribution",
+    "alpha": 0.99,
+    "es_usd": 249999.89352251394,
+    "components": {
+      "SPY": 157632.49015780774,
+      "EFA": 0.0,
+      "EEM": 0.0,
+      "AGG": 13515.11218190801,
+      "GLD": 31202.75991179448,
+      "XLE": 0.0,
+      "XLK": 47649.53127100371
+    },
+    "residual_usd": 0.0,
+    "diversification_benefit_usd": 113528.33662407284
+  },
+  "policy_es99_usd": 249999.89352251394,
+  "validation": [
+    {
+      "status": "ok",
+      "days": 2449,
+      "breaches": 282,
+      "expected_breaches": 244.89999999999995,
+      "kupiec_lr": 5.984219025619495,
+      "kupiec_p": 0.014434432424716044,
+      "transitions": [
+        1929,
+        237,
+        237,
+        45
+      ],
+      "independence_lr": 5.657792482928016,
+      "independence_p": 0.01737798223621183,
+      "conditional_coverage_p": 0.0029646219636488163,
+      "binomial_p": 0.013907855081715709,
+      "coverage": 1.0,
+      "missing_days": 0,
+      "zone": "unavailable",
+      "red_window_share": null,
+      "weight_hash": "cefbf7a2edcbff9d3ab7700e7226fc8ddf7b70e3af2c6b66b920628a340878f1",
+      "method": "historical",
+      "alpha": 0.9
+    },
+    {
+      "status": "ok",
+      "days": 2449,
+      "breaches": 142,
+      "expected_breaches": 122.4500000000001,
+      "kupiec_lr": 3.1320346142313156,
+      "kupiec_p": 0.0767678759315355,
+      "transitions": [
+        2178,
+        128,
+        128,
+        14
+      ],
+      "independence_lr": 3.845052430250007,
+      "independence_p": 0.04989296173404076,
+      "conditional_coverage_p": 0.03054532838005618,
+      "binomial_p": 0.0706268338905402,
+      "coverage": 1.0,
+      "missing_days": 0,
+      "zone": "unavailable",
+      "red_window_share": null,
+      "weight_hash": "cefbf7a2edcbff9d3ab7700e7226fc8ddf7b70e3af2c6b66b920628a340878f1",
+      "method": "historical",
+      "alpha": 0.95
+    },
+    {
+      "status": "ok",
+      "days": 2449,
+      "breaches": 35,
+      "expected_breaches": 24.490000000000023,
+      "kupiec_lr": 4.021449074710688,
+      "kupiec_p": 0.044925098234702004,
+      "transitions": [
+        2382,
+        31,
+        31,
+        4
+      ],
+      "independence_lr": 10.370254043354805,
+      "independence_p": 0.0012806192476758588,
+      "conditional_coverage_p": 0.0007496894086299723,
+      "binomial_p": 0.04121277718428395,
+      "coverage": 1.0,
+      "missing_days": 0,
+      "zone": "yellow",
+      "red_window_share": 0.08045454545454546,
+      "weight_hash": "cefbf7a2edcbff9d3ab7700e7226fc8ddf7b70e3af2c6b66b920628a340878f1",
+      "method": "historical",
+      "alpha": 0.99
+    },
+    {
+      "status": "ok",
+      "days": 2449,
+      "breaches": 204,
+      "expected_breaches": 244.89999999999995,
+      "kupiec_lr": 8.000474573765814,
+      "kupiec_p": 0.004676509143538031,
+      "transitions": [
+        2066,
+        178,
+        178,
+        26
+      ],
+      "independence_lr": 5.013799123714534,
+      "independence_p": 0.025146064910814482,
+      "conditional_coverage_p": 0.0014927475724874437,
+      "binomial_p": 0.005170516033783583,
+      "coverage": 1.0,
+      "missing_days": 0,
+      "zone": "unavailable",
+      "red_window_share": null,
+      "weight_hash": "cefbf7a2edcbff9d3ab7700e7226fc8ddf7b70e3af2c6b66b920628a340878f1",
+      "method": "normal",
+      "alpha": 0.9
+    },
+    {
+      "status": "ok",
+      "days": 2449,
+      "breaches": 125,
+      "expected_breaches": 122.4500000000001,
+      "kupiec_lr": 0.05553440862547632,
+      "kupiec_p": 0.8136985313393741,
+      "transitions": [
+        2209,
+        114,
+        114,
+        11
+      ],
+      "independence_lr": 3.1138788490726483,
+      "independence_p": 0.07762788514880183,
+      "conditional_coverage_p": 0.20500792770719184,
+      "binomial_p": 0.8165998280079213,
+      "coverage": 1.0,
+      "missing_days": 0,
+      "zone": "unavailable",
+      "red_window_share": null,
+      "weight_hash": "cefbf7a2edcbff9d3ab7700e7226fc8ddf7b70e3af2c6b66b920628a340878f1",
+      "method": "normal",
+      "alpha": 0.95
+    },
+    {
+      "status": "ok",
+      "days": 2449,
+      "breaches": 54,
+      "expected_breaches": 24.490000000000023,
+      "kupiec_lr": 26.738319059834566,
+      "kupiec_p": 2.329556869648027e-07,
+      "transitions": [
+        2346,
+        48,
+        48,
+        6
+      ],
+      "independence_lr": 10.697696494684692,
+      "independence_p": 0.0010726901129497228,
+      "conditional_coverage_p": 7.4280105195137304e-09,
+      "binomial_p": 2.0961845797565157e-07,
+      "coverage": 1.0,
+      "missing_days": 0,
+      "zone": "yellow",
+      "red_window_share": 0.22818181818181818,
+      "weight_hash": "cefbf7a2edcbff9d3ab7700e7226fc8ddf7b70e3af2c6b66b920628a340878f1",
+      "method": "normal",
+      "alpha": 0.99
+    },
+    {
+      "status": "ok",
+      "days": 2449,
+      "breaches": 278,
+      "expected_breaches": 244.89999999999995,
+      "kupiec_lr": 4.784344562790693,
+      "kupiec_p": 0.028719575584976505,
+      "transitions": [
+        1939,
+        231,
+        231,
+        47
+      ],
+      "independence_lr": 8.643418993725618,
+      "independence_p": 0.0032824485635088445,
+      "conditional_coverage_p": 0.0012139427103690377,
+      "binomial_p": 0.028505899796507105,
+      "coverage": 1.0,
+      "missing_days": 0,
+      "zone": "unavailable",
+      "red_window_share": null,
+      "weight_hash": "cefbf7a2edcbff9d3ab7700e7226fc8ddf7b70e3af2c6b66b920628a340878f1",
+      "method": "evt",
+      "alpha": 0.9
+    },
+    {
+      "status": "ok",
+      "days": 2449,
+      "breaches": 149,
+      "expected_breaches": 122.4500000000001,
+      "kupiec_lr": 5.6847107411597335,
+      "kupiec_p": 0.01711336040987889,
+      "transitions": [
+        2167,
+        132,
+        132,
+        17
+      ],
+      "independence_lr": 6.4474806397172415,
+      "independence_p": 0.01111097901294036,
+      "conditional_coverage_p": 0.0023202143845525215,
+      "binomial_p": 0.015849956807407285,
+      "coverage": 1.0,
+      "missing_days": 0,
+      "zone": "unavailable",
+      "red_window_share": null,
+      "weight_hash": "cefbf7a2edcbff9d3ab7700e7226fc8ddf7b70e3af2c6b66b920628a340878f1",
+      "method": "evt",
+      "alpha": 0.95
+    },
+    {
+      "status": "ok",
+      "days": 2449,
+      "breaches": 31,
+      "expected_breaches": 24.490000000000023,
+      "kupiec_lr": 1.6122802061892116,
+      "kupiec_p": 0.20417157138764677,
+      "transitions": [
+        2391,
+        26,
+        26,
+        5
+      ],
+      "independence_lr": 17.701434690184954,
+      "independence_p": 2.5843161241557273e-05,
+      "conditional_coverage_p": 6.398528338300266e-05,
+      "binomial_p": 0.18563946860681663,
+      "coverage": 1.0,
+      "missing_days": 0,
+      "zone": "green",
+      "red_window_share": 0.10727272727272727,
+      "weight_hash": "cefbf7a2edcbff9d3ab7700e7226fc8ddf7b70e3af2c6b66b920628a340878f1",
+      "method": "evt",
+      "alpha": 0.99
+    },
+    {
+      "status": "ok",
+      "days": 2449,
+      "breaches": 257,
+      "expected_breaches": 244.89999999999995,
+      "kupiec_lr": 0.6547742569757702,
+      "kupiec_p": 0.41841091196850233,
+      "transitions": [
+        1951,
+        240,
+        240,
+        17
+      ],
+      "independence_lr": 5.16136695398086,
+      "independence_p": 0.02309471363245231,
+      "conditional_coverage_p": 0.05458093650388005,
+      "binomial_p": 0.4188139657121466,
+      "coverage": 1.0,
+      "missing_days": 0,
+      "zone": "unavailable",
+      "red_window_share": null,
+      "weight_hash": "cefbf7a2edcbff9d3ab7700e7226fc8ddf7b70e3af2c6b66b920628a340878f1",
+      "method": "fhs",
+      "alpha": 0.9
+    },
+    {
+      "status": "ok",
+      "days": 2449,
+      "breaches": 139,
+      "expected_breaches": 122.4500000000001,
+      "kupiec_lr": 2.260388820285243,
+      "kupiec_p": 0.1327207344055572,
+      "transitions": [
+        2175,
+        134,
+        134,
+        5
+      ],
+      "independence_lr": 1.350847426691189,
+      "independence_p": 0.24513002316713045,
+      "conditional_coverage_p": 0.1643728224667844,
+      "binomial_p": 0.12593668783989787,
+      "coverage": 1.0,
+      "missing_days": 0,
+      "zone": "unavailable",
+      "red_window_share": null,
+      "weight_hash": "cefbf7a2edcbff9d3ab7700e7226fc8ddf7b70e3af2c6b66b920628a340878f1",
+      "method": "fhs",
+      "alpha": 0.95
+    },
+    {
+      "status": "ok",
+      "days": 2449,
+      "breaches": 31,
+      "expected_breaches": 24.490000000000023,
+      "kupiec_lr": 1.6122802061892116,
+      "kupiec_p": 0.20417157138764677,
+      "transitions": [
+        2388,
+        29,
+        29,
+        2
+      ],
+      "independence_lr": 3.470884498236728,
+      "independence_p": 0.06245790520519164,
+      "conditional_coverage_p": 0.07874170405074538,
+      "binomial_p": 0.18563946860681663,
+      "coverage": 1.0,
+      "missing_days": 0,
+      "zone": "yellow",
+      "red_window_share": 0.0,
+      "weight_hash": "cefbf7a2edcbff9d3ab7700e7226fc8ddf7b70e3af2c6b66b920628a340878f1",
+      "method": "fhs",
+      "alpha": 0.99
+    },
+    {
+      "status": "ok",
+      "days": 2449,
+      "breaches": 257,
+      "expected_breaches": 244.89999999999995,
+      "kupiec_lr": 0.6547742569757702,
+      "kupiec_p": 0.41841091196850233,
+      "transitions": [
+        1951,
+        240,
+        240,
+        17
+      ],
+      "independence_lr": 5.16136695398086,
+      "independence_p": 0.02309471363245231,
+      "conditional_coverage_p": 0.05458093650388005,
+      "binomial_p": 0.4188139657121466,
+      "coverage": 1.0,
+      "missing_days": 0,
+      "zone": "unavailable",
+      "red_window_share": null,
+      "weight_hash": "cefbf7a2edcbff9d3ab7700e7226fc8ddf7b70e3af2c6b66b920628a340878f1",
+      "method": "garch_evt",
+      "alpha": 0.9
+    },
+    {
+      "status": "ok",
+      "days": 2449,
+      "breaches": 132,
+      "expected_breaches": 122.4500000000001,
+      "kupiec_lr": 0.7654272408783527,
+      "kupiec_p": 0.3816353999820531,
+      "transitions": [
+        2189,
+        127,
+        127,
+        5
+      ],
+      "independence_lr": 0.7773644472335945,
+      "independence_p": 0.37794839939455616,
+      "conditional_coverage_p": 0.4623672251250365,
+      "binomial_p": 0.3781388554566685,
+      "coverage": 1.0,
+      "missing_days": 0,
+      "zone": "unavailable",
+      "red_window_share": null,
+      "weight_hash": "cefbf7a2edcbff9d3ab7700e7226fc8ddf7b70e3af2c6b66b920628a340878f1",
+      "method": "garch_evt",
+      "alpha": 0.95
+    },
+    {
+      "status": "ok",
+      "days": 2449,
+      "breaches": 28,
+      "expected_breaches": 24.490000000000023,
+      "kupiec_lr": 0.48570373016002577,
+      "kupiec_p": 0.48585005711826323,
+      "transitions": [
+        2393,
+        27,
+        27,
+        1
+      ],
+      "independence_lr": 0.9516129625656617,
+      "independence_p": 0.3293090711460285,
+      "conditional_coverage_p": 0.48740574717598206,
+      "binomial_p": 0.47567973447759043,
+      "coverage": 1.0,
+      "missing_days": 0,
+      "zone": "green",
+      "red_window_share": 0.0,
+      "weight_hash": "cefbf7a2edcbff9d3ab7700e7226fc8ddf7b70e3af2c6b66b920628a340878f1",
+      "method": "garch_evt",
+      "alpha": 0.99
+    }
+  ],
+  "model_used": "fhs",
+  "model_parameters": {
+    "historical": {
+      "status": "ok",
+      "params": {
+        "n": 5469
+      }
+    },
+    "normal": {
+      "status": "ok",
+      "params": {
+        "mu": 0.00034818651392624396,
+        "sigma": 0.006190727258940014
+      }
+    },
+    "student_t": {
+      "status": "ok",
+      "params": {
+        "nu": 3.0967518779765184,
+        "loc": 0.000544062496755126,
+        "scale": 0.003808028367755455
+      }
+    },
+    "mc_normal": {
+      "status": "ok",
+      "params": {
+        "n_sim": 100000,
+        "seed": 20261026,
+        "covariance_treatment": "Cholesky"
+      }
+    },
+    "mc_t": {
+      "status": "ok",
+      "params": {
+        "n_sim": 100000,
+        "seed": 20261026,
+        "covariance_treatment": "Cholesky",
+        "nu": 4.129892495228062
+      }
+    },
+    "evt": {
+      "status": "ok",
+      "params": {
+        "u": 0.003787558513687942,
+        "threshold_q": 0.8250137136588042,
+        "n_exceed": 957,
+        "xi": 0.1563471153986892,
+        "xi_se": 0.03737939367297603,
+        "sigma": 0.0038474702923473143,
+        "threshold_rule": "lowest KS distance among stable thresholds"
+      }
+    },
+    "fhs": {
+      "status": "ok",
+      "params": {
+        "mu": 0.00030426263050767723,
+        "omega": 5.121462106671225e-07,
+        "alpha": 0.03067974886020961,
+        "gamma": 0.10154641978223736,
+        "beta": 0.9025108949668106,
+        "persistence": 0.9839638537181389,
+        "sigma_next": 0.007005390039060491,
+        "z_n": 5469
+      }
+    },
+    "garch_evt": {
+      "status": "ok",
+      "params": {
+        "mu": 0.00030426263050767723,
+        "omega": 5.121462106671225e-07,
+        "alpha": 0.03067974886020961,
+        "gamma": 0.10154641978223736,
+        "beta": 0.9025108949668106,
+        "persistence": 0.9839638537181389,
+        "sigma_next": 0.007005390039060491,
+        "z_u": 1.2374096431328128,
+        "z_threshold_q": 0.8999817151215944,
+        "z_n_exceed": 547,
+        "z_xi": 0.09801960276894009,
+        "z_xi_se": 0.04694792805790556,
+        "z_sigma": 0.6045247141848729,
+        "z_threshold_rule": "fixed percentile q = 0.9"
+      }
+    }
+  },
+  "fit_failures": [],
+  "risk_replay": "daily rebalanced without costs; differs from quarterly implementation",
+  "evaluation_label": "retrospective portfolio evaluation",
+  "distribution_yield": 0.01888349715646321,
+  "diversification_ratio": 1.4528480095150844,
+  "volatility_risk_contributions": {
+    "SPY": 0.5775104333674338,
+    "EFA": 0.0,
+    "EEM": 0.0,
+    "AGG": 0.05461090519360387,
+    "GLD": 0.17458912244133326,
+    "XLE": 0.0,
+    "XLK": 0.19328953899762916
+  },
+  "risk_contribution_dispersion": 0.1932746810400435,
+  "retrospective_2017_onward": {
+    "cagr": 0.11344721158473337,
+    "cumulative_return": 1.8476975155827837,
+    "annual_volatility": 0.10150477064705349,
+    "sharpe": 0.8665899035654243,
+    "sortino": 1.5856921475158694,
+    "beta": 0.5002521988693457,
+    "treynor": 0.17581687875240382,
+    "jensen_alpha": 0.02116080860243577,
+    "information_ratio": 1.0662979353964397,
+    "maximum_drawdown": -0.19273937583294798,
+    "calmar": 0.5886042283495869,
+    "max_underwater_days": 493,
+    "recovered_at_end": false,
+    "observations": 2449,
+    "money_weighted_return": 0.11195479671436433,
+    "realised_inflation_hurdle": 0.07673856248818689
+  },
+  "crisis_recovery": [
+    {
+      "scenario": "GFC",
+      "peak": "2007-10-09",
+      "trough": "2008-11-20",
+      "peak_to_trough_days": 283,
+      "trough_to_recovery_days": 219,
+      "recovery": "2009-10-06"
+    },
+    {
+      "scenario": "COVID",
+      "peak": "2020-02-19",
+      "trough": "2020-03-20",
+      "peak_to_trough_days": 22,
+      "trough_to_recovery_days": 49,
+      "recovery": "2020-06-01"
+    },
+    {
+      "scenario": "Rates 2022",
+      "peak": "2022-01-03",
+      "trough": "2022-10-12",
+      "peak_to_trough_days": 195,
+      "trough_to_recovery_days": 294,
+      "recovery": "2023-12-13"
+    }
+  ]
+}

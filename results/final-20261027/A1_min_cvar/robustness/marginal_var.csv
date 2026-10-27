@@ -1,0 +1,25 @@
+asset,step,marginal_var_fraction,component_var_usd,derivative
+SPY,0.001,0.014848110513674198,22272.165770511296,independent dollar exposure; no renormalisation
+EFA,0.001,0.016655864628810357,0.0,independent dollar exposure; no renormalisation
+EEM,0.001,0.023625095145279884,0.0,independent dollar exposure; no renormalisation
+AGG,0.001,0.006354436384793834,44481.054693556835,independent dollar exposure; no renormalisation
+GLD,0.001,0.021028103349030915,31542.155023546373,independent dollar exposure; no renormalisation
+XLE,0.001,0.007988874387517692,0.0,independent dollar exposure; no renormalisation
+XLK,0.001,0.023410858023223402,0.0,independent dollar exposure; no renormalisation
+Euler residual,0.001,,4165.420852869761,
+SPY,0.0001,0.016918049679393726,25377.07451909059,independent dollar exposure; no renormalisation
+EFA,0.0001,0.023464909214947205,0.0,independent dollar exposure; no renormalisation
+EEM,0.0001,0.019892815751858944,0.0,independent dollar exposure; no renormalisation
+AGG,0.0001,0.006354436384789497,44481.05469352648,independent dollar exposure; no renormalisation
+GLD,0.0001,0.016181216948062474,24271.825422093712,independent dollar exposure; no renormalisation
+XLE,0.0001,0.001257540626561915,0.0,independent dollar exposure; no renormalisation
+XLK,0.0001,0.034581970099010345,0.0,independent dollar exposure; no renormalisation
+Euler residual,0.0001,,-3.396588565962588e-08,
+SPY,1e-05,0.016918049679411074,25377.07451911661,independent dollar exposure; no renormalisation
+EFA,1e-05,0.023464909214981896,0.0,independent dollar exposure; no renormalisation
+EEM,1e-05,0.019892815751858944,0.0,independent dollar exposure; no renormalisation
+AGG,1e-05,0.006354436384720107,44481.05469304075,independent dollar exposure; no renormalisation
+GLD,1e-05,0.016181216948036453,24271.82542205468,independent dollar exposure; no renormalisation
+XLE,1e-05,0.0012575406265792621,0.0,independent dollar exposure; no renormalisation
+XLK,1e-05,0.034581970098993,0.0,independent dollar exposure; no renormalisation
+Euler residual,1e-05,,-5.326988850029579e-07,

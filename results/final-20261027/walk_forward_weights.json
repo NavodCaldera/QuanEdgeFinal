@@ -1,0 +1,232 @@
+[
+  {
+    "year": 2017,
+    "status": "ok",
+    "weights": {
+      "SPY": 0.226363,
+      "EFA": 0.0,
+      "EEM": 0.0,
+      "AGG": 0.423637,
+      "GLD": 0.15,
+      "XLE": 0.1,
+      "XLK": 0.1
+    },
+    "weight_hash": "065dc41b1646edbb1f7ad685fd71cab050c6f28327ed512d6c529a340e637573",
+    "expected_arithmetic": 0.08215797597362899,
+    "expected_geometric": 0.07711004596019076,
+    "volatility": 0.09670162613780184,
+    "es99": 0.024999982207403036,
+    "duals": [
+      -0.0,
+      -1.8379923684407729
+    ],
+    "scenario_hash": "8eb36642b20f4e8317b77c03bcfe1ad8b60c681b5a3e2f1a05cf6bedd49f9e37"
+  },
+  {
+    "year": 2018,
+    "status": "ok",
+    "weights": {
+      "SPY": 0.380673,
+      "EFA": 0.0,
+      "EEM": 0.0,
+      "AGG": 0.369327,
+      "GLD": 0.15,
+      "XLE": 0.0,
+      "XLK": 0.1
+    },
+    "weight_hash": "e97d826282c873bb42ac67950b757d178c0b0c8d28239fb6428211c018704ca7",
+    "expected_arithmetic": 0.08742989945247998,
+    "expected_geometric": 0.08245657968455287,
+    "volatility": 0.09574917947787338,
+    "es99": 0.024999980105875133,
+    "duals": [
+      -0.0,
+      -1.56331426502026
+    ],
+    "scenario_hash": "beb7292490b90a6e3f155d90700b0d9e7fad9e15fa8e6e54ad0e2a083a4f3e39"
+  },
+  {
+    "year": 2019,
+    "status": "ok",
+    "weights": {
+      "SPY": 0.390944,
+      "EFA": 0.0,
+      "EEM": 0.0,
+      "AGG": 0.359056,
+      "GLD": 0.15,
+      "XLE": 0.0,
+      "XLK": 0.1
+    },
+    "weight_hash": "37bb9e7028c2a59774d9d9c87d0de8e704d105d342cb45ea50e3d687a5be0e12",
+    "expected_arithmetic": 0.0784833363698026,
+    "expected_geometric": 0.07343251107439966,
+    "volatility": 0.09689445535806626,
+    "es99": 0.02499999405533387,
+    "duals": [
+      -0.0,
+      -1.7682545421644493
+    ],
+    "scenario_hash": "17545fd658db4454617961dc524520ecd64af5a7badf963c5fca38971a795e68"
+  },
+  {
+    "year": 2020,
+    "status": "ok",
+    "weights": {
+      "SPY": 0.4,
+      "EFA": 0.0,
+      "EEM": 0.001621,
+      "AGG": 0.348379,
+      "GLD": 0.15,
+      "XLE": 0.0,
+      "XLK": 0.1
+    },
+    "weight_hash": "c7dfe95b4527e3bebc76d7397c2d2f62692cf2ac8b06fdb82a6859482f2abb2e",
+    "expected_arithmetic": 0.08743739633679161,
+    "expected_geometric": 0.08234279856264905,
+    "volatility": 0.09691198187233813,
+    "es99": 0.02500001393169325,
+    "duals": [
+      -0.0,
+      -1.9317985399096298
+    ],
+    "scenario_hash": "e53853a82e5ef28c5a0440606cec60ea4047804cf6d31a5e847f642cce37adaf"
+  },
+  {
+    "year": 2021,
+    "status": "ok",
+    "weights": {
+      "SPY": 0.325646,
+      "EFA": 0.0,
+      "EEM": 0.0,
+      "AGG": 0.424354,
+      "GLD": 0.15,
+      "XLE": 0.0,
+      "XLK": 0.1
+    },
+    "weight_hash": "9d01f385c0b79a5c5a2e7a12af8d839069549ff546d9083bdb760962d0f02a4c",
+    "expected_arithmetic": 0.09047876264611035,
+    "expected_geometric": 0.08590208544701691,
+    "volatility": 0.09171450131355656,
+    "es99": 0.02500000527006713,
+    "duals": [
+      -0.0,
+      -1.4209665915033254
+    ],
+    "scenario_hash": "102ee06c9b4270807cd4390b48f5299edca646d0e9508da8c841ebda0215db21"
+  },
+  {
+    "year": 2022,
+    "status": "ok",
+    "weights": {
+      "SPY": 0.335923,
+      "EFA": 0.0,
+      "EEM": 0.0,
+      "AGG": 0.414077,
+      "GLD": 0.15,
+      "XLE": 0.0,
+      "XLK": 0.1
+    },
+    "weight_hash": "1c860f569120952926d004940557dbb37859570492890543f77bbf905681bd66",
+    "expected_arithmetic": 0.09321134303542229,
+    "expected_geometric": 0.0885631331338867,
+    "volatility": 0.0923141470989897,
+    "es99": 0.024999989177086724,
+    "duals": [
+      -0.0,
+      -1.1730272197542402
+    ],
+    "scenario_hash": "faebc7811b431c46ba59f55ed492da53e99cc4231e86c1b1c1a790cfefc4c5d4"
+  },
+  {
+    "year": 2023,
+    "status": "ok",
+    "weights": {
+      "SPY": 0.332326,
+      "EFA": 0.0,
+      "EEM": 0.0,
+      "AGG": 0.417674,
+      "GLD": 0.15,
+      "XLE": 0.0,
+      "XLK": 0.1
+    },
+    "weight_hash": "7e2623c6fa61a576d538f743b54fd085e5a7aa572f06d91c74444ccb8b8572cd",
+    "expected_arithmetic": 0.08259211006235878,
+    "expected_geometric": 0.07774989349291253,
+    "volatility": 0.09468718582672751,
+    "es99": 0.02499999690011051,
+    "duals": [
+      -0.0,
+      -1.2287672639213165
+    ],
+    "scenario_hash": "aaca9a81fa3da9a8dfbaa4c1fdc1e563f42042c254232ed7cf7e0f5e29b5db71"
+  },
+  {
+    "year": 2024,
+    "status": "ok",
+    "weights": {
+      "SPY": 0.342117,
+      "EFA": 0.0,
+      "EEM": 0.0,
+      "AGG": 0.407883,
+      "GLD": 0.15,
+      "XLE": 0.0,
+      "XLK": 0.1
+    },
+    "weight_hash": "904e88b64305b5d189a157746430543e684507db9dcd2042cb1104898765cfe4",
+    "expected_arithmetic": 0.08756803910989432,
+    "expected_geometric": 0.08261839886149691,
+    "volatility": 0.09551435931028894,
+    "es99": 0.02500000049055255,
+    "duals": [
+      -0.0,
+      -1.1273795953192551
+    ],
+    "scenario_hash": "139b5bd1da439ba8325b4e6a4fe6a7df51471e1c1388a3ef15919268437a3cfa"
+  },
+  {
+    "year": 2025,
+    "status": "ok",
+    "weights": {
+      "SPY": 0.350334,
+      "EFA": 0.0,
+      "EEM": 0.0,
+      "AGG": 0.399666,
+      "GLD": 0.15,
+      "XLE": 0.0,
+      "XLK": 0.1
+    },
+    "weight_hash": "b198a13478ec42b40cd41dbedc9961d73d3de934e3332bbc529a5a8b0552b9fd",
+    "expected_arithmetic": 0.09033486241294553,
+    "expected_geometric": 0.08531041191982057,
+    "volatility": 0.09611266589730313,
+    "es99": 0.02499999228042159,
+    "duals": [
+      -0.0,
+      -1.0261183086047714
+    ],
+    "scenario_hash": "b1cf19f2dd60aa7d1c862a426acf9fa5fd0a9775046eb898b423558c20a9fd02"
+  },
+  {
+    "year": 2026,
+    "status": "ok",
+    "weights": {
+      "SPY": 0.349631,
+      "EFA": 0.0,
+      "EEM": 0.0,
+      "AGG": 0.400369,
+      "GLD": 0.15,
+      "XLE": 0.0,
+      "XLK": 0.1
+    },
+    "weight_hash": "d29f8179e9c594a6c02d2cff515f94a9fb1d74c0a8db70bfeec94bb9c67ad45e",
+    "expected_arithmetic": 0.0965200969945644,
+    "expected_geometric": 0.09144064808675773,
+    "volatility": 0.09636491018420992,
+    "es99": 0.024999988744144695,
+    "duals": [
+      -0.0,
+      -1.0204019127424429
+    ],
+    "scenario_hash": "df6c864f07b463562c3229948139e5e2998d2096a056b0e252b37bb2d8a1df9e"
+  }
+]

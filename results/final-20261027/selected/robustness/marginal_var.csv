@@ -1,0 +1,25 @@
+asset,step,marginal_var_fraction,component_var_usd,derivative
+SPY,0.001,0.037998207948692145,133973.70160341926,independent dollar exposure; no renormalisation
+EFA,0.001,0.04250857842362683,0.0,independent dollar exposure; no renormalisation
+EEM,0.001,0.047467427615029145,0.0,independent dollar exposure; no renormalisation
+AGG,0.001,-0.002458786193119608,-9771.732676557878,independent dollar exposure; no renormalisation
+GLD,0.001,0.005551092335203192,8326.638502804788,independent dollar exposure; no renormalisation
+XLE,0.001,0.03827179971098785,0.0,independent dollar exposure; no renormalisation
+XLK,0.001,0.03824077126173345,38240.77126173345,independent dollar exposure; no renormalisation
+Euler residual,0.001,,-4.440892098500626e-09,
+SPY,0.0001,0.03799820794870082,133973.70160344985,independent dollar exposure; no renormalisation
+EFA,0.0001,0.04250857842362163,0.0,independent dollar exposure; no renormalisation
+EEM,0.0001,0.047467427615032615,0.0,independent dollar exposure; no renormalisation
+AGG,0.0001,-0.002458786193121343,-9771.732676564772,independent dollar exposure; no renormalisation
+GLD,0.0001,0.0055510923352257435,8326.638502838616,independent dollar exposure; no renormalisation
+XLE,0.0001,0.03827179971098438,0.0,independent dollar exposure; no renormalisation
+XLK,0.0001,0.03824077126172998,38240.77126172998,independent dollar exposure; no renormalisation
+Euler residual,0.0001,,4.961309141293668e-08,
+SPY,1e-05,0.037998207948718166,133973.701603511,independent dollar exposure; no renormalisation
+EFA,1e-05,0.04250857842356958,0.0,independent dollar exposure; no renormalisation
+EEM,1e-05,0.04746742761508465,0.0,independent dollar exposure; no renormalisation
+AGG,1e-05,-0.0024587861932254262,-9771.732676978423,independent dollar exposure; no renormalisation
+GLD,1e-05,0.005551092335277784,8326.638502916676,independent dollar exposure; no renormalisation
+XLE,1e-05,0.03827179971098438,0.0,independent dollar exposure; no renormalisation
+XLK,1e-05,0.03824077126172998,38240.77126172998,independent dollar exposure; no renormalisation
+Euler residual,1e-05,,-2.248201624865942e-07,

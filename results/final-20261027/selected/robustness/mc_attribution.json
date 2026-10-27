@@ -1,0 +1,16 @@
+{
+  "source": "joint multivariate-t Monte Carlo attribution check",
+  "alpha": 0.99,
+  "es_usd": 217830.39035733888,
+  "components": {
+    "SPY": 137477.7626327182,
+    "EFA": 0.0,
+    "EEM": 0.0,
+    "AGG": 12605.954196560899,
+    "GLD": 23828.179777551224,
+    "XLE": 0.0,
+    "XLK": 43918.49375050856
+  },
+  "residual_usd": -2.9103830456733704e-11,
+  "diversification_benefit_usd": 91441.80210203666
+}

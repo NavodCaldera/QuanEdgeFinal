@@ -46,6 +46,16 @@ Risk values distinguish log loss, simple percentage points and USD. Dollar ES av
 
 The accepted policy assumes 4% annual spending, 2.5% inflation, a 6.77% geometric-return hurdle, USD 250,000 historical one-day ES99 budget and 20% stress/drawdown limit. FHS is primary; GARCH-EVT is the pre-named challenger. Earlier development results were seen and are disclosed in PLAN.md. The frozen C1-C5 and A1-A5 rules determine Accept, Adjust, Reject or evaluation incomplete. The owner's final investment judgement is separate.
 
+The completed local run `final-20261027` returns **Adjust** to the minimum-CVaR allocation: **15% SPY, 70% AGG, 15% GLD**. The original allocation fails the GFC drawdown gate. For the adjusted allocation, FHS fails coverage and the pre-named GARCH-EVT challenger passes the gate with a yellow final zone. The illustrative spending simulation shows substantial real-capital shortfall risk; this qualifies the owner's decision and must not be hidden by the mechanical verdict.
+
+Review the [investment memorandum](results/final-20261027/documents/investment_memorandum.pdf), [executive tear sheet](results/final-20261027/documents/executive_tear_sheet.pdf), [committee memo](results/final-20261027/documents/committee_memo.pdf), [editable pitch](results/final-20261027/documents/committee_pitch_v2.pptx) and [speaker/Q&A notes](results/final-20261027/documents/speaker_qa_notes.md).
+
+```powershell
+python -m quanedge.verify results/final-20261027
+```
+
+This read-only check verifies artifact/input/source hashes, forecast timing, allocation identities, recomputed backtests, ES reconciliation and document page counts. Source hashes normalize line endings; data hashes preserve exact bytes. Post-snapshot descriptive monitoring, when present under `monitoring/`, is separate from the frozen selection and never changes its verdict.
+
 Traditional Basel zones are used only for 250 observations at 99%, following [BIS guidance](https://www.bis.org/committees/bcbs/basel-framework/standard/mar/99/inforce/2019-12-15/published/2019-12-15). They are a monitoring comparison, not an endowment regulatory requirement.
 
 ## AI disclosure and review

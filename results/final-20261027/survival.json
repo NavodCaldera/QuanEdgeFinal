@@ -1,0 +1,59 @@
+{
+  "selected": {
+    "status": "illustrative",
+    "paths": 10000,
+    "block": "non-circular joint 12 months",
+    "results": [
+      {
+        "year": 5,
+        "shortfall_probability": 0.2927,
+        "mc_se": 0.004550018791169988,
+        "median_real_surplus_usd": 1221504.6366491045
+      },
+      {
+        "year": 10,
+        "shortfall_probability": 0.2509,
+        "mc_se": 0.004335310715508175,
+        "median_real_surplus_usd": 2268777.187250417
+      }
+    ]
+  },
+  "40_60": {
+    "status": "illustrative",
+    "paths": 10000,
+    "block": "non-circular joint 12 months",
+    "results": [
+      {
+        "year": 5,
+        "shortfall_probability": 0.4697,
+        "mc_se": 0.00499081065559494,
+        "median_real_surplus_usd": 139870.87238907846
+      },
+      {
+        "year": 10,
+        "shortfall_probability": 0.517,
+        "mc_se": 0.004997109164306899,
+        "median_real_surplus_usd": -98765.49007848956
+      }
+    ]
+  },
+  "permanent": {
+    "status": "illustrative",
+    "paths": 10000,
+    "block": "non-circular joint 12 months",
+    "results": [
+      {
+        "year": 5,
+        "shortfall_probability": 0.4037,
+        "mc_se": 0.004906386756055825,
+        "median_real_surplus_usd": 420748.28235311393
+      },
+      {
+        "year": 10,
+        "shortfall_probability": 0.3794,
+        "mc_se": 0.0048523771493980145,
+        "median_real_surplus_usd": 794496.0166724036
+      }
+    ]
+  }
+}

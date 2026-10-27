@@ -1,0 +1,35 @@
+{
+  "source": "joint multivariate-t Monte Carlo attribution check",
+  "alpha": 0.99,
+  "es_usd": 130289.59828830148,
+  "components": {
+    "SPY": 33874.56285618576,
+    "EFA": 0.0,
+    "EEM": 0.0,
+    "AGG": 57237.1947614519,
+    "GLD": 39177.84067066378,
+    "XLE": 0.0,
+    "XLK": 0.0
+  },
+  "marginal_es_usd_per_dollar": {
+    "SPY": 0.02258304190412384,
+    "EFA": 0.025607361370456265,
+    "EEM": 0.030833427407329816,
+    "AGG": 0.008176742108778844,
+    "GLD": 0.026118560447109192,
+    "XLE": 0.024578804655709944,
+    "XLK": 0.023914885578425065
+  },
+  "derivative_basis": "independent dollar exposures; boundary ties give the shared-tail subgradient",
+  "risk_budget_share": {
+    "SPY": 0.259994376383209,
+    "EFA": 0.0,
+    "EEM": 0.0,
+    "AGG": 0.4393074774457352,
+    "GLD": 0.3006981461710555,
+    "XLE": 0.0,
+    "XLK": 0.0
+  },
+  "residual_usd": -4.3655745685100555e-11,
+  "diversification_benefit_usd": 78242.47479800195
+}
