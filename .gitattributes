@@ -2,3 +2,7 @@
 *.csv -text
 *.json -text
 data/** -text
+results/** -text
+*.pdf -text
+*.pptx -text
+*.png -text
