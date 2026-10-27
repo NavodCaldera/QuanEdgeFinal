@@ -1,0 +1,27 @@
+{
+  "retrieved_at_utc": "2026-10-27T13:02:43.843637+00:00",
+  "source": "Yahoo Finance via yfinance",
+  "first": "2026-10-01",
+  "last": "2026-10-26",
+  "weight_hash": "a4698cec361f42b3f9b23598dcaba6ad09e21328a7dd894cc66c1f2a988fc897",
+  "portfolio": "A1_min_cvar",
+  "results": [
+    {
+      "method": "fhs",
+      "n": 18,
+      "breaches": 0,
+      "exact_count_probability": 0.8345137614500878,
+      "binomial_p": 1.0,
+      "label": "post-snapshot monitoring, descriptive only; no traffic light"
+    },
+    {
+      "method": "garch_evt",
+      "n": 18,
+      "breaches": 0,
+      "exact_count_probability": 0.8345137614500878,
+      "binomial_p": 1.0,
+      "label": "post-snapshot monitoring, descriptive only; no traffic light"
+    }
+  ],
+  "note": "New-download adjacent price ratios avoid cross-snapshot dividend rescaling. Frozen selection and verdict are unchanged. Conditional parameters refit at monitoring start, then every 21 days."
+}

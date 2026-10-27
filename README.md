@@ -56,6 +56,8 @@ python -m quanedge.verify results/final-20261027
 
 This read-only check verifies artifact/input/source hashes, forecast timing, allocation identities, recomputed backtests, ES reconciliation and document page counts. Source hashes normalize line endings; data hashes preserve exact bytes. Post-snapshot descriptive monitoring, when present under `monitoring/`, is separate from the frozen selection and never changes its verdict.
 
+Use release tag `final-run-final-20261027-v2` for the verified checkout, including attributes that preserve exact artifact bytes. The earlier `prereg-v1` policy freeze remains unchanged.
+
 Traditional Basel zones are used only for 250 observations at 99%, following [BIS guidance](https://www.bis.org/committees/bcbs/basel-framework/standard/mar/99/inforce/2019-12-15/published/2019-12-15). They are a monitoring comparison, not an endowment regulatory requirement.
 
 ## AI disclosure and review
