@@ -84,5 +84,5 @@ await finalizePresentation({workspaceDir:root,candidatePath:path.join(build,'can
              '--require-native-table-slide','3','--require-native-table-slide','7'],
  explicitTotalSlideCount:12,requiredNativeTableOwnerSlides:[3,7],requiredNativeChartOwnerSlides:[],
  fontPolicy:{basis:'design',families:[font]},verifyArtifactToolImport:true,
- receiptPath:path.join(build,'validation.json')});
+ receiptPath:path.join(build,path.basename(final)+'.validation.json')});
 console.log(final);
