@@ -439,3 +439,12 @@ Decision/assumptions and downstream impact:
 Dependencies/blockers and next action:
 AI assistance and actual human review:
 ```
+
+2026-10-27, DATA-001 / PORT-001 / VAL-001, implementation and preregistration:
+- Owner accepted PLAN.md section 13 policy and FHS primary / GARCH-EVT challenger in this conversation before current recommended-weight evaluation. Independent human code/investment review remains pending. Solo eligibility and deadline remain pending; cash excluded.
+- Restored required data/risk modules and tests from e94c0ae; removed development adapter and automatic placeholder allocation. Fresh Yahoo snapshot: 5,470 dates, 2005-01-03 through 2026-09-30; 242 flagged moves retained. Macro HTTP retrieval timestamps were not separately captured; source inventory labels filesystem write timestamps honestly.
+- Frozen estimator: annual sample simple-return means shrunk 50% toward their cross-asset mean; Ledoit-Wolf covariance; expected annual turnover 1.0 times NAV at 5 bp one-way (fixed 5 bp expected cost reserve). Geometric approximation is (1+net arithmetic mean)*exp(-annual variance/2)-1. Maximum-Sharpe comparison uses fixed 2% risk-free assumption; realised KPIs use aligned DTB3. No double deduction of expenses.
+- Selection: HiGHS return-maximising historical CVaR99 LP followed by CVaR minimisation within 1e-8 of optimal return. Training-only scenario hash and candidates in results/training; computed A4 budget = 3.0% NAV. Original policy/config, C1-C5 and ordered A1-A5 are frozen at prereg-v1 before current post-2016 allocation evaluation.
+- Development evidence seen before model choice remains disclosed: earlier equal-weight FHS coverage failure and GARCH-EVT results in PLAN.md phase 4. No claim of untouched historical evaluation.
+- Validation so far: 130 checks passed in the first full restored-suite run; six obsolete documentation-path checks failed and were migrated to generated evidence. New portfolio/accounting/tail/hash/verdict tests passed (8). Normal Monte Carlo now supports PSD covariance using an explicit eigen factor; singular multivariate-t density MLE remains unavailable. Final full-suite, application and artifact verification follow.
+- AI: Codex implemented restoration, integration and tests; automated checks are not human sign-off. Code and generated documents remain ready for owner review, not accepted investment judgement.

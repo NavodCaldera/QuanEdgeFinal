@@ -1,0 +1,50 @@
+{
+  "source": "Yahoo Finance via yfinance, auto_adjust=True (dividend- and split-adjusted close)",
+  "snapshot": {
+    "file": "prices_dev.csv",
+    "sha256": "76bac76cbc98b5ce62291bd6257600047cc20857943d363edd1f807f743d4d0d",
+    "rows_in_file": 5470,
+    "rows_with_missing_price": 0,
+    "rows_dropped_by_common_calendar_filter": 0,
+    "first_date": "2005-01-03",
+    "last_date": "2026-09-30",
+    "columns": [
+      "SPY",
+      "EFA",
+      "EEM",
+      "AGG",
+      "GLD",
+      "XLE",
+      "XLK"
+    ]
+  },
+  "clean_rows": 5470,
+  "clean_first_date": "2005-01-03",
+  "clean_last_date": "2026-09-30",
+  "download_metadata": {
+    "source": "Yahoo Finance via yfinance",
+    "retrieved_at_utc": "2026-10-27T07:56:54.510089+00:00",
+    "yfinance_version": "1.7.0",
+    "tickers": [
+      "SPY",
+      "EFA",
+      "EEM",
+      "AGG",
+      "GLD",
+      "XLE",
+      "XLK"
+    ],
+    "requested_start": "2005-01-01",
+    "requested_end_exclusive": "2026-10-01",
+    "auto_adjust": true,
+    "rows_downloaded": 5470
+  },
+  "refreshed_in_this_run": false,
+  "reproducibility_warning": "Adjusted prices are re-scaled after every dividend, so a later download will not match this snapshot exactly. The committed snapshot is canonical.",
+  "installed_versions": {
+    "yfinance": "1.7.0",
+    "pandas": "3.0.2",
+    "numpy": "2.4.4",
+    "statsmodels": "0.14.6"
+  }
+}

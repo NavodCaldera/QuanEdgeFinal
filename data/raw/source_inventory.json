@@ -1,0 +1,51 @@
+[
+  {
+    "file": "distributions.csv",
+    "sha256": "f96ab0114fc5c3a11fdfef7a92de0a3956015822ee3bab2b5dcb734143bf35fc",
+    "source": "Yahoo Finance",
+    "snapshot_write_time_utc": "2026-10-27T07:58:31.406174+00:00",
+    "timestamp_note": "file write time; original ingestion did not separately record HTTP retrieval timestamp"
+  },
+  {
+    "file": "fred_CPIAUCSL.csv",
+    "sha256": "5c8f525a1dbae3cbb58ad71eab03547979706fcbc077e15d3d1d10f78ca12f28",
+    "source": "FRED",
+    "snapshot_write_time_utc": "2026-10-27T07:57:10.127846+00:00",
+    "timestamp_note": "file write time; original ingestion did not separately record HTTP retrieval timestamp"
+  },
+  {
+    "file": "fred_DGS10.csv",
+    "sha256": "832561da159329caf7585adcefbff51f8c655106d4768fe58fe93388c2ef827a",
+    "source": "FRED",
+    "snapshot_write_time_utc": "2026-10-27T07:57:09.015480+00:00",
+    "timestamp_note": "file write time; original ingestion did not separately record HTTP retrieval timestamp"
+  },
+  {
+    "file": "fred_DTB3.csv",
+    "sha256": "8bad8db7dea9be5eb32ff07dd8b69c268571c649ed4d80808fcae5288cd1d143",
+    "source": "FRED",
+    "snapshot_write_time_utc": "2026-10-27T07:57:07.703942+00:00",
+    "timestamp_note": "file write time; original ingestion did not separately record HTTP retrieval timestamp"
+  },
+  {
+    "file": "fred_FEDFUNDS.csv",
+    "sha256": "d2873edc7dc829a9430e7a143e24d81ed9ffe681714cd2d99dfacc41d91fee35",
+    "source": "FRED",
+    "snapshot_write_time_utc": "2026-10-27T07:57:11.398792+00:00",
+    "timestamp_note": "file write time; original ingestion did not separately record HTTP retrieval timestamp"
+  },
+  {
+    "file": "fred_VIXCLS.csv",
+    "sha256": "7031b3c56c1043b546843cc169092acf0bd0d5727e6eec138dbb28cfc5498884",
+    "source": "FRED",
+    "snapshot_write_time_utc": "2026-10-27T07:57:12.662787+00:00",
+    "timestamp_note": "file write time; original ingestion did not separately record HTTP retrieval timestamp"
+  },
+  {
+    "file": "worldbank_usa.csv",
+    "sha256": "bdfe9b3a845bf85610ac05015f8514e8cea791bfba63e5d888efdc6a2e344e3e",
+    "source": "World Bank",
+    "snapshot_write_time_utc": "2026-10-27T07:57:25.149613+00:00",
+    "timestamp_note": "file write time; original ingestion did not separately record HTTP retrieval timestamp"
+  }
+]
