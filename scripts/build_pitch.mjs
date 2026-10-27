@@ -14,6 +14,7 @@ const run=path.join(root,'results',runId);
 const bundle=JSON.parse(await fs.readFile(path.join(run,'submission.json'),'utf8'));
 const chosen=bundle.decision.alternative || 'selected';
 const rec=bundle.portfolios[chosen];
+const capital=rec.real_capital_survival?.results || [];
 const build=path.join(root,'.cache','pitch',runId);await fs.mkdir(build,{recursive:true});
 const out=path.join(run,'documents');await fs.mkdir(out,{recursive:true});
 const font=resolvePresentationFont({fontFamily:'Arial'});
@@ -47,7 +48,7 @@ slide('Data and portfolio accounting','Seven eligible ETFs, adjusted Yahoo close
  '55 seconds. Explain adjusted closes, no dividend or expense double counting, and why weighted asset log returns are wrong. Contemporary revised macro data is not a vintage archive. Source: data/clean manifests and audits.');
 slide('Selection and alternatives','Maximise expected return within historical CVaR99\nCompare minimum CVaR, minimum variance and near-parity\nCompare 40/60, 60/40 and adapted permanent portfolio\nFreeze procedure before current post-training evaluation\nHistorical allocations remain retrospective',
  '60 seconds. Explain mean shrinkage, Ledoit-Wolf, LP objective and secondary CVaR objective. A benchmark gap does not isolate a constraint effect. See results/training/constraint_effects.json.');
-slide('Performance and the hurdle',`After-cost historical CAGR: ${pct(rec.performance?.cagr)}\nHistorical maximum drawdown: ${pct(rec.performance?.maximum_drawdown)}\nExpected geometric return: ${pct(rec.expected_geometric)}\nAnnual spending reduces NAV once\nReal-capital target uses the CPI ratio`,
+slide('Performance and the hurdle',`After-cost historical CAGR: ${pct(rec.performance?.cagr)}\nHistorical maximum drawdown: ${pct(rec.performance?.maximum_drawdown)}\nExpected geometric return: ${pct(rec.expected_geometric)}\nAnnual spending reduces NAV once\nReal-capital target uses the CPI ratio\nIllustrative 5/10-year shortfall: ${pct(capital[0]?.shortfall_probability)} / ${pct(capital[1]?.shortfall_probability)}`,
  '55 seconds. Historical performance is not expected return. Explain quarterly/drift costs versus daily constant-weight risk replay, geometric versus arithmetic means, and the spending convention.');
 const risk=slide('One-day downside risk','', '60 seconds. VaR is a threshold; ES averages tail severity. Dollar ES averages dollar losses. Explain normal, Monte Carlo and EVT differences. Confidence is 99%, value USD 10 million.');
 const csv=await fs.readFile(path.join(run,chosen,'risk.csv'),'utf8');
@@ -75,7 +76,7 @@ for(const [i,s] of p.slides.items.entries()) {
  await fs.writeFile(path.join(build,`slide-${String(i+1).padStart(2,'0')}.png`),new Uint8Array(await img.arrayBuffer()));
 }
 const python=path.join(runtime,'python/python.exe');
-const final=path.join(out,'committee_pitch.pptx');
+const final=path.join(out,process.env.QUANTEDGE_PITCH_NAME || 'committee_pitch.pptx');
 await finalizePresentation({workspaceDir:root,candidatePath:path.join(build,'candidate.pptx'),finalPath:final,
  pythonExecutable:python,integrityValidatorPath:path.join(skill,'container_tools/inspect_presentation_package_integrity.py'),
  layoutValidatorPath:path.join(skill,'container_tools/inspect_presentation_layout_geometry.py'),
