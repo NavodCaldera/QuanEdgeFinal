@@ -7,7 +7,7 @@ The risk workstream in one command:
 
 --returns takes daily asset log returns (dates in the first column, one
 column per permitted ticker) and --weights a JSON object {ticker: weight}:
-the adapters for Person 1's approved dataset and Person 2's weights.  Without
+the adapters for Data's approved dataset and Portfolio's weights.  Without
 them the run uses the TEMPORARY development cache and placeholder equal
 weights, and every output says so.
 
@@ -152,12 +152,12 @@ def summary(info, mode, run_id, r, models, table, scan, chosen, checks, inside, 
     d = diagnostics.describe(r)
     t = table.set_index(["method", "alpha"])
     last = pd.Timestamp(info["last_date"])
-    L = ["# Risk measurement summary (Person 3)", "",
+    L = ["# Risk measurement summary (Risk)", "",
          f"Run `{run_id}` ({mode} mode). Every number is read from this run's `tables/`; `manifest.json` "
          "records the inputs, settings and code version.", ""]
     if info["development"]:
         L += [f"> **Development inputs.** Data: {info['data_mode']}. Weights: {info['weights_mode']}. Every "
-              "number here will change when Person 1's approved data and Person 2's weights are used.", ""]
+              "number here will change when Data's approved data and Portfolio's weights are used.", ""]
     L += ["## Data", "",
           f"- {d['n_days']:,} trading days, {d['start']:%d %b %Y} to {d['end']:%d %b %Y}; the as-of date of "
           f"every estimate is {last:%d %b %Y}. Data: {info['data_mode']}.",
@@ -283,7 +283,7 @@ def summary(info, mode, run_id, r, models, table, scan, chosen, checks, inside, 
                                  "breaches": i99["breaches"].map(lambda b: "n/a" if pd.isna(b) else f"{b:.0f}"),
                                  "breach rate": i99["breach_pct"].map(lambda p: "n/a" if pd.isna(p) else f"{p:.2f}%"),
                                  "expected": "1.00%"}))
-    L += ["", "## Rolling out-of-sample breaches (raw counts; formal tests are Person 4's)", ""]
+    L += ["", "## Rolling out-of-sample breaches (raw counts; formal tests are Validation's)", ""]
     if bs is None:
         L.append("Not run in quick mode.")
     else:
@@ -306,7 +306,7 @@ def summary(info, mode, run_id, r, models, table, scan, chosen, checks, inside, 
 
 
 def main(argv=None):
-    ap = argparse.ArgumentParser(description="Person 3: VaR, ES and EVT for the portfolio")
+    ap = argparse.ArgumentParser(description="Risk: VaR, ES and EVT for the portfolio")
     ap.add_argument("--quick", action="store_true",
                     help="50 bootstrap resamples and no rolling forecasts; writes results/risk_quick/")
     ap.add_argument("--out", type=Path, help="output folder (default results/risk, or results/risk_quick with --quick)")

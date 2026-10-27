@@ -59,7 +59,7 @@ def generate_dataset_manifest(
         "team": "Team Ghosted",
         "competition": "SAIFA Quant Edge 1.0",
         "client": "The Serendib University Endowment Fund (USD 10 Million)",
-        "workstream": "Person 1 — Data Engineering & Reproducibility Lead",
+        "workstream": "Data — Data Engineering & Reproducibility Lead",
         "environment": {
             "python_version": sys.version,
             "platform": platform.platform(),

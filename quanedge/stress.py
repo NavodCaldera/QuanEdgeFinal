@@ -12,9 +12,13 @@ SCENARIOS={"GFC":("2007-10-09","2009-03-09"),"COVID":("2020-02-19","2020-03-23")
 def attribution(returns,weights,alpha=.99,value=1e7):
     w=np.array([weights[t] for t in returns.columns]);losses=-value*returns.to_numpy()*w
     total=losses.sum(axis=1);tw=tail_weights(total,alpha);components=tw@losses
+    marginal=tw@(-returns.to_numpy())
     standalone=np.array([tail_weights(losses[:,i],alpha)@losses[:,i] for i in range(len(w))])
     return {"source":"historical attribution","alpha":alpha,"es_usd":float(tw@total),
             "components":dict(zip(returns.columns,components.tolist())),
+            "marginal_es_usd_per_dollar":dict(zip(returns.columns,marginal.tolist())),
+            "derivative_basis":"independent dollar exposures; boundary ties give the shared-tail subgradient",
+            "risk_budget_share":dict(zip(returns.columns,(components/(tw@total)).tolist())) if tw@total>0 else None,
             "residual_usd":float(components.sum()-tw@total),
             "diversification_benefit_usd":float(standalone.sum()-tw@total)}
 

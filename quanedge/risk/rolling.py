@@ -1,5 +1,5 @@
 """
-One-day-ahead VaR/ES forecasts on a rolling window: the input to Person 4's
+One-day-ahead VaR/ES forecasts on a rolling window: the input to Validation's
 out-of-sample backtest (Kupiec, Christoffersen, Basel traffic light).
 
 No look-ahead: the forecast for day t uses only returns up to day t-1.
@@ -140,7 +140,7 @@ def breach_summary(fc: pd.DataFrame, start=None, end=None) -> pd.DataFrame:
     """
     Raw breach counts per method and level over [start, end] (the dashboard's
     backtest date range), on days with a forecast only.  Formal tests
-    (Kupiec, Christoffersen, traffic light) are Person 4's; this is only the
+    (Kupiec, Christoffersen, traffic light) are Validation's; this is only the
     count they start from.
     """
     fc = fc.loc[start:end]

@@ -1,5 +1,5 @@
 """
-Risk measurement (Person 3): VaR, Expected Shortfall and EVT for one portfolio.
+Risk measurement (Risk): VaR, Expected Shortfall and EVT for one portfolio.
 See docs/person-3/AGENTS.md for conventions and the interface contract.
 Figures live in quanedge.risk.plots (imported separately: it loads matplotlib).
 """

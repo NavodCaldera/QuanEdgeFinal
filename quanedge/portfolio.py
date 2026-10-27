@@ -165,8 +165,10 @@ def kpis(r,rf,market,benchmark):
             "recovered_at_end":bool(dd.iloc[-1]>=-1e-10),"observations":len(x)}
 
 
-def money_weighted(path,value=1e7):
-    dates=path.index;times=(dates-(dates[0]-pd.Timedelta(days=1))).days/365.25
+def money_weighted(path,value=1e7,start_date=None):
+    dates=path.index
+    origin=pd.Timestamp(start_date) if start_date is not None else dates[0]-pd.Timedelta(days=1)
+    times=(dates-origin).days/365.0
     cf=path.spending.to_numpy()*value;cf[-1]+=path.wealth.iloc[-1]*value
     def npv(rate):return float(-value+np.sum(cf/(1+rate)**times))
     try:return brentq(npv,-.95,10)

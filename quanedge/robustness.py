@@ -48,6 +48,26 @@ def additional_evidence(returns,macro,w,cfg,folder):
         models=fit_models(logs,w,methods=["evt"],evt_threshold_q=cutoff)
         t=risk_table(models,value=cfg["value"]);t["threshold_percentile"]=cutoff;thresholds.append(t)
     pd.concat(thresholds).to_csv(folder/"threshold_sensitivity.csv",index=False)
+    from .risk import conditional
+    from .risk.validation import ModelFitError
+    try:
+        filt=conditional.fit_filter(r)
+        residual=[]
+        for cutoff in [.85,.90,.95]:
+            try:
+                model=conditional.garch_evt(filt,cutoff)
+                table=risk_table({"garch_evt":model},value=cfg["value"])
+                table["residual_threshold_percentile"]=cutoff;residual.append(table)
+            except ModelFitError as err:
+                residual.append(pd.DataFrame([{"residual_threshold_percentile":cutoff,"status":str(err)}]))
+        pd.concat(residual).to_csv(folder/"residual_threshold_sensitivity.csv",index=False)
+        from statsmodels.stats.diagnostic import acorr_ljungbox,het_arch
+        tests=acorr_ljungbox(filt.z,lags=[10,20],return_df=True)
+        tests["squared_residual_p"]=acorr_ljungbox(filt.z**2,lags=[10,20],return_df=True).lb_pvalue
+        tests["arch_lm_p"]=het_arch(filt.z,nlags=10)[1]
+        tests.to_csv(folder/"conditional_residual_checks.csv")
+    except ModelFitError as err:
+        (folder/"conditional_residual_checks.txt").write_text("unavailable: "+str(err),encoding="utf-8")
     intervals=[]
     for block in [10,40]:
         ci=bootstrap_intervals(logs,w,methods=["historical","normal","evt"],reps=100,block=block,seed=cfg["seed"])

@@ -6,3 +6,5 @@ __pycache__/
 results/risk_quick/
 results/.*
 .DS_Store
+.cache/
+*.log

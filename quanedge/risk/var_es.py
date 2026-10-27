@@ -220,7 +220,9 @@ def monte_carlo(asset_r: pd.DataFrame, weights, dist: str = "normal",
         treatment = "eigen PSD factor; only floating-point negative eigenvalues set to zero"
     rng = np.random.default_rng(seed)
     sims = np.column_stack([rng.standard_normal(n_sim) for _ in range(x.shape[1])]) @ chol.T
-    params = {"n_sim": n_sim, "seed": seed, "covariance_treatment": treatment}
+    params = {"n_sim": n_sim, "seed": seed, "covariance_treatment": treatment,
+              "asset_order": list(asset_r.columns), "fitted_daily_mean": x.mean(axis=0).tolist(),
+              "fitted_daily_covariance": covariance.tolist()}
     if dist == "t":
         nu = mvt_nu(x)
         sims *= np.sqrt((nu - 2) / rng.chisquare(nu, (n_sim, 1)))   # one shared shock per scenario: joint tails

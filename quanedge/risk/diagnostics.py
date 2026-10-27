@@ -95,7 +95,7 @@ def in_sample_breaches(r, models: dict, alphas) -> pd.DataFrame:
     """
     How often the full-sample VaR of each unconditional model was exceeded
     inside the same sample.  A sanity check of fit, NOT a backtest (the
-    out-of-sample tests are Person 4's, on rolling forecasts).  A model with
+    out-of-sample tests are Validation's, on rolling forecasts).  A model with
     no VaR gets blanks, not zero breaches.
     """
     losses = -np.asarray(r, dtype=float)

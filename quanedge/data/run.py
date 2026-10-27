@@ -1,5 +1,5 @@
 """
-Person 1 — Data engineering and reproducibility pipeline runner.
+Data — Data engineering and reproducibility pipeline runner.
 
 Execute with:
     python -m quanedge.data.run              # Full pipeline: clean datasets, anomaly audit, ADF stationarity, manifest
@@ -75,7 +75,7 @@ def write_price_provenance(snapshot_audit: dict, prices: pd.DataFrame, refreshed
         "clean_last_date": prices.index.max().strftime("%Y-%m-%d"),
         "download_metadata": meta if meta else {
             "retrieved_at_utc": "unknown",
-            "note": ("The snapshot pre-dates this pipeline: it was first committed to git in the Person 3 "
+            "note": ("The snapshot pre-dates this pipeline: it was first committed to git in the Risk "
                      "foundation commit (6d18d37, 2026-10-26) without retrieval metadata. Its date range, "
                      "columns and SHA-256 are recorded here; the download time and yfinance version are not."),
         },
@@ -88,20 +88,20 @@ def write_price_provenance(snapshot_audit: dict, prices: pd.DataFrame, refreshed
 
 
 def run_pipeline(refresh: bool = False) -> None:
-    """Run end-to-end Person 1 data engineering workflow."""
+    """Run end-to-end Data data engineering workflow."""
     start_time = time.time()
     if refresh:
         print("!" * 78)
         print("REFRESH REQUESTED: data will be re-downloaded from Yahoo Finance, FRED and the World Bank.")
         print("Yahoo's adjusted history is re-scaled after every dividend, so prices, returns, the SHA-256")
         print("manifest and every figure in the report and app may change. The committed snapshot is the")
-        print("canonical dataset; refresh only if the whole team agrees to re-run and re-publish everything.")
+        print("canonical dataset; refresh only if the owner agrees to re-run and re-publish everything.")
         print("!" * 78)
     CLEAN_DATA_DIR.mkdir(parents=True, exist_ok=True)
     RESULTS_DATA_DIR.mkdir(parents=True, exist_ok=True)
 
     print("=" * 78)
-    print("QuanEdge Final (Team Ghosted) — Person 1 Data Engineering Pipeline")
+    print("QuanEdge Final (Team Ghosted) — Data Data Engineering Pipeline")
     print(f"Timestamp (UTC): {datetime.now(timezone.utc):%Y-%m-%d %H:%M:%S}")
     print(f"Investable Universe: {', '.join(TICKERS)}")
     print("=" * 78)
@@ -200,7 +200,7 @@ def run_pipeline(refresh: bool = False) -> None:
     stationarity_df.to_csv(stat_file, index=False, lineterminator="\n")
 
     with open(summary_md_file, "w", encoding="utf-8") as f:
-        f.write("# Person 1 Data Engineering & Provenance Report\n\n")
+        f.write("# Data Data Engineering & Provenance Report\n\n")
         f.write(f"Generated on {datetime.now(timezone.utc):%Y-%m-%d %H:%M:%S} UTC by `python -m quanedge.data.run`.\n\n")
         f.write("## Overview & Compliance\n")
         f.write(f"- **Investable Universe:** {', '.join(TICKERS)} (7 permitted ETFs, strict rubric compliance).\n")
@@ -245,12 +245,12 @@ def run_pipeline(refresh: bool = False) -> None:
 
     elapsed = time.time() - start_time
     print("\n" + "=" * 78)
-    print(f"PERSON 1 PIPELINE COMPLETED SUCCESSFULLY in {elapsed:.2f}s")
+    print(f"DATA PIPELINE COMPLETED SUCCESSFULLY in {elapsed:.2f}s")
     print("=" * 78)
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Run QuanEdge Person 1 data engineering pipeline.")
+    parser = argparse.ArgumentParser(description="Run QuanEdge Data data engineering pipeline.")
     parser.add_argument("--refresh", action="store_true", help="Force redownload of external data sources.")
     parser.add_argument("--check-only", action="store_true", help="Verify SHA-256 manifest integrity without writing.")
     args = parser.parse_args()

@@ -1,5 +1,5 @@
 """
-Constants shared by every workstream. Change them only by team agreement:
+Constants shared by every workstream. Change them only by owner approval:
 the app, report and tear sheet must quote one consistent set of numbers.
 """
 from pathlib import Path

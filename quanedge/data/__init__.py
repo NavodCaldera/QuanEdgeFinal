@@ -1,5 +1,5 @@
 """
-QuanEdge Data Engineering Package (Person 1 Workstream).
+QuanEdge Data Engineering Package (Data Workstream).
 
 Provides the common clean, reproducible dataset, macroeconomic series,
 provenance tracking, and statistical validation for Team Ghosted's endowment analysis.

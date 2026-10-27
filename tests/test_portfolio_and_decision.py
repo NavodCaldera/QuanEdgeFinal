@@ -87,3 +87,21 @@ def test_result_states():
     assert result_state({"artifact_key":"a"},{"a":{"failed":True}})=="FAILED"
     assert result_state({"cheap":True},{})=="LIVE"
     assert result_state({"input_error":True},{})=="INPUT_ERROR"
+
+
+def test_money_weighted_cashflows_constant_return():
+    from quanedge.portfolio import money_weighted
+    start=pd.Timestamp("2020-01-01")
+    dates=[start+pd.Timedelta(days=365),start+pd.Timedelta(days=730)]
+    nav1=1.1*.96;nav2=nav1*1.1*.96
+    p=pd.DataFrame({"spending":[1.1*.04,nav1*1.1*.04],"wealth":[nav1,nav2]},index=dates)
+    assert money_weighted(p,start_date=start)==pytest.approx(.1)
+    p=pd.DataFrame({"spending":[0.,0.],"wealth":[1.1,1.21]},index=dates)
+    assert money_weighted(p,start_date=start)==pytest.approx(.1)
+
+
+def test_all_adjustment_branches_have_order():
+    good={f"C{i}":True for i in range(1,6)};bad=dict(good,C3=False)
+    for winner in range(1,6):
+        alternatives=[(f"A{j}",good if j==winner else bad) for j in range(1,6)]
+        assert verdict(bad,alternatives)["alternative"]==f"A{winner}"

@@ -6,7 +6,7 @@ import pandas as pd
 import streamlit as st
 from quanedge.config import ROOT,TICKERS
 from quanedge.portfolio import canonical_weights,weight_hash,replay,kpis
-from quanedge.results import artifact_key,result_state
+from quanedge.results import artifact_key,result_state,digest
 from quanedge.backtest import assess
 from quanedge.risk import fit_models,risk_table,load_forecasts
 from quanedge.stress import stress_tests,hypothetical,attribution
@@ -36,13 +36,18 @@ with st.expander("Frozen recommendation",expanded=True):
     st.write(f"Run {run} · weights {rec.get('weight_hash','unavailable')[:8]}")
     st.write(f"Verdict: {bundle['decision']['outcome']} — {bundle['decision']['action']}")
     if rec.get("weights"):
-        st.dataframe(pd.Series(rec["weights"],name="Allocation").mul(100).rename("Allocation %"))
+        st.write(" · ".join(f"{t} {v:.2%}" for t,v in rec["weights"].items() if v))
         primary=next((r for r in rec.get("validation",[]) if r["method"]==rec.get("model_used") and r["alpha"]==.99),{})
         st.write(f"Frozen traffic light: {primary.get('zone','unavailable')}")
     st.caption("The algorithm's proposal requires the owner's independent investment review.")
+    if bundle["decision"].get("alternative"):
+        adjusted=bundle["decision"]["alternative"]
+        st.write(f"Proposed adjustment: {adjusted}")
+        st.write(" · ".join(f"{t} {v:.2%}" for t,v in portfolios[adjusted]["weights"].items() if v))
 choices=[name for name,p in portfolios.items() if p.get("weights")]
 if not choices:st.error("No feasible allocation available.");st.stop()
-name=st.sidebar.selectbox("Portfolio",choices)
+default=bundle["decision"].get("alternative","selected")
+name=st.sidebar.selectbox("Portfolio",choices,index=choices.index(default) if default in choices else 0)
 mode=st.sidebar.radio("Mode",["Precomputed","Explore"])
 alpha=st.sidebar.selectbox("Confidence",[.90,.95,.99],index=2,format_func=lambda a:f"{a:.0%}")
 method=st.sidebar.selectbox("VaR methodology",["historical","normal","student_t","mc_normal","mc_t","evt","fhs","garch_evt"],index=6)
@@ -57,7 +62,8 @@ if mode=="Explore":
         weights={t:v/sum(weights.values()) for t,v in weights.items()}
 if not valid:st.stop()
 wh=weight_hash(weights)
-key=artifact_key(wh,method,meta["data_hash"],meta["config_hash"],meta["code_rev"])
+active_config_hash=digest(original["policy"]) if "policy" in original else meta["config_hash"]
+key=artifact_key(wh,method,meta["data_hash"],active_config_hash,meta["code_rev"])
 state=result_state({"artifact_key":key},index)
 matched=state=="MATCHED"
 matched_name=index[key]["portfolio"] if matched else None
@@ -74,11 +80,18 @@ if not matched:
 def inputs(data_hash):
     prices=pd.read_csv(ROOT/"data/clean/prices_clean.csv",index_col=0,parse_dates=True)
     import hashlib
-    if hashlib.sha256((ROOT/"data/clean/prices_clean.csv").read_bytes()).hexdigest()!=data_hash:
+    if hashlib.sha256((ROOT/"data/clean/prices_clean.csv").read_bytes()).hexdigest()!=meta.get("price_hash",data_hash):
         raise ValueError("Current data differs from loaded run; restore the run's snapshot")
     return prices,prices.pct_change().dropna()
 
 
+import hashlib
+for source,expected in {**meta.get("input_hashes",{}),**meta.get("source_file_hashes",{})}.items():
+    path=ROOT/source
+    content=path.read_bytes() if path.exists() else b""
+    if source in meta.get("source_file_hashes",{}):content=content.replace(b"\r\n",b"\n")
+    if not path.exists() or hashlib.sha256(content).hexdigest()!=expected:
+        st.error(f"Run input changed: {source}. Restore frozen inputs or produce a new run.");st.stop()
 prices,returns=inputs(meta["data_hash"])
 if page=="Recommendation":
     if matched:st.write(bundle["decision"] if matched_name=="selected" else {"checks":result["checks"],"note":"Candidate checks; frozen decision concerns W_rec."})
@@ -87,6 +100,10 @@ if page=="Recommendation":
         worst=max((x.get("loss_usd",0) for x in result["stress"]),default=0)
         st.write(f"How bad: largest specified scenario loss ${worst:,.0f}; losses outside these scenarios can be worse.")
     st.write("How confident: inspect forecast coverage, exception tests, model failures and uncertainty. Passing tests does not guarantee protection.")
+    if matched and result.get("real_capital_survival"):
+        st.write("Illustrative spending sustainability")
+        st.dataframe(pd.DataFrame(result["real_capital_survival"]["results"]),hide_index=True)
+        st.warning("These resampled-history shortfall probabilities do not gate the frozen verdict. They are a material spending-sustainability concern for owner review, rather than calibrated forecasts.")
 elif page=="Portfolio":
     st.bar_chart(pd.Series(weights,name="Weight %")*100)
     p=replay(returns,weights,cfg["cost"],cfg["drift"])
@@ -94,6 +111,11 @@ elif page=="Portfolio":
     wealth=pd.concat([pd.Series([1.],index=[p.index[0]-pd.Timedelta(days=1)]),p.wealth])
     st.line_chart((wealth/wealth.cummax()-1).rename("Drawdown"))
     if matched:st.json(result["performance"])
+    else:
+        macro=pd.read_csv(ROOT/"data/clean/macro_clean.csv",index_col=0,parse_dates=True)
+        benchmark=replay(returns,canonical_weights({"SPY":.4,"AGG":.6}),cfg["cost"],cfg["drift"])["return"]
+        st.json(kpis(p["return"],macro.rf_daily_effective,returns.SPY,benchmark))
+        st.caption("Computed in app, not part of frozen run.")
     st.caption("Retrospective portfolio evaluation; quarterly or 5-point drift rebalancing, 5 bp one-way costs. Chart excludes spending.")
 elif page=="Risk":
     if matched:
@@ -102,6 +124,12 @@ elif page=="Risk":
         table=risk_table(fit_models(np.log1p(returns),weights,methods=["historical","normal","student_t","mc_normal","mc_t"],n_sim=20000,seed=cfg["seed"]),value=cfg["value"])
         st.caption("Computed in app, not part of frozen run. EVT/conditional models and uncertainty require precomputation.")
     selected=table.loc[(table.alpha==alpha)&table.method.isin([method,"evt"])]
+    chosen_row=selected.loc[selected.method==method]
+    evt_row=selected.loc[selected.method=="evt"]
+    for column,label,frame,field in zip(st.columns(3),[f"VaR · {method}",f"ES · {method}","EVT VaR"],
+                                       [chosen_row,chosen_row,evt_row],["var_usd","es_usd","var_usd"]):
+        value=frame.iloc[0][field] if len(frame) else np.nan
+        column.metric(label,f"${value:,.0f}" if np.isfinite(value) else "Unavailable")
     st.dataframe(selected[["method","alpha","var_pct","es_pct","var_usd","es_usd","basis","status"]],hide_index=True)
     st.caption("One trading day. Percent columns are percentage points; dollar ES averages dollar tail losses.")
     uncertainty=folder/(matched_name or "")/"uncertainty.csv"
@@ -112,7 +140,9 @@ elif page=="Backtesting":
         fc=load_forecasts(folder/matched_name/"forecasts.csv")
         start,end=dates if len(dates)==2 else (None,None)
         assessment=assess(fc,wh,method,alpha,start,end)
-        st.write("Traffic light: "+assessment.get("zone","unavailable"));st.json(assessment)
+        zone=assessment.get("zone","unavailable")
+        {"green":st.success,"yellow":st.warning,"red":st.error}.get(zone,st.info)("Traffic light: "+zone)
+        st.json(assessment)
         col=f"var_{method}_{alpha*100:g}"
         if col in fc:
             show=fc.loc[start:end];st.line_chart(pd.DataFrame({"Realised log loss":-show["return"],"VaR log loss":show[col]}))
@@ -120,6 +150,13 @@ elif page=="Backtesting":
 elif page=="Stress & contributions":
     stresses=result["stress"] if matched else stress_tests(prices,weights,cfg["value"])+[hypothetical(returns.loc[:cfg["training_end"]],weights,cfg["value"])]
     st.dataframe(pd.DataFrame([{k:v for k,v in s.items() if not isinstance(v,dict)} for s in stresses]),hide_index=True)
+    for scenario in stresses:
+        if scenario.get("contributions_usd"):
+            with st.expander(scenario["scenario"]+" asset impacts"):
+                impacts=scenario["contributions_usd"]
+                st.dataframe(pd.Series(impacts,name="USD loss contribution"))
+                st.write("Largest weighted damage contributor: "+max(impacts,key=impacts.get))
+                if scenario.get("shocks"):st.json(scenario["shocks"])
     att=attribution(returns,weights,alpha,cfg["value"])
     st.bar_chart(pd.Series(att["components"],name="Component ES USD"));st.json(att)
     st.caption("Historical attribution using shared portfolio tail weights. Negative contributions are retained. Attribution unavailable for portfolio-only FHS.")

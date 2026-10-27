@@ -9,7 +9,7 @@ Use Python 3.12 from the repository root. An isolated environment avoids conflic
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
-python -m pip install -r requirements.txt
+python -m pip install -r requirements.lock.txt
 python -m quanedge.data.run --check-only
 python -m pytest -q
 python -m streamlit run app.py
@@ -27,6 +27,8 @@ python -m quanedge.pipeline --config config/final.yaml
 ```
 
 The data pipeline rebuilds offline from frozen raw/cache snapshots. `--refresh` deliberately changes inputs; never use it just to edit documents. The final pipeline requires the policy config to match the local `prereg-v1` tag and refuses prices after or short of 2026-09-30. The training command uses only 2005-2016 returns. A new final run is staged before publication to a new local folder; failed runs do not replace completed evidence. Final analysis may take several minutes because every distinct allocation receives its own forecasts.
+
+`requirements.txt` lists direct dependencies; `requirements.lock.txt` pins the tested clean-environment dependency set. Editable pitch contents and speaker notes are included with each delivered deck. Regenerating the PPTX uses `scripts/build_pitch.mjs` and the Codex bundled Artifact Tool runtime, configured with `QUANTEDGE_RUNTIME` and `QUANTEDGE_PRESENTATION_SKILL`; this is separate from the portable Python analytics/app workflow.
 
 ## Structure and evidence
 

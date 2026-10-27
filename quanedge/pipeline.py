@@ -234,10 +234,12 @@ def run(cfg_path,stage="final",run_id=None):
             index[key]={"portfolio":name,"path":name,"weight_hash":result["weight_hash"]}
     write_json(out/"index.json",index)
     write_json(out/"submission.json",{"metadata":meta,"policy":cfg,"portfolios":allocations,"decision":decision,"A4_budget":a4})
+    from .evidence import complete,seal
+    complete(out)
     from .reporting import generate
     generate(out)
-    meta["files"]={str(p.relative_to(out)):hashlib.sha256(p.read_bytes()).hexdigest() for p in out.rglob("*") if p.is_file() and p.name!="manifest.json"}
-    write_json(out/"manifest.json",meta)
+    meta["files"]={p.relative_to(out).as_posix():hashlib.sha256(p.read_bytes()).hexdigest() for p in out.rglob("*") if p.is_file() and p.name!="manifest.json"}
+    seal(out)
     out.rename(final)
     (ROOT/"results/latest.txt").write_text(run_id,encoding="utf-8")
     print(f"Completed {final}: {decision['outcome']}",flush=True)

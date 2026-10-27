@@ -37,7 +37,7 @@ BOOT_BLOCK = 20                       # ~1 trading month: keeps volatility clust
 BOOT_N_SIM = 20_000                   # Monte Carlo scenarios inside each bootstrap resample
 CI_LEVEL = 0.95
 
-# ---------------- Rolling one-day-ahead forecasts (input to Person 4's backtest) ----------------
+# ---------------- Rolling one-day-ahead forecasts (input to Validation's backtest) ----------------
 ROLL_WINDOW = 750                     # ~3 years: first forecast 27 Dec 2007, so the GFC is out-of-sample
 ROLL_REFIT = 21                       # refit optimiser-based models monthly; GARCH volatility updates daily
 ROLL_MIN_WINDOW = 250                 # shortest rolling window accepted (GARCH needs about a year)

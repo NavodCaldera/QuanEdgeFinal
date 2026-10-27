@@ -1,3 +1,4 @@
 # Data files are hashed in data/clean/data_manifest.json: never convert their line endings.
 *.csv -text
 *.json -text
+data/** -text
