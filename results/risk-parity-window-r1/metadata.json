@@ -1,0 +1,45 @@
+{
+  "task": "PORT-015",
+  "source": "data/clean/prices_clean.csv",
+  "source_sha256": "76bac76cbc98b5ce62291bd6257600047cc20857943d363edd1f807f743d4d0d",
+  "windows": {
+    "All history (expanding)": "None",
+    "10 years": "2520",
+    "5 years": "1260",
+    "3 years": "756",
+    "1 year": "252",
+    "EWMA half-life 1y": "ewma"
+  },
+  "solver_check": {
+    "data": "2007 only, Ledoit-Wolf",
+    "convex": {
+      "weights": {
+        "SPY": 0.13003579324581732,
+        "XLE": 0.07269614511802058,
+        "AGG": 0.6857186786992491,
+        "GLD": 0.11154938293691306
+      },
+      "risk_shares": {
+        "SPY": 0.24999999997114788,
+        "XLE": 0.25000000006450757,
+        "AGG": 0.24999999994449748,
+        "GLD": 0.25000000001984696
+      }
+    },
+    "squared_gap": {
+      "weights": {
+        "SPY": 0.38931554051128775,
+        "XLE": 0.2299713852950997,
+        "AGG": 5.470415081985353e-17,
+        "GLD": 0.38071307419361244
+      },
+      "risk_shares": {
+        "SPY": 0.3333333398693648,
+        "XLE": 0.3333333274346679,
+        "AGG": -3.963441161901142e-18,
+        "GLD": 0.3333333326959673
+      }
+    }
+  },
+  "label": "retrospective portfolio evaluation; walk-forward weights use only earlier data"
+}

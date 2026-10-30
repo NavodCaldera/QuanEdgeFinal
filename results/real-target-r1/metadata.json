@@ -1,0 +1,21 @@
+{
+  "task": "PORT-016",
+  "inflation_assumption": 0.0364,
+  "nominal_for_4pct_real": 0.07785599999999993,
+  "break_even_real_with_4pct_start_of_year_draw": 0.04166666666666674,
+  "selections": {
+    "frozen estimator": {
+      "status": "ok",
+      "reason": null
+    },
+    "raw means": {
+      "status": "ok",
+      "reason": null
+    }
+  },
+  "sources_sha256": {
+    "data/clean/prices_clean.csv": "76bac76cbc98b5ce62291bd6257600047cc20857943d363edd1f807f743d4d0d",
+    "config/final.yaml": "be0bbd5d489eca3fafef2e8f1dce5747919ade218510c257b9d381df1c58e22e"
+  },
+  "label": "retrospective portfolio evaluation"
+}
