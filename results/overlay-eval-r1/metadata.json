@@ -1,0 +1,25 @@
+{
+  "task": "PORT-005",
+  "label": "Mandate-change candidate evaluated after preregistration; checks follow the frozen criteria but the strategy was designed after the data were seen.",
+  "created": "2026-10-30T14:45:12+00:00",
+  "data_hash": "76bac76cbc98b5ce62291bd6257600047cc20857943d363edd1f807f743d4d0d",
+  "config_hash": "c0bc0983242a703d50b9a9bb5c2ad7227d60ac6574c55da29eb6a4c6c9ef9d3d",
+  "overlay": {
+    "type": "ewma_volatility_target",
+    "ewma_lambda": 0.94,
+    "review": "W",
+    "min_equity_change": 0.05,
+    "min_history": 252,
+    "scale": "min(1, expanding vol / EWMA vol)",
+    "freed_weight": "AGG then GLD within caps"
+  },
+  "strategy_hash": "9d9651041ffc6374eeb2813fa4c094e8ef52646cd18ccf1d294d8cb4779c0b16",
+  "departures_from_frozen_evaluation": [
+    "risk forecasts use the overlay's realised daily returns after costs, not a fixed-weight replay",
+    "C2 requires both the base weights' estimation-sample ES99 and the overlay path's realised ES99 within budget",
+    "C3 subtracts the overlay's realised historical log-return drag from the frozen base expected geometric return",
+    "C5 uses the overlay path from each scenario start close, with rebalancing and costs, not buy-and-hold",
+    "risk table and attribution are for the end-of-snapshot holdings",
+    "real-capital shortfall bootstraps the strategy's monthly returns as one asset"
+  ]
+}

@@ -1,0 +1,218 @@
+[
+  {
+    "constraint": "es_budget",
+    "from": 0.025,
+    "to": 0.02,
+    "status": "ok",
+    "baseline": {
+      "status": "ok",
+      "weights": {
+        "SPY": 0.0,
+        "EFA": 0.0,
+        "EEM": 0.0,
+        "AGG": 0.8672,
+        "GLD": 0.060714,
+        "XLE": 0.0,
+        "XLK": 0.072086
+      },
+      "weight_hash": "7d8b34477700c0a282a22a97611d4c5898bb9a1fda44cb301dfa7a5f17a84891",
+      "expected_arithmetic": 0.06922077095339009,
+      "expected_geometric": 0.06789078486685511,
+      "expected_real": 0.030384778914371857,
+      "nominal_target": 0.06749200000000011,
+      "target_binding": false,
+      "volatility": 0.04989304112111967,
+      "es99": 0.011799988537749842,
+      "duals": [],
+      "scenario_hash": "8eb36642b20f4e8317b77c03bcfe1ad8b60c681b5a3e2f1a05cf6bedd49f9e37"
+    },
+    "relaxed": {
+      "status": "ok",
+      "weights": {
+        "SPY": 0.0,
+        "EFA": 0.0,
+        "EEM": 0.0,
+        "AGG": 0.8672,
+        "GLD": 0.060714,
+        "XLE": 0.0,
+        "XLK": 0.072086
+      },
+      "weight_hash": "7d8b34477700c0a282a22a97611d4c5898bb9a1fda44cb301dfa7a5f17a84891",
+      "expected_arithmetic": 0.06922077095339009,
+      "expected_geometric": 0.06789078486685511,
+      "expected_real": 0.030384778914371857,
+      "nominal_target": 0.06749200000000011,
+      "target_binding": false,
+      "volatility": 0.04989304112111967,
+      "es99": 0.011799988537749842,
+      "duals": [],
+      "scenario_hash": "8eb36642b20f4e8317b77c03bcfe1ad8b60c681b5a3e2f1a05cf6bedd49f9e37"
+    },
+    "label": "in-sample, estimator-dependent controlled re-solve",
+    "objective_change": 0.0,
+    "es99_change": 0.0,
+    "same_scenarios": true
+  },
+  {
+    "constraint": "es_budget",
+    "from": 0.025,
+    "to": 0.03,
+    "status": "ok",
+    "baseline": {
+      "status": "ok",
+      "weights": {
+        "SPY": 0.0,
+        "EFA": 0.0,
+        "EEM": 0.0,
+        "AGG": 0.8672,
+        "GLD": 0.060714,
+        "XLE": 0.0,
+        "XLK": 0.072086
+      },
+      "weight_hash": "7d8b34477700c0a282a22a97611d4c5898bb9a1fda44cb301dfa7a5f17a84891",
+      "expected_arithmetic": 0.06922077095339009,
+      "expected_geometric": 0.06789078486685511,
+      "expected_real": 0.030384778914371857,
+      "nominal_target": 0.06749200000000011,
+      "target_binding": false,
+      "volatility": 0.04989304112111967,
+      "es99": 0.011799988537749842,
+      "duals": [],
+      "scenario_hash": "8eb36642b20f4e8317b77c03bcfe1ad8b60c681b5a3e2f1a05cf6bedd49f9e37"
+    },
+    "relaxed": {
+      "status": "ok",
+      "weights": {
+        "SPY": 0.0,
+        "EFA": 0.0,
+        "EEM": 0.0,
+        "AGG": 0.8672,
+        "GLD": 0.060714,
+        "XLE": 0.0,
+        "XLK": 0.072086
+      },
+      "weight_hash": "7d8b34477700c0a282a22a97611d4c5898bb9a1fda44cb301dfa7a5f17a84891",
+      "expected_arithmetic": 0.06922077095339009,
+      "expected_geometric": 0.06789078486685511,
+      "expected_real": 0.030384778914371857,
+      "nominal_target": 0.06749200000000011,
+      "target_binding": false,
+      "volatility": 0.04989304112111967,
+      "es99": 0.011799988537749842,
+      "duals": [],
+      "scenario_hash": "8eb36642b20f4e8317b77c03bcfe1ad8b60c681b5a3e2f1a05cf6bedd49f9e37"
+    },
+    "label": "in-sample, estimator-dependent controlled re-solve",
+    "objective_change": 0.0,
+    "es99_change": 0.0,
+    "same_scenarios": true
+  },
+  {
+    "constraint": "real_return_target",
+    "from": 0.03,
+    "to": 0.02,
+    "status": "ok",
+    "baseline": {
+      "status": "ok",
+      "weights": {
+        "SPY": 0.0,
+        "EFA": 0.0,
+        "EEM": 0.0,
+        "AGG": 0.8672,
+        "GLD": 0.060714,
+        "XLE": 0.0,
+        "XLK": 0.072086
+      },
+      "weight_hash": "7d8b34477700c0a282a22a97611d4c5898bb9a1fda44cb301dfa7a5f17a84891",
+      "expected_arithmetic": 0.06922077095339009,
+      "expected_geometric": 0.06789078486685511,
+      "expected_real": 0.030384778914371857,
+      "nominal_target": 0.06749200000000011,
+      "target_binding": false,
+      "volatility": 0.04989304112111967,
+      "es99": 0.011799988537749842,
+      "duals": [],
+      "scenario_hash": "8eb36642b20f4e8317b77c03bcfe1ad8b60c681b5a3e2f1a05cf6bedd49f9e37"
+    },
+    "relaxed": {
+      "status": "ok",
+      "weights": {
+        "SPY": 0.0,
+        "EFA": 0.0,
+        "EEM": 0.0,
+        "AGG": 0.8672,
+        "GLD": 0.060714,
+        "XLE": 0.0,
+        "XLK": 0.072086
+      },
+      "weight_hash": "7d8b34477700c0a282a22a97611d4c5898bb9a1fda44cb301dfa7a5f17a84891",
+      "expected_arithmetic": 0.06922077095339009,
+      "expected_geometric": 0.06789078486685511,
+      "expected_real": 0.030384778914371857,
+      "nominal_target": 0.05712800000000007,
+      "target_binding": false,
+      "volatility": 0.04989304112111967,
+      "es99": 0.011799988537749842,
+      "duals": [],
+      "scenario_hash": "8eb36642b20f4e8317b77c03bcfe1ad8b60c681b5a3e2f1a05cf6bedd49f9e37"
+    },
+    "label": "in-sample, estimator-dependent controlled re-solve",
+    "objective_change": 0.0,
+    "es99_change": 0.0,
+    "same_scenarios": true
+  },
+  {
+    "constraint": "real_return_target",
+    "from": 0.03,
+    "to": 0.01,
+    "status": "ok",
+    "baseline": {
+      "status": "ok",
+      "weights": {
+        "SPY": 0.0,
+        "EFA": 0.0,
+        "EEM": 0.0,
+        "AGG": 0.8672,
+        "GLD": 0.060714,
+        "XLE": 0.0,
+        "XLK": 0.072086
+      },
+      "weight_hash": "7d8b34477700c0a282a22a97611d4c5898bb9a1fda44cb301dfa7a5f17a84891",
+      "expected_arithmetic": 0.06922077095339009,
+      "expected_geometric": 0.06789078486685511,
+      "expected_real": 0.030384778914371857,
+      "nominal_target": 0.06749200000000011,
+      "target_binding": false,
+      "volatility": 0.04989304112111967,
+      "es99": 0.011799988537749842,
+      "duals": [],
+      "scenario_hash": "8eb36642b20f4e8317b77c03bcfe1ad8b60c681b5a3e2f1a05cf6bedd49f9e37"
+    },
+    "relaxed": {
+      "status": "ok",
+      "weights": {
+        "SPY": 0.0,
+        "EFA": 0.0,
+        "EEM": 0.0,
+        "AGG": 0.8672,
+        "GLD": 0.060714,
+        "XLE": 0.0,
+        "XLK": 0.072086
+      },
+      "weight_hash": "7d8b34477700c0a282a22a97611d4c5898bb9a1fda44cb301dfa7a5f17a84891",
+      "expected_arithmetic": 0.06922077095339009,
+      "expected_geometric": 0.06789078486685511,
+      "expected_real": 0.030384778914371857,
+      "nominal_target": 0.04676400000000003,
+      "target_binding": false,
+      "volatility": 0.04989304112111967,
+      "es99": 0.011799988537749842,
+      "duals": [],
+      "scenario_hash": "8eb36642b20f4e8317b77c03bcfe1ad8b60c681b5a3e2f1a05cf6bedd49f9e37"
+    },
+    "label": "in-sample, estimator-dependent controlled re-solve",
+    "objective_change": 0.0,
+    "es99_change": 0.0,
+    "same_scenarios": true
+  }
+]

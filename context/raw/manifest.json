@@ -1,0 +1,59 @@
+{
+  "label": "Standalone historical context, added after preregistration; not part of the frozen analytical run.",
+  "source": "Yahoo Finance via yfinance",
+  "retrieved_at_utc": "2026-10-29T17:18:47.097387+00:00",
+  "requested_start": "1990-01-01",
+  "requested_end_exclusive": "2026-10-01",
+  "cap_inclusive": "2026-09-30",
+  "adjustment": "auto_adjust=True: Close adjusted for splits and distributions (frozen-pipeline convention)",
+  "missing_values": "NaN before each ETF's first price and on dates it did not trade; never filled",
+  "tickers": [
+    "SPY",
+    "EFA",
+    "EEM",
+    "AGG",
+    "GLD",
+    "XLE",
+    "XLK"
+  ],
+  "rows": 8475,
+  "actual_dates": {
+    "SPY": [
+      "1993-01-29",
+      "2026-09-30"
+    ],
+    "EFA": [
+      "2001-08-27",
+      "2026-09-30"
+    ],
+    "EEM": [
+      "2003-04-14",
+      "2026-09-30"
+    ],
+    "AGG": [
+      "2003-09-29",
+      "2026-09-30"
+    ],
+    "GLD": [
+      "2004-11-18",
+      "2026-09-30"
+    ],
+    "XLE": [
+      "1998-12-22",
+      "2026-09-30"
+    ],
+    "XLK": [
+      "1998-12-22",
+      "2026-09-30"
+    ]
+  },
+  "versions": {
+    "python": "3.12.9",
+    "yfinance": "1.7.0",
+    "pandas": "3.0.2",
+    "numpy": "2.4.4"
+  },
+  "files": {
+    "prices_full_history.csv": "362bff5c9f7b255c0b2b9df945279f4562e52867fc2c51f7a2b52bfbb2667cfc"
+  }
+}

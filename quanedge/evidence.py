@@ -5,7 +5,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from .config import ROOT,TICKERS
-from .portfolio import replay,kpis,money_weighted,canonical_weights,estimates
+from .portfolio import replay,kpis,money_weighted,canonical_weights,estimates,return_check,spending_replay,real_return
 from .results import digest,artifact_key
 from .risk import load_forecasts,save_forecasts
 
@@ -48,8 +48,8 @@ def complete(run):
             arithmetic=float(v@mu-result["policy"].get("expected_annual_turnover",1)*cfg["cost"])
             result["expected_arithmetic"]=arithmetic
             result["expected_geometric"]=float(np.expm1(np.log1p(arithmetic)-variance/2))
-            from .portfolio import hurdle
-            result["checks"]["C3"]=bool(result["expected_geometric"]>=hurdle(cfg["inflation"],cfg["spending"]))
+            result["checks"]["C3"]=return_check(result["expected_geometric"],result["policy"])
+        if "real_return_floor" in cfg:result["expected_real"]=real_return(result["expected_geometric"],cfg["inflation"])
         result["volatility"]=float(np.sqrt(variance))
         result["performance"]["distribution_yield"]=result["distribution_yield"]
         rc=v*(cov@v)/variance
@@ -61,12 +61,16 @@ def complete(run):
         result["performance"]["money_weighted_return"]=money_weighted(full_spending,start_date=prices.index[0])
         period=path.loc[cfg["evaluation_start"]:]
         result["retrospective_2017_onward"]=kpis(period["return"],macro.rf_daily_effective,returns.SPY,bench)
-        spending=replay(returns.loc[cfg["evaluation_start"]:],w,cfg["cost"],cfg["drift"],result["policy"]["spending"])
+        spending=spending_replay(returns.loc[cfg["evaluation_start"]:],w,result["policy"])
         origin=prices.loc[prices.index<spending.index[0]].index[-1]
         result["retrospective_2017_onward"]["money_weighted_return"]=money_weighted(spending,start_date=origin)
         cpi=macro.CPIAUCSL.loc[period.index].dropna();inflation=(cpi.iloc[-1]/cpi.iloc[0])**(365.25/(cpi.index[-1]-cpi.index[0]).days)-1
-        from .portfolio import hurdle
-        result["retrospective_2017_onward"]["realised_inflation_hurdle"]=hurdle(float(inflation),result["policy"]["spending"])
+        if "real_return_floor" in cfg:
+            result["retrospective_2017_onward"]["realised_cpi_inflation"]=float(inflation)
+            result["retrospective_2017_onward"]["realised_real_cagr"]=real_return(result["retrospective_2017_onward"]["cagr"],float(inflation))
+        else:
+            from .portfolio import hurdle
+            result["retrospective_2017_onward"]["realised_inflation_hurdle"]=hurdle(float(inflation),result["policy"]["spending"])
         recovery=[]
         for scenario in result["stress"][:3]:
             if scenario.get("status")!="ok":continue
@@ -78,7 +82,7 @@ def complete(run):
                              "recovery":str(hit.index[0].date()) if len(hit) else f"not recovered by {cfg['snapshot_end']}"})
         result["crisis_recovery"]=recovery
         candidate_rows.append({"portfolio":name,"weight_hash":wh,"expected_arithmetic":result["expected_arithmetic"],
-            "expected_geometric":result["expected_geometric"],"volatility":result["volatility"],
+            "expected_geometric":result["expected_geometric"],"expected_real":real_return(result["expected_geometric"],cfg["inflation"]),"volatility":result["volatility"],
             "es99_usd":result["policy_es99_usd"],"distribution_yield":result["distribution_yield"],
             "diversification_ratio":result["diversification_ratio"],"risk_contribution_dispersion":result["risk_contribution_dispersion"],
             "max_drawdown":result["performance"]["maximum_drawdown"],"worst_scenario_usd":max(s.get("loss_usd",0) for s in result["stress"]),
@@ -123,11 +127,12 @@ def complete(run):
         if not (chosen_folder/"robustness/mc_convergence.csv").exists():
             from .robustness import additional_evidence
             additional_evidence(returns,macro,w,cfg,chosen_folder/"robustness")
-        from .stress import survival,reverse_stress
+        from .stress import survival,reverse_stress,reserve_survival
         monthly=(1+returns).resample("ME").prod()-1
         cpi=macro.CPIAUCSL.resample("ME").last().pct_change()
         result=bundle["portfolios"][chosen]
-        result["real_capital_survival"]=survival(monthly,cpi,w,result["policy"])
+        result["real_capital_survival"]=(reserve_survival(monthly,w,result["policy"]) if "reserve_initial" in cfg
+                                         else survival(monthly,cpi,w,result["policy"]))
         result["reverse_stress"]=reverse_stress(returns.loc[:cfg["training_end"]],w)
         write_json(chosen_folder/"summary.json",result);write_json(run/"submission.json",bundle)
     return bundle

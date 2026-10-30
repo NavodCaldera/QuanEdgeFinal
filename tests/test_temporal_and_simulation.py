@@ -32,7 +32,7 @@ def test_matching_one_asset_monte_carlo():
 
 def test_walk_forward_weights_ignore_current_year(cfg):
     idx=pd.bdate_range("2012-01-01","2017-12-29")
-    x=pd.DataFrame(np.random.default_rng(7).normal(.0002,.005,(len(idx),7)),index=idx,columns=TICKERS)
+    x=pd.DataFrame(np.random.default_rng(7).normal(.0004,.005,(len(idx),7)),index=idx,columns=TICKERS)  # reaches the v2 real target
     _,first=walk_forward(x,cfg)
     x.loc["2017":]*=-3
     _,second=walk_forward(x,cfg)

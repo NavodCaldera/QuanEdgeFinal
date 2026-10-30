@@ -1,0 +1,17 @@
+{
+  "label": "Standalone historical context, added after preregistration; not part of the frozen analytical run.",
+  "created_at_utc": "2026-10-29T17:21:15.925604+00:00",
+  "parent_run": "final-20261027",
+  "parent_manifest_sha256": "2df0807e512332fb6b35a0ae75629bd8cc2569888359e59990f0fe14a02eb816",
+  "context_snapshot_sha256": "362bff5c9f7b255c0b2b9df945279f4562e52867fc2c51f7a2b52bfbb2667cfc",
+  "frozen_prices_sha256": "76bac76cbc98b5ce62291bd6257600047cc20857943d363edd1f807f743d4d0d",
+  "files": {
+    "coverage.csv": "cefd56580b3af01890c25e899248fc03303f27051a5fbaca8e7f91c2d9eaacf7",
+    "audit.csv": "7660273c7f084599dd93c8e9a4612b07d3a3af871b082f284951dcb0dd71f0ef",
+    "drawdowns.csv": "2069238788d7539c635fe6af4de5198b5b49aac7c31c25da628a9077e62e66f7",
+    "overlap_check.csv": "e74a4b36ef20a98fb6769e8b738d3a7cacf0894c6c78cc6498cd1853961e9798",
+    "dotcom_partial.csv": "6837912b3eaf2842cb567552c6dd070caf84a14e5c1c819d066bb7ffafcf263f",
+    "estimator_sensitivity.csv": "97264f4fd7e33ff87f5faafcea9b0fcada2e6277cf83f3c03e7745d4b67ce180",
+    "risk_windows.csv": "4abeeeebd67605d5c7670720486ea26046c37afa3f5bc6f21a3437947b842ef4"
+  }
+}

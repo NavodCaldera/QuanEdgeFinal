@@ -9,11 +9,11 @@ os.chdir(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")); sys.pa
 import numpy as np, pandas as pd, yaml
 from scipy.optimize import minimize
 import quanedge.portfolio as qp
-from quanedge.config import TICKERS
+from quanedge.config import TICKERS, frozen_policy   # mandate v1 study: prereg-v1 limits
 from quanedge.stress import stress_tests
 pd.set_option("display.width",250); pd.set_option("display.max_columns",30); pd.set_option("display.precision",2)
 
-cfg=yaml.safe_load(open("config/final.yaml")); FOUR=["SPY","AGG","GLD","XLE"]
+cfg=frozen_policy("prereg-v1"); FOUR=["SPY","AGG","GLD","XLE"]
 prices=pd.read_csv("data/clean/prices_clean.csv",index_col=0,parse_dates=True)[TICKERS]
 R=prices.pct_change().dropna(); train=R.loc[:cfg["training_end"]]; evalr=R.loc[cfg["evaluation_start"]:]
 H=qp.hurdle(cfg["inflation"],cfg["spending"])

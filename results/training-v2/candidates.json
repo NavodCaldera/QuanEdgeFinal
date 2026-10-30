@@ -1,0 +1,203 @@
+{
+  "selected": {
+    "status": "ok",
+    "weights": {
+      "SPY": 0.0,
+      "EFA": 0.0,
+      "EEM": 0.0,
+      "AGG": 0.8672,
+      "GLD": 0.060714,
+      "XLE": 0.0,
+      "XLK": 0.072086
+    },
+    "weight_hash": "7d8b34477700c0a282a22a97611d4c5898bb9a1fda44cb301dfa7a5f17a84891",
+    "expected_arithmetic": 0.06922077095339009,
+    "expected_geometric": 0.06789078486685511,
+    "expected_real": 0.030384778914371857,
+    "nominal_target": 0.06749200000000011,
+    "target_binding": false,
+    "volatility": 0.04989304112111967,
+    "es99": 0.011799988537749842,
+    "duals": [],
+    "scenario_hash": "8eb36642b20f4e8317b77c03bcfe1ad8b60c681b5a3e2f1a05cf6bedd49f9e37"
+  },
+  "min_cvar": {
+    "status": "ok",
+    "weights": {
+      "SPY": 0.0,
+      "EFA": 0.0,
+      "EEM": 0.0,
+      "AGG": 0.8672,
+      "GLD": 0.060714,
+      "XLE": 0.0,
+      "XLK": 0.072086
+    },
+    "weight_hash": "7d8b34477700c0a282a22a97611d4c5898bb9a1fda44cb301dfa7a5f17a84891",
+    "expected_arithmetic": 0.06922077095339009,
+    "expected_geometric": 0.06789078486685511,
+    "volatility": 0.04989304112111967,
+    "es99": 0.011799988537749842,
+    "duals": [
+      -0.0,
+      -0.0
+    ],
+    "scenario_hash": "8eb36642b20f4e8317b77c03bcfe1ad8b60c681b5a3e2f1a05cf6bedd49f9e37"
+  },
+  "min_variance": {
+    "status": "ok",
+    "weights": {
+      "SPY": 0.021696,
+      "EFA": 0.0,
+      "EEM": 0.0,
+      "AGG": 0.8749870000000001,
+      "GLD": 0.033062,
+      "XLE": 0.0,
+      "XLK": 0.070255
+    },
+    "weight_hash": "9d7df644fe1ae95d79d3a523b42c60f9931689655ef4e40d6c78639025f263eb",
+    "expected_arithmetic": 0.06892382413413316,
+    "expected_geometric": 0.06761679882783889,
+    "volatility": 0.04946709919478524,
+    "es99": 0.01196115185457788,
+    "duals": [],
+    "scenario_hash": "8eb36642b20f4e8317b77c03bcfe1ad8b60c681b5a3e2f1a05cf6bedd49f9e37"
+  },
+  "near_parity": {
+    "status": "ok",
+    "weights": {
+      "SPY": 0.072022,
+      "EFA": 0.057151,
+      "EEM": 0.043002,
+      "AGG": 0.581612,
+      "GLD": 0.12225,
+      "XLE": 0.048636,
+      "XLK": 0.075327
+    },
+    "weight_hash": "d72db7f26d8e78d97ce87dbeb0b4863debefb18dc2e5b775a769e2224a66d396",
+    "expected_arithmetic": 0.07706429489745754,
+    "expected_geometric": 0.07383211338246952,
+    "volatility": 0.07752973205384564,
+    "es99": 0.01917405275349894,
+    "duals": [],
+    "scenario_hash": "8eb36642b20f4e8317b77c03bcfe1ad8b60c681b5a3e2f1a05cf6bedd49f9e37"
+  },
+  "max_sharpe": {
+    "status": "ok",
+    "weights": {
+      "SPY": 0.0,
+      "EFA": 0.0,
+      "EEM": 0.0,
+      "AGG": 0.811466,
+      "GLD": 0.067308,
+      "XLE": 0.0,
+      "XLK": 0.121226
+    },
+    "weight_hash": "b35300553590715f0966bed927a64681a627b7a63aa99fd203b1975def68fe3f",
+    "expected_arithmetic": 0.07098298419337984,
+    "expected_geometric": 0.06961877782705615,
+    "volatility": 0.05048962228494944,
+    "es99": 0.011930311845845738,
+    "duals": [],
+    "scenario_hash": "8eb36642b20f4e8317b77c03bcfe1ad8b60c681b5a3e2f1a05cf6bedd49f9e37"
+  },
+  "max_return": {
+    "status": "ok",
+    "weights": {
+      "SPY": 0.0,
+      "EFA": 0.0,
+      "EEM": 0.0,
+      "AGG": 0.266141,
+      "GLD": 0.327875,
+      "XLE": 0.0,
+      "XLK": 0.405984
+    },
+    "weight_hash": "62947025f683a44b2dab9ab01549bc967323f027331938dcfed87add0c10bcb1",
+    "expected_arithmetic": 0.0875236457785885,
+    "expected_geometric": 0.08148092090835096,
+    "volatility": 0.10556421796609128,
+    "es99": 0.024999973968212172,
+    "duals": [
+      -0.0,
+      -1.1129498227877934
+    ],
+    "scenario_hash": "8eb36642b20f4e8317b77c03bcfe1ad8b60c681b5a3e2f1a05cf6bedd49f9e37"
+  },
+  "40_60": {
+    "status": "benchmark",
+    "weights": {
+      "SPY": 0.4,
+      "EFA": 0.0,
+      "EEM": 0.0,
+      "AGG": 0.6,
+      "GLD": 0.0,
+      "XLE": 0.0,
+      "XLK": 0.0
+    },
+    "weight_hash": "8ed63ea389c1929db1295b31818e67583ade238d47f7639436d506658d7fc0e2"
+  },
+  "60_40": {
+    "status": "benchmark",
+    "weights": {
+      "SPY": 0.6,
+      "EFA": 0.0,
+      "EEM": 0.0,
+      "AGG": 0.4,
+      "GLD": 0.0,
+      "XLE": 0.0,
+      "XLK": 0.0
+    },
+    "weight_hash": "4c6d2ce676df92917d8df1ddedd24faddb94cfb1da861a0ebaa3eaae47ef6b00"
+  },
+  "equal_weight": {
+    "status": "benchmark",
+    "weights": {
+      "SPY": 0.142858,
+      "EFA": 0.142857,
+      "EEM": 0.142857,
+      "AGG": 0.142857,
+      "GLD": 0.142857,
+      "XLE": 0.142857,
+      "XLK": 0.142857
+    },
+    "weight_hash": "9bed070558db9353d44783da140a73fb826ef94b2ae14b99f047eba5a8a9b112"
+  },
+  "permanent": {
+    "status": "benchmark",
+    "weights": {
+      "SPY": 0.25,
+      "EFA": 0.0,
+      "EEM": 0.0,
+      "AGG": 0.5,
+      "GLD": 0.25,
+      "XLE": 0.0,
+      "XLK": 0.0
+    },
+    "weight_hash": "ba0ae18ea8b89e6ecdc4084189e84fc534213f6c925d5f41209eda20a0b950b7"
+  },
+  "balanced_35_50_15": {
+    "status": "benchmark",
+    "weights": {
+      "SPY": 0.35,
+      "EFA": 0.0,
+      "EEM": 0.0,
+      "AGG": 0.5,
+      "GLD": 0.15,
+      "XLE": 0.0,
+      "XLK": 0.0
+    },
+    "weight_hash": "8a0a00d9af7c68bd9189b598a066490817fa09f9c9f2acd4922fbe62077899cf"
+  },
+  "unconstrained_parity": {
+    "status": "benchmark",
+    "weights": {
+      "SPY": 0.072022,
+      "EFA": 0.057151,
+      "EEM": 0.043002,
+      "AGG": 0.581612,
+      "GLD": 0.12225,
+      "XLE": 0.048636,
+      "XLK": 0.075327
+    },
+    "weight_hash": "d72db7f26d8e78d97ce87dbeb0b4863debefb18dc2e5b775a769e2224a66d396"
+  }
+}

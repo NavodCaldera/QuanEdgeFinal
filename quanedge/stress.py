@@ -65,6 +65,39 @@ def reverse_stress(training,weights,limit=.20):
             "interpretation":"minimum covariance-distance one-step shock; not a probability or multi-day drawdown forecast"}
 
 
+def reserve_survival(monthly,weights,cfg,years=None):
+    """Fixed real cash reserve paid each 1 January before returns (mandate v2).
+    Joint non-circular 12-month blocks; quarterly/drift rebalancing; real values deflate
+    by the policy inflation assumption, matching the reserve's growth."""
+    years=years or cfg["survival_years"];x=monthly[TICKERS].dropna().to_numpy()
+    if len(x)<24:return {"status":"unavailable: insufficient monthly data"}
+    n=cfg["survival_paths"];rng=np.random.default_rng(cfg["seed"]);fund=cfg["fund_value"]
+    w=np.array([weights[t] for t in TICKERS],float);positions=np.tile(w,(n,1))
+    depleted=np.full(n,0);out=[]
+    for year in range(1,years+1):
+        need=cfg["reserve_initial"]*(1+cfg["reserve_growth"])**(year-1)/fund
+        nav=positions.sum(axis=1);short=(nav<need)&(depleted==0)
+        depleted[short]=year
+        positions*=np.where(depleted==0,(nav-need)/np.where(nav>0,nav,1),0.)[:,None]
+        starts=rng.integers(0,len(x)-11,n)
+        for month in range(12):
+            positions*=1+x[starts+month]
+            total=positions.sum(axis=1);current=positions/np.where(total>0,total,1)[:,None]
+            trade=np.full(n,(month+1)%3==0)|(np.max(abs(current-w),axis=1)>cfg["drift"])
+            turnover=np.abs(current-w).sum(axis=1);nav=total*(1-cfg["cost"]*turnover)
+            positions[trade]=nav[trade,None]*w
+        if year in (10,years):
+            real=positions.sum(axis=1)*fund/(1+cfg["inflation"])**year
+            funded=float((depleted==0).mean())
+            out.append({"year":year,"all_payments_funded":funded,"mc_se":float(np.sqrt(funded*(1-funded)/n)),
+                        "real_capital_preserved":float((real>=fund).mean()),
+                        "median_real_balance_usd":float(np.median(real)),
+                        "p10_real_balance_usd":float(np.quantile(real,.1)),
+                        "median_depletion_year":float(np.median(depleted[depleted>0])) if (depleted>0).any() else None})
+    return {"status":"illustrative","paths":n,"block":"non-circular joint 12 months","horizon_years":years,
+            "schedule":"USD reserve_initial x (1+reserve_growth)^(t-1) withdrawn each 1 January; cash earns 0","results":out}
+
+
 def survival(monthly,monthly_inflation,weights,cfg,years=10):
     """Joint non-circular 12-month blocks; annual spending, quarterly rebalancing."""
     data=monthly.join(monthly_inflation.rename("inflation")).dropna()

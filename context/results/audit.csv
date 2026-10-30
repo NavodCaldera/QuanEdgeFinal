@@ -1,0 +1,8 @@
+ticker,observations,gaps_inside_history,stale_runs_5plus,moves_over_15pct,nonpositive_prices
+SPY,8475,0,0,0,0
+EFA,6310,0,0,1,0
+EEM,5904,0,0,3,0
+AGG,5788,0,0,0,0
+GLD,5500,0,0,0,0
+XLE,6985,0,0,4,0
+XLK,6985,0,0,1,0

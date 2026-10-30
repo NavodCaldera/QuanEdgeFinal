@@ -1,0 +1,7 @@
+{
+  "source": "context\\raw\\prices_full_history.csv",
+  "source_sha256": "362bff5c9f7b255c0b2b9df945279f4562e52867fc2c51f7a2b52bfbb2667cfc",
+  "as_of": "2026-09-30",
+  "scope": "Each ETF largest observed adjusted-price drawdown; descriptive historical context",
+  "unrecovered": "Elapsed durations are lower bounds, not completed recovery times"
+}
