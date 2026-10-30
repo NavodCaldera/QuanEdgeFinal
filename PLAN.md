@@ -450,7 +450,45 @@ The owner's guiding caveat goes into the memo word for word: buying negatively c
 | Payback period | Adapt as time under water in each crisis | Phase 2 | Core |
 | Accounting rate of return | Adapt as distribution yield (income over average NAV) | Phase 2 | Core (already a KPI) |
 | IRR | Adapt as money-weighted return under the spending rule, against the realised-inflation hurdle, retrospective (2017 to snapshot end) | Phase 2 | Core |
+| Threshold "winner to loser" rebalancing (sell an ETF after a 10% rise, buy the ETF that fell most) | Reject as a trading rule; keep as tested evidence for the existing quarterly-plus-drift rebalancing. No reversal signal, and its apparent gains come from drift outside policy limits (19a) | Phase 7 memo, Q&A | Memo text only; no policy change |
 | NPV, profitability index | Drop: for a fairly priced liquid fund, NPV computed in advance only restates expected return, and realised NPV at h is a dollar transform of money-weighted return minus h; PI = 1 + NPV / USD 10m adds nothing. The dollar view survives as the median real surplus over the real-capital target | - | Dropped |
+
+### 19a. Correlation study and the "winner to loser" rule (exploratory, 30 October 2026)
+
+Reproduce with `python scripts/correlation_rebalancing_study.py` (offline, `data/clean`, 2005-01-04 to 2026-09-30, 5,469 daily returns). Retrospective portfolio evaluation: the owner has seen the full sample. Descriptive only: it changes no frozen value, weight or verdict at `prereg-v1`.
+
+**Correlations.** The seven ETFs form two blocks.
+
+| Pair | Daily log-return corr. | Monthly | Rolling 252-day range | Note |
+|---|---|---|---|---|
+| SPY-XLK | 0.91 | 0.89 | 0.76 to 0.97 | Near-duplicate exposure |
+| SPY-EFA | 0.88 | 0.86 | - | |
+| SPY-EEM | 0.82 | 0.75 | 0.55 to 0.93 | Never negative |
+| SPY-XLE | 0.71 | 0.61 | -0.18 to 0.95 | |
+| SPY-AGG | 0.00 (95% CI -0.02 to 0.03) | 0.24 | -0.60 to 0.41 | Negative 55% of the time |
+| SPY-GLD | 0.07 | 0.10 | -0.35 to 0.44 | |
+| AGG-GLD | 0.21 | 0.36 | -0.13 to 0.67 | |
+
+- One common factor explains 58% of daily variance (first eigenvalue 4.08 of 7). Equity correlations rise in crises: SPY-EEM 0.93 and SPY-XLK 0.98 in February to April 2020.
+- On SPY's worst 5% of days the equity ETFs lost 2.9% to 3.5% on average, AGG gained 0.04% and GLD lost 0.09%. AGG and GLD carry the portfolio's diversification.
+- The stock-bond hedge depends on the regime. SPY-AGG was -0.27 in 2010-2019, then +0.32 in 2022 and +0.18 in 2023-2026. This supports the owner's caveat above: correlation can reduce losses but guarantees nothing.
+
+**Rule tested.** Each ETF's price is tracked from its last trade. When a held ETF is 10% above that reference, two variants were tested: trim it back to target, or sell only the 10% gain. In both variants the proceeds go to the held ETF with the largest fall since its own reference, and both references reset. The rule runs alongside buy-and-hold, quarterly and 5-point drift-band rebalancing, at 5 bp on buy plus sell notional, as in `portfolio.replay`.
+
+| Adjusted recommendation SPY 15 / AGG 70 / GLD 15, 2005-2026 | CAGR | Volatility | Max drawdown | Max GLD weight | Min AGG weight |
+|---|---|---|---|---|---|
+| Quarterly rebalance | 5.46% | 5.82% | -16.8% | 18% | 67% |
+| 5-point drift band | 5.67% | 5.85% | -16.9% | 20% | 65% |
+| Rule: trim to target | 5.73% | 6.56% | -17.6% | 31% | 51% |
+| Rule: sell the gain | 7.95% | 8.38% | -16.6% | 52% | 20% |
+
+- The higher "sell the gain" return is a drift effect, not timing. Gold rose to 52% against the 15% cap and AGG fell to 20% against the 25% minimum, moving toward the buy-and-hold mix (6.63% CAGR, 7.30% volatility).
+- On the equal-weight seven-ETF portfolio, both rule variants did worse than the drift band: 9.83% and 9.53% CAGR against 10.32%. They traded about twice as much (0.12 against 0.06 of NAV a year) and made 165 rule trades.
+- The 2017-2026 window and the original selected weights give the same picture.
+
+**Premise test.** After a 10% rise over three months, the following three months showed no significant underperformance for any ETF. Using non-overlapping triggers, t-statistics ranged from -1.48 (XLE) to +1.36 (EEM). Cross-sectionally, past 1-, 3- and 12-month winners slightly *outperformed* the next month (rank correlations +0.03 to +0.06, t-statistics 1.1 to 1.9). That is weak momentum, the opposite of the reversal the rule needs.
+
+**Decision.** Keep quarterly-plus-5-point-drift rebalancing. It already sells relative winners and buys relative losers, and it stays inside policy limits. Any trigger rule should be weight-based and rebalance all assets to target, not move proceeds into the single worst performer, because that concentrates risk. Adopting a different rule would be a logged mandate change, and the new rule would need its own weight-hashed forecasts and backtest. Memo and Q&A answer: "We tested it; there is no reversal signal in these ETFs, and the rule's extra return came from breaking the gold cap and the bond minimum."
 
 Review record (second critic pair): both agreed the hurdle must come from the spending need, which also fixed a circularity in the first version of section 13 that made Reject impossible, and they found the accidental 40% cap on AGG. They differed on keeping a realised NPV (dropped as redundant), on the AGG ceiling (60% vs 70%; 70% chosen, with its constraint effect reported) and on co-exceedance versus a simulated-null correlation test (co-exceedance chosen as plainer and cheaper; the simulated null is on the cut list).
 
