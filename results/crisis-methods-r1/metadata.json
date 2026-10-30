@@ -1,0 +1,157 @@
+{
+  "source": "data/clean/prices_clean.csv",
+  "source_sha256": "76bac76cbc98b5ce62291bd6257600047cc20857943d363edd1f807f743d4d0d",
+  "weights": {
+    "Inverse variance (1/var)": {
+      "weights": {
+        "SPY": 0.07,
+        "EFA": 0.0,
+        "EEM": 0.0,
+        "AGG": 0.83,
+        "GLD": 0.07,
+        "XLE": 0.03,
+        "XLK": 0.0
+      },
+      "weight_hash": "ea7b8e8fd9b2eab02310dc128670cbf6e42437faa2f4eff311d639ce2a179a5e"
+    },
+    "Inverse volatility (1/vol)": {
+      "weights": {
+        "SPY": 0.16,
+        "EFA": 0.0,
+        "EEM": 0.0,
+        "AGG": 0.57,
+        "GLD": 0.17,
+        "XLE": 0.1,
+        "XLK": 0.0
+      },
+      "weight_hash": "2a36d9bf3461b7c098a5855a47b5eb925d5732e1f7ffce79e239b4bc542ac69d"
+    },
+    "Risk parity (ERC)": {
+      "weights": {
+        "SPY": 0.14,
+        "EFA": 0.0,
+        "EEM": 0.0,
+        "AGG": 0.61,
+        "GLD": 0.16,
+        "XLE": 0.09,
+        "XLK": 0.0
+      },
+      "weight_hash": "4cb2f6be6d87c504dbcc3443dfcbdd3a5986d10dd839bf795bd0536f31c5feb0"
+    },
+    "Minimum variance": {
+      "weights": {
+        "SPY": 0.06,
+        "EFA": 0.0,
+        "EEM": 0.0,
+        "AGG": 0.91,
+        "GLD": 0.02,
+        "XLE": 0.01,
+        "XLK": 0.0
+      },
+      "weight_hash": "c48f652efa06fc214b2d5f992780631dbba88c3dd2c67ef5e84c7fa6c28e74ad"
+    },
+    "Minimum CVaR (v2/v3 W_rec)": {
+      "weights": {
+        "SPY": 0.058,
+        "EFA": 0.0,
+        "EEM": 0.0,
+        "AGG": 0.88,
+        "GLD": 0.06,
+        "XLE": 0.002,
+        "XLK": 0.0
+      },
+      "weight_hash": "259603c83e3d018ca9c5aa57438c66f45b0c9272a59096329c63c05a3c3f71ab"
+    },
+    "Maximum Sharpe": {
+      "weights": {
+        "SPY": 0.13,
+        "EFA": 0.0,
+        "EEM": 0.0,
+        "AGG": 0.78,
+        "GLD": 0.09,
+        "XLE": 0.0,
+        "XLK": 0.0
+      },
+      "weight_hash": "dc6310fba0fa8a63438fb3bb92ac544d61228c64b7215fc47df940583df745b4"
+    }
+  },
+  "crises": [
+    {
+      "name": "GFC",
+      "start": "2007-10-09",
+      "end": "2009-03-09",
+      "reason": "Frozen stress scenario; SPY's deepest drawdown"
+    },
+    {
+      "name": "Lehman liquidity shock",
+      "start": "2008-09-09",
+      "end": "2008-10-10",
+      "reason": "AGG's 2nd-deepest drawdown (nested in GFC)"
+    },
+    {
+      "name": "Gold bear market",
+      "start": "2011-08-22",
+      "end": "2015-12-17",
+      "reason": "GLD's deepest drawdown"
+    },
+    {
+      "name": "Oil collapse",
+      "start": "2014-06-23",
+      "end": "2016-01-20",
+      "reason": "XLE's deepest episode, to its 2016 oil trough"
+    },
+    {
+      "name": "2018 trade tensions",
+      "start": "2018-01-26",
+      "end": "2018-12-24",
+      "reason": "EFA/EEM episode start to SPY's Dec-2018 trough"
+    },
+    {
+      "name": "COVID crash",
+      "start": "2020-02-19",
+      "end": "2020-03-23",
+      "reason": "Frozen stress scenario; SPY's 3rd-deepest drawdown"
+    },
+    {
+      "name": "COVID dash for cash",
+      "start": "2020-03-06",
+      "end": "2020-03-18",
+      "reason": "AGG's 3rd-deepest drawdown (nested in COVID)"
+    },
+    {
+      "name": "Bond bear market",
+      "start": "2020-08-04",
+      "end": "2022-10-20",
+      "reason": "AGG's deepest drawdown, still unrecovered"
+    },
+    {
+      "name": "China / global tightening",
+      "start": "2021-02-17",
+      "end": "2022-10-24",
+      "reason": "EEM's 2nd-deepest drawdown"
+    },
+    {
+      "name": "Rates 2022",
+      "start": "2022-01-03",
+      "end": "2022-10-12",
+      "reason": "Frozen stress scenario; XLK's 2nd-deepest drawdown"
+    },
+    {
+      "name": "Gold correction 2026",
+      "start": "2026-01-29",
+      "end": "2026-07-16",
+      "reason": "GLD's 3rd-deepest drawdown, unrecovered"
+    }
+  ],
+  "unavailable": [
+    {
+      "name": "Dot-com bust",
+      "start": "2000-03-24",
+      "end": "2002-10-09",
+      "reason": "Cannot be replayed: AGG starts 2003-09-29 and GLD 2004-11-18"
+    }
+  ],
+  "assumption": "buy-and-hold from crisis start; no rebalancing, costs or reserve withdrawals; USD 10m",
+  "hypothetical": "quanedge.stress.hypothetical on 2005-2016 training simple returns (as pipeline.py); deterministic, no probability",
+  "label": "retrospective portfolio evaluation; weights estimated on a sample that contains these crises"
+}
