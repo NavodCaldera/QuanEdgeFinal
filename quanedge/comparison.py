@@ -28,24 +28,35 @@ def risk_parity(cov):
     return y/y.sum()
 
 
-def dynamic_risk_parity(returns, lam=.97, window=750, min_history=500, cost=0.):
-    """Daily simple returns of monthly EWMA risk parity over the columns of returns.
+def dynamic_parity_path(returns, freq="M", lam=.97, window=750, min_history=500, cost=0.):
+    """Daily path of EWMA risk parity re-estimated at each month-end ("M") or week-end ("W") close.
 
-    The first target uses the first min_history days; each later target uses data
-    through its month-end close only. Returns an empty series if history is too short."""
+    The first target uses the first min_history days; each later target uses data through its
+    decision close only. Columns: return, wealth, turnover, rebalanced, then end-of-day holdings
+    and the target in force (target_<ticker>). Empty if history is too short."""
     if len(returns) <= min_history:
-        return pd.Series(dtype=float)
-    x = returns.to_numpy(); dates = returns.index
+        return pd.DataFrame()
+    x = returns.to_numpy(); dates = returns.index; cols = list(returns.columns)
     target = lambda i: risk_parity(ewma_cov(x[max(0, i+1-window):i+1], lam))
-    month_end = np.r_[dates[1:].to_period("M") != dates[:-1].to_period("M"), False]
-    pos = target(min_history-1); out = []
+    period = dates.to_period(freq)
+    decision = np.r_[period[1:] != period[:-1], False]
+    tgt = target(min_history-1); pos = tgt.copy(); rows = []
     for i in range(min_history, len(x)):
-        old = pos.sum(); pos = pos*(1 + x[i])
-        if month_end[i]:
-            new = target(i); turnover = np.abs(new - pos/pos.sum()).sum()
-            pos = new*pos.sum()*(1 - cost*turnover)
-        out.append(pos.sum()/old - 1)
-    return pd.Series(out, index=dates[min_history:], name="return")
+        old = pos.sum(); pos = pos*(1 + x[i]); turnover = 0.
+        if decision[i]:
+            tgt = target(i); turnover = float(np.abs(tgt - pos/pos.sum()).sum())
+            pos = tgt*pos.sum()*(1 - cost*turnover)
+        rows.append([pos.sum()/old - 1, turnover, decision[i], *(pos/pos.sum()), *tgt])
+    frame = pd.DataFrame(rows, index=dates[min_history:],
+                         columns=["return", "turnover", "rebalanced", *cols, *[f"target_{c}" for c in cols]])
+    frame.insert(1, "wealth", (1 + frame["return"]).cumprod())
+    return frame
+
+
+def dynamic_risk_parity(returns, lam=.97, window=750, min_history=500, cost=0., freq="M"):
+    """Daily simple returns of dynamic_parity_path (empty series if history is too short)."""
+    path = dynamic_parity_path(returns, freq, lam, window, min_history, cost)
+    return path["return"].rename("return") if len(path) else pd.Series(dtype=float)
 
 
 def wealth_paths(returns, allocations, cost=0., drift=.05, value=1e7):

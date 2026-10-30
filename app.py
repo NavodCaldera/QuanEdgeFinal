@@ -176,33 +176,38 @@ elif page=="Portfolio comparison":
     picked=st.sidebar.multiselect("Portfolios to compare",options,
         default=[c for c in ["selected","near_parity","permanent","balanced_35_50_15","max_sharpe","60_40"] if c in options],
         format_func=lambda c:labels.get(c,c))
-    dynamic=st.sidebar.checkbox("Add dynamic EWMA risk parity (exploratory)",value=True)
+    dynamic=st.sidebar.checkbox("Add dynamic EWMA risk parity, monthly (exploratory)",value=True)
+    weekly=st.sidebar.checkbox("Add dynamic EWMA risk parity, weekly (exploratory)",value=True)
     common=st.sidebar.radio("Comparison start",["Full history (dynamic joins later)","Common start with dynamic"],
-                            disabled=not dynamic,help="The dynamic strategy needs 500 days of history before its first allocation.")=="Common start with dynamic"
+                            disabled=not (dynamic or weekly),help="The dynamic strategies need 500 days of history before their first allocation.")=="Common start with dynamic"
     show_table=st.sidebar.checkbox("Show comparison table",value=True)
     universe=cfg.get("universe",TICKERS)
 
     @st.cache_data
-    def dynamic_returns(data_hash,universe,cost):
-        return comparison.dynamic_risk_parity(returns[list(universe)],cost=cost)
+    def dynamic_path(data_hash,universe,cost,freq):
+        return comparison.dynamic_parity_path(returns[list(universe)],freq,cost=cost)
 
     def weight_text(w):
         return " / ".join(f"{100*w[t]:.1f}".removesuffix(".0") for t in universe)
-    DYN="Dynamic EWMA risk parity"
-    if not picked and not dynamic:
+    DYN={"M":"Dynamic EWMA risk parity (monthly)","W":"Dynamic EWMA risk parity (weekly)"}
+    if not picked and not dynamic and not weekly:
         st.info("Select at least one portfolio in the sidebar.")
     else:
-        dyn=dynamic_returns(meta["data_hash"],tuple(universe),cfg["cost"]) if dynamic else pd.Series(dtype=float)
-        if dynamic and dyn.empty:st.info("Dynamic risk parity needs more than 500 days of history; it is not shown.")
-        start=dyn.index[0] if len(dyn) and common else returns.index[0]
+        paths={f:dynamic_path(meta["data_hash"],tuple(universe),cfg["cost"],f) for f,on in (("M",dynamic),("W",weekly)) if on}
+        if any(p.empty for p in paths.values()):st.info("Dynamic risk parity needs more than 500 days of history; it is not shown.")
+        paths={f:p for f,p in paths.items() if len(p)}
+        dyn_start=min((p.index[0] for p in paths.values()),default=None)
+        start=dyn_start if paths and common else returns.index[0]
         names={labels.get(c,c):c for c in picked}
         wealth=comparison.wealth_paths(returns.loc[start:],{n:portfolios[c]["weights"] for n,c in names.items()},cfg["cost"],cfg["drift"])
-        joined=None
-        if len(dyn):
+        joined=None;initial={}
+        for f,p in paths.items():
             base=1e7
             if not common and "near_parity" in picked:            # join at static risk parity's value, as in the report chart
-                rp=wealth[labels["near_parity"]];base=rp.loc[:dyn.index[0]].iloc[-2];joined=labels["near_parity"]
-            wealth[DYN]=base*(1+dyn).cumprod()
+                rp=wealth[labels["near_parity"]];base=rp.loc[:p.index[0]].iloc[-2];joined=labels["near_parity"]
+            wealth[DYN[f]]=base*p.wealth
+            initial[DYN[f]]=weight_text({t:p[f"target_{t}"].iloc[0] for t in universe})+(" (changes monthly)" if f=="M" else " (changes weekly)")
+        dyn=pd.Series(dtype=float) if not paths else next(iter(paths.values()))["return"]
         for title,frame,unit in [("Portfolio value",wealth/1e6,"USD m"),("Drawdown from peak",100*(wealth/wealth.cummax()-1),"%")]:
             fig=go.Figure([go.Scatter(x=frame.index,y=frame[c],name=c,mode="lines",line=dict(width=2.5 if c.startswith(("W_rec","Dynamic")) else 1.5),
                                       hovertemplate="%{x|%d %b %Y}<br>%{y:,.2f} "+unit+"<extra>"+c+"</extra>") for c in frame])
@@ -217,7 +222,7 @@ elif page=="Portfolio comparison":
             st.subheader("Comparison table")
             table=comparison.summary(wealth,cfg.get("inflation"))
             weights_col=f"Weights ({'/'.join(universe)}, %)"
-            table.insert(1,weights_col,[weight_text(portfolios[names[n]]["weights"]) if n in names else "changes monthly" for n in table.Portfolio])
+            table.insert(1,weights_col,[weight_text(portfolios[names[n]]["weights"]) if n in names else initial.get(n,"") for n in table.Portfolio])
             table=table.rename(columns={"End value (USD m)":f"Value {returns.index[-1]:%b %Y} (USD m)"})
             money=[c for c in table if c.startswith("Value")];pct=[c for c in table if c.endswith("%")]
             st.dataframe(table,hide_index=True,use_container_width=True,
@@ -227,7 +232,7 @@ elif page=="Portfolio comparison":
         st.caption(f"Computed in app, not part of frozen run. Retrospective portfolio evaluation of USD 10 million from {start.date()} to {returns.index[-1].date()}: "
                    f"quarterly or {cfg['drift']*100:g}-point drift rebalancing, {cfg['cost']*1e4:g} bp one-way costs, no "+("cash-reserve withdrawals" if v2 else "spending")+". "
                    "Fixed weights come from run "+run+" and were estimated on data that includes this period. "
-                   +(("Dynamic risk parity re-estimates an EWMA (lambda 0.97) covariance over "+", ".join(universe)+" at each month-end from data up to that close. "
+                   +(("Dynamic risk parity re-estimates an EWMA (lambda 0.97) covariance over "+", ".join(universe)+" at each month-end or week-end close from data up to that close; its weights column shows the first target. "
                       f"It needs 500 days of history, so it starts on {dyn.index[0].date()}"
                       +(", and every line starts there. " if common else (f" at the value of {joined} on that day; its CAGR, volatility and drawdown are measured from its own start. " if joined else
                         " at USD 10 million; its value is not comparable with lines that started earlier. "))

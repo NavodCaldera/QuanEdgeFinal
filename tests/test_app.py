@@ -68,7 +68,8 @@ def test_explore_invalidates_and_restores(tmp_path,monkeypatch,cfg):
     by_label(app.sidebar.checkbox,"Show comparison table").uncheck().run()
     assert not app.dataframe
     by_label(app.sidebar.multiselect,"Portfolios to compare").set_value([]).run()
-    app.sidebar.checkbox[0].uncheck().run()
+    app.sidebar.checkbox[0].uncheck()
+    app.sidebar.checkbox[1].uncheck().run()
     assert any("Select at least one portfolio" in x.value for x in app.info)
     by_label(app.sidebar.radio,"Page").set_value("ETF charts").run()
     assert not app.exception
