@@ -22,6 +22,9 @@ Added at the owner's request after the first run: dynamic EWMA risk parity
 (quanedge.comparison.dynamic_parity_path, lambda 0.97, 750-day window, month-end targets).
 "Dynamic RP (from 2005)" uses a 63-day warm-up so that it starts in April 2005;
 "Dynamic RP (v4d, from 2007)" is the pre-registered 500-day version (starts 2006-12-28).
+Owner request after that: every method starts on the same date. The full-period table now starts
+all methods at the dynamic warm-up decision close (2005-04-05; first return 2005-04-06), with the
+fixed rules starting at target on that close; the v4d row, which cannot start then, is dropped.
 Their 2020-2026 rows are slices of the full-history paths (targets keep using pre-2020 data).
 0% cost (mandate v3) for the main columns; "CAGR @5bp" charges 5 bp per unit of one-way
 turnover as in portfolio.replay. No reserve withdrawals. Weights are full-sample estimates
@@ -107,19 +110,19 @@ def main():
     target = {c: raw[c] for c in FOUR}
     rules = ["Normal", "Relative band", "Band only", "Band + ladder", "Buy-and-hold"]
     tables, ladder_events = {}, None
-    for label, start in (("2005-2026", None), ("2020-2026", "2019-12-31")):
-        p = prices if start is None else prices.loc[start:]
+    common = prices.index[63]  # close of the 63rd return: dynamic RP's first decision
+    for label, start in (("2005-2026", common), ("2020-2026", "2019-12-31")):
+        p = prices.loc[start:]
         rows = {}
         for rule in rules:
             r, turn, eff, ev = simulate(p, target, rule)
             rows[rule] = metrics(r, turn, simulate(p, target, rule, cost=.0005)[0])
-            if rule == "Band + ladder" and start is None:
+            if rule == "Band + ladder" and label == "2005-2026":
                 ladder_events = ev; rows[rule]["Max ladder extra pt"] = 100*float((eff[LADDER]-np.array([target[c] for c in LADDER])).max().max())
-        for name, warm in (("Dynamic RP (from 2005)", 63), ("Dynamic RP (v4d, from 2007)", 500)):
+        for name, warm in (("Dynamic RP (from 2005)", 63),):
             R = prices.pct_change().dropna()
             path, path_c = (dynamic_parity_path(R, "M", .97, 750, warm, c) for c in (0., .0005))
-            if start is not None:
-                path, path_c = path.loc["2020":], path_c.loc["2020":]
+            path, path_c = path.loc[p.index[1]:], path_c.loc[p.index[1]:]
             rows[name] = metrics(path["return"], path["turnover"], path_c["return"])
             rows[name]["Start"] = str(path.index[0].date())
         tables[label] = pd.DataFrame(rows).T
