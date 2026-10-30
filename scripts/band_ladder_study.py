@@ -25,6 +25,7 @@ Added at the owner's request after the first run: dynamic EWMA risk parity
 Owner request after that: every method starts on the same date. The full-period table now starts
 all methods at the dynamic warm-up decision close (2005-04-05; first return 2005-04-06), with the
 fixed rules starting at target on that close; the v4d row, which cannot start then, is dropped.
+Weekly and quarterly versions of dynamic RP (same lambda, window and warm-up) added on request.
 Their 2020-2026 rows are slices of the full-history paths (targets keep using pre-2020 data).
 0% cost (mandate v3) for the main columns; "CAGR @5bp" charges 5 bp per unit of one-way
 turnover as in portfolio.replay. No reserve withdrawals. Weights are full-sample estimates
@@ -119,9 +120,9 @@ def main():
             rows[rule] = metrics(r, turn, simulate(p, target, rule, cost=.0005)[0])
             if rule == "Band + ladder" and label == "2005-2026":
                 ladder_events = ev; rows[rule]["Max ladder extra pt"] = 100*float((eff[LADDER]-np.array([target[c] for c in LADDER])).max().max())
-        for name, warm in (("Dynamic RP (from 2005)", 63),):
+        for name, warm, fq in (("Dynamic RP monthly", 63, "M"), ("Dynamic RP weekly", 63, "W"), ("Dynamic RP quarterly", 63, "Q")):
             R = prices.pct_change().dropna()
-            path, path_c = (dynamic_parity_path(R, "M", .97, 750, warm, c) for c in (0., .0005))
+            path, path_c = (dynamic_parity_path(R, fq, .97, 750, warm, c) for c in (0., .0005))
             path, path_c = path.loc[p.index[1]:], path_c.loc[p.index[1]:]
             rows[name] = metrics(path["return"], path["turnover"], path_c["return"])
             rows[name]["Start"] = str(path.index[0].date())
