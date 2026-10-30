@@ -1,0 +1,482 @@
+{
+  "e1e509e54073f1316f7663a9e8cad7ad1f46266df32e97bfb229da4b62e39f9c": {
+    "portfolio": "A1_min_cvar",
+    "path": "A1_min_cvar",
+    "weight_hash": "bd13d8979ea90bd195fc97c16af6d8923a6a8537159887b9ffb110953163d87f"
+  },
+  "62a2e6a1ed7cb4eeb3ca172098d6ffc0077c7f010442d774868f2da532d978a1": {
+    "portfolio": "A1_min_cvar",
+    "path": "A1_min_cvar",
+    "weight_hash": "bd13d8979ea90bd195fc97c16af6d8923a6a8537159887b9ffb110953163d87f"
+  },
+  "6635af4ca232b707e97f4ba7529a2b3a23ffe8cba1d85ea37e40d598671a0b75": {
+    "portfolio": "A1_min_cvar",
+    "path": "A1_min_cvar",
+    "weight_hash": "bd13d8979ea90bd195fc97c16af6d8923a6a8537159887b9ffb110953163d87f"
+  },
+  "94d6b07a03150d4e73666395b7a27ea45e46bf519ce76dd6c5e640ebcf0abc31": {
+    "portfolio": "A1_min_cvar",
+    "path": "A1_min_cvar",
+    "weight_hash": "bd13d8979ea90bd195fc97c16af6d8923a6a8537159887b9ffb110953163d87f"
+  },
+  "fd1084077b29437d5463c524a5e662ab4af59ae7740fef5de975a7b96e253157": {
+    "portfolio": "A1_min_cvar",
+    "path": "A1_min_cvar",
+    "weight_hash": "bd13d8979ea90bd195fc97c16af6d8923a6a8537159887b9ffb110953163d87f"
+  },
+  "33f155fa524872ffda525cc12fab7f0424521936db5220d63f62b53ac3936cc3": {
+    "portfolio": "A1_min_cvar",
+    "path": "A1_min_cvar",
+    "weight_hash": "bd13d8979ea90bd195fc97c16af6d8923a6a8537159887b9ffb110953163d87f"
+  },
+  "1badcc598a22eb936c5c74e7ea4b93c3d6bc18f4e9dd5a1431908d81912171e0": {
+    "portfolio": "A1_min_cvar",
+    "path": "A1_min_cvar",
+    "weight_hash": "bd13d8979ea90bd195fc97c16af6d8923a6a8537159887b9ffb110953163d87f"
+  },
+  "575526be9bcba13942423e632b723553c774900a515860bd6d9943aecdc6bccd": {
+    "portfolio": "A1_min_cvar",
+    "path": "A1_min_cvar",
+    "weight_hash": "bd13d8979ea90bd195fc97c16af6d8923a6a8537159887b9ffb110953163d87f"
+  },
+  "4a8dc39ebc215219678490d5fd34ab0f33f57159d4ffd51ee3f455a9eea7486c": {
+    "portfolio": "A1_min_variance",
+    "path": "A1_min_variance",
+    "weight_hash": "b1cf4378cd67cef91b00284845fa004feb04988d6b5718734740ddee9e49f0f1"
+  },
+  "15e2d00143b01668136acd7838fde4fc764a1d07188fc241c515bf4112ec561e": {
+    "portfolio": "A1_min_variance",
+    "path": "A1_min_variance",
+    "weight_hash": "b1cf4378cd67cef91b00284845fa004feb04988d6b5718734740ddee9e49f0f1"
+  },
+  "d3b6d82af475962ac48ab39959a61680f2e71620748238914229547224d62b0f": {
+    "portfolio": "A1_min_variance",
+    "path": "A1_min_variance",
+    "weight_hash": "b1cf4378cd67cef91b00284845fa004feb04988d6b5718734740ddee9e49f0f1"
+  },
+  "6c8c76d235da67e1c5ae38dfa7f77ebda6785d4a6155f2fe483a4d144838d239": {
+    "portfolio": "A1_min_variance",
+    "path": "A1_min_variance",
+    "weight_hash": "b1cf4378cd67cef91b00284845fa004feb04988d6b5718734740ddee9e49f0f1"
+  },
+  "3000f8b4c23cd6323a6e2801ffdbd67e7c39f4d1795305b4ecd8a6ed65c729eb": {
+    "portfolio": "A1_min_variance",
+    "path": "A1_min_variance",
+    "weight_hash": "b1cf4378cd67cef91b00284845fa004feb04988d6b5718734740ddee9e49f0f1"
+  },
+  "5c943361872cf4f7ade155b105ece9973c1ddf2477ab8b40135676363555063d": {
+    "portfolio": "A1_min_variance",
+    "path": "A1_min_variance",
+    "weight_hash": "b1cf4378cd67cef91b00284845fa004feb04988d6b5718734740ddee9e49f0f1"
+  },
+  "4ef43bee88c586681cf9a4de1810892dae7f25bbc29f7364d94a252786354116": {
+    "portfolio": "A1_min_variance",
+    "path": "A1_min_variance",
+    "weight_hash": "b1cf4378cd67cef91b00284845fa004feb04988d6b5718734740ddee9e49f0f1"
+  },
+  "e90e927461ad3cd9d08fa4f5087d10d53e08c7ba81331e6966e7e06d7ab42719": {
+    "portfolio": "A1_min_variance",
+    "path": "A1_min_variance",
+    "weight_hash": "b1cf4378cd67cef91b00284845fa004feb04988d6b5718734740ddee9e49f0f1"
+  },
+  "0969b164cc2418201603fa8017ac52ab0b1dadeebef2398867f26ee316a5c4d2": {
+    "portfolio": "A1_near_parity",
+    "path": "A1_near_parity",
+    "weight_hash": "cc6568879e74a74a87b2223eabca52551f2ed06e93b58d3587138dea17a68c61"
+  },
+  "cea45410b579d5bf7e9aa6631edafa8f20f99ae988ff7ba112960e44bbf35223": {
+    "portfolio": "A1_near_parity",
+    "path": "A1_near_parity",
+    "weight_hash": "cc6568879e74a74a87b2223eabca52551f2ed06e93b58d3587138dea17a68c61"
+  },
+  "71b3765675c801560b25eac7dd40afeddeb81c97724e32d135dace44d1361446": {
+    "portfolio": "A1_near_parity",
+    "path": "A1_near_parity",
+    "weight_hash": "cc6568879e74a74a87b2223eabca52551f2ed06e93b58d3587138dea17a68c61"
+  },
+  "d8fd19e14ff531dcf4234a5621c1e0936d70a3eb51cef0726108d8508d52186f": {
+    "portfolio": "A1_near_parity",
+    "path": "A1_near_parity",
+    "weight_hash": "cc6568879e74a74a87b2223eabca52551f2ed06e93b58d3587138dea17a68c61"
+  },
+  "ecca77067419b3ae881e383e7bb6c20dbcc16665997963bf4fb849fd17ce2279": {
+    "portfolio": "A1_near_parity",
+    "path": "A1_near_parity",
+    "weight_hash": "cc6568879e74a74a87b2223eabca52551f2ed06e93b58d3587138dea17a68c61"
+  },
+  "b7318031a7b012f82b02b9a261cc1f11c97dc17cfc0504b5f028488cc68caa04": {
+    "portfolio": "A1_near_parity",
+    "path": "A1_near_parity",
+    "weight_hash": "cc6568879e74a74a87b2223eabca52551f2ed06e93b58d3587138dea17a68c61"
+  },
+  "947149bf7cfdbfd1fe062a76cc59f8d7cdff8247c51d3d87fee35d6123d1f907": {
+    "portfolio": "A1_near_parity",
+    "path": "A1_near_parity",
+    "weight_hash": "cc6568879e74a74a87b2223eabca52551f2ed06e93b58d3587138dea17a68c61"
+  },
+  "f7c4fda55674814442f302700907f9ef5e245ee6d57d18d52af800b9cb4e20e8": {
+    "portfolio": "A1_near_parity",
+    "path": "A1_near_parity",
+    "weight_hash": "cc6568879e74a74a87b2223eabca52551f2ed06e93b58d3587138dea17a68c61"
+  },
+  "6a571ba8b5b2179fce113bc405120859793353900fdf793f74678e17f14cde97": {
+    "portfolio": "A1_max_sharpe",
+    "path": "A1_max_sharpe",
+    "weight_hash": "8652d2f8ce21151a30ec1ca26e32b6fdca9664ae6e913e5ffab3a4f763cc8de5"
+  },
+  "546433802d5396ddc4c4156483859ee62e01bf2771ce52112d590eb9ef6d8c5a": {
+    "portfolio": "A1_max_sharpe",
+    "path": "A1_max_sharpe",
+    "weight_hash": "8652d2f8ce21151a30ec1ca26e32b6fdca9664ae6e913e5ffab3a4f763cc8de5"
+  },
+  "ad7ca1cd518c8833978a373ed470cd0f912affc9976d459e1e736b1eefc58d75": {
+    "portfolio": "A1_max_sharpe",
+    "path": "A1_max_sharpe",
+    "weight_hash": "8652d2f8ce21151a30ec1ca26e32b6fdca9664ae6e913e5ffab3a4f763cc8de5"
+  },
+  "a309bee2dfc7289da95336aa3c4f4928dc91073674b17edfef60068d9efb04e4": {
+    "portfolio": "A1_max_sharpe",
+    "path": "A1_max_sharpe",
+    "weight_hash": "8652d2f8ce21151a30ec1ca26e32b6fdca9664ae6e913e5ffab3a4f763cc8de5"
+  },
+  "69197fcddaab345187ad709b91c599ecb1d5e1ee81d47891c606ef8358f441ab": {
+    "portfolio": "A1_max_sharpe",
+    "path": "A1_max_sharpe",
+    "weight_hash": "8652d2f8ce21151a30ec1ca26e32b6fdca9664ae6e913e5ffab3a4f763cc8de5"
+  },
+  "b91a7094dc17acc6cfcb3faffd3a3018daa92210568eb9bd3eb66a9ad589a947": {
+    "portfolio": "A1_max_sharpe",
+    "path": "A1_max_sharpe",
+    "weight_hash": "8652d2f8ce21151a30ec1ca26e32b6fdca9664ae6e913e5ffab3a4f763cc8de5"
+  },
+  "8c65b0173dfdfa63fd994a1dbab8ec55fb847e08112e34f377c321b01bfd98fb": {
+    "portfolio": "A1_max_sharpe",
+    "path": "A1_max_sharpe",
+    "weight_hash": "8652d2f8ce21151a30ec1ca26e32b6fdca9664ae6e913e5ffab3a4f763cc8de5"
+  },
+  "b3e52e626a785d17c0125a60e6d336c7779fd35499a57d81b688048660aeaf9d": {
+    "portfolio": "A1_max_sharpe",
+    "path": "A1_max_sharpe",
+    "weight_hash": "8652d2f8ce21151a30ec1ca26e32b6fdca9664ae6e913e5ffab3a4f763cc8de5"
+  },
+  "6c37c8d92fe23b3d51799f87727ba91579a8fde8f47921bfd87c5e365c393273": {
+    "portfolio": "max_return",
+    "path": "max_return",
+    "weight_hash": "7ff8e6494c41bdc76c3f3a5987117e88e240cd18d471c6c80665f5bc8036498d"
+  },
+  "e8db00d30158368b272bd6202741be56f71a2f58c1a7fcca0005b0e98666239e": {
+    "portfolio": "max_return",
+    "path": "max_return",
+    "weight_hash": "7ff8e6494c41bdc76c3f3a5987117e88e240cd18d471c6c80665f5bc8036498d"
+  },
+  "1d429c84dbfbfc428a19ae8c0ab9a676c69346ff4aeff1d9c10f0b4296cec68c": {
+    "portfolio": "max_return",
+    "path": "max_return",
+    "weight_hash": "7ff8e6494c41bdc76c3f3a5987117e88e240cd18d471c6c80665f5bc8036498d"
+  },
+  "1a644fb2cea16dec43f444be8217906b177091c763d225e63ba80175a3a9718e": {
+    "portfolio": "max_return",
+    "path": "max_return",
+    "weight_hash": "7ff8e6494c41bdc76c3f3a5987117e88e240cd18d471c6c80665f5bc8036498d"
+  },
+  "38906b36025a80d50c29efeaf3c1adaecfc246f93d4a1993b6616cd61b5e03ef": {
+    "portfolio": "max_return",
+    "path": "max_return",
+    "weight_hash": "7ff8e6494c41bdc76c3f3a5987117e88e240cd18d471c6c80665f5bc8036498d"
+  },
+  "dd47e92a337add2ea3f50009e542f5cacadf260eab1dc424c69921fdf4b5030f": {
+    "portfolio": "max_return",
+    "path": "max_return",
+    "weight_hash": "7ff8e6494c41bdc76c3f3a5987117e88e240cd18d471c6c80665f5bc8036498d"
+  },
+  "8cc54de63480e51486a2a3146fb1b26fdd99184e8bbc28149928b982d8471458": {
+    "portfolio": "max_return",
+    "path": "max_return",
+    "weight_hash": "7ff8e6494c41bdc76c3f3a5987117e88e240cd18d471c6c80665f5bc8036498d"
+  },
+  "f7feaffa24a8767464cca4cf5e456591e9ea383a92e7e0f25733d9490651d178": {
+    "portfolio": "max_return",
+    "path": "max_return",
+    "weight_hash": "7ff8e6494c41bdc76c3f3a5987117e88e240cd18d471c6c80665f5bc8036498d"
+  },
+  "005c77a6ac86e8fc82e3cb95ce2c31292aee070850bf1729a07c27bbdd859628": {
+    "portfolio": "40_60",
+    "path": "40_60",
+    "weight_hash": "8ed63ea389c1929db1295b31818e67583ade238d47f7639436d506658d7fc0e2"
+  },
+  "6b5de6d763e0e6a591ffc114247f5c09c1d065476d7eaade29e196f3db5fc85c": {
+    "portfolio": "40_60",
+    "path": "40_60",
+    "weight_hash": "8ed63ea389c1929db1295b31818e67583ade238d47f7639436d506658d7fc0e2"
+  },
+  "cf4a09052631ad37c0a35ef02d764d57192f1f40af9418e16ae09ea35263ac7e": {
+    "portfolio": "40_60",
+    "path": "40_60",
+    "weight_hash": "8ed63ea389c1929db1295b31818e67583ade238d47f7639436d506658d7fc0e2"
+  },
+  "a2ec380691277db4fc1d46ad65a0b7c4f0e19e9d99d635f2802e4371c4e8f8e6": {
+    "portfolio": "40_60",
+    "path": "40_60",
+    "weight_hash": "8ed63ea389c1929db1295b31818e67583ade238d47f7639436d506658d7fc0e2"
+  },
+  "60f197021d1b3848dd36bc7fd60a5e9ae54b26e7a6f371dea0ac363971b3b918": {
+    "portfolio": "40_60",
+    "path": "40_60",
+    "weight_hash": "8ed63ea389c1929db1295b31818e67583ade238d47f7639436d506658d7fc0e2"
+  },
+  "319e3701ca33b70802b682f1d90e8702aa738c1b53f5be3db0bc37b701c11cf8": {
+    "portfolio": "40_60",
+    "path": "40_60",
+    "weight_hash": "8ed63ea389c1929db1295b31818e67583ade238d47f7639436d506658d7fc0e2"
+  },
+  "a547f201e9d98390b9b45948a7f3ebb6c17b5841c54620bd7b91b46d262f2131": {
+    "portfolio": "40_60",
+    "path": "40_60",
+    "weight_hash": "8ed63ea389c1929db1295b31818e67583ade238d47f7639436d506658d7fc0e2"
+  },
+  "81afb5ce8daabf9ef25297cafe2df77d6be2bea69470699dc51c52a21f134159": {
+    "portfolio": "40_60",
+    "path": "40_60",
+    "weight_hash": "8ed63ea389c1929db1295b31818e67583ade238d47f7639436d506658d7fc0e2"
+  },
+  "e947e97ed353dbfe2b36fcd6ee45d7462fb02382be73d90bde9e3fcf0bb17d30": {
+    "portfolio": "60_40",
+    "path": "60_40",
+    "weight_hash": "4c6d2ce676df92917d8df1ddedd24faddb94cfb1da861a0ebaa3eaae47ef6b00"
+  },
+  "5ab782d61be54ad38ca4a82e0c2b15091565f2d43eae8a3b72e2a6a3b433519b": {
+    "portfolio": "60_40",
+    "path": "60_40",
+    "weight_hash": "4c6d2ce676df92917d8df1ddedd24faddb94cfb1da861a0ebaa3eaae47ef6b00"
+  },
+  "ff4d2b4b4de259a07b05ae79fc4bdc78523bd13a8725dfcd2cfb252613fc5b0b": {
+    "portfolio": "60_40",
+    "path": "60_40",
+    "weight_hash": "4c6d2ce676df92917d8df1ddedd24faddb94cfb1da861a0ebaa3eaae47ef6b00"
+  },
+  "8663f417cc42ed7949e39c90129e3ea79e620edbfcfe9a922f1938bf3206e004": {
+    "portfolio": "60_40",
+    "path": "60_40",
+    "weight_hash": "4c6d2ce676df92917d8df1ddedd24faddb94cfb1da861a0ebaa3eaae47ef6b00"
+  },
+  "2831d8c659d9a6ba2fcc5dbfd0224e219c26a3e98788cb388461128dc781b4c7": {
+    "portfolio": "60_40",
+    "path": "60_40",
+    "weight_hash": "4c6d2ce676df92917d8df1ddedd24faddb94cfb1da861a0ebaa3eaae47ef6b00"
+  },
+  "cf854fde5be52bd007bd985ff2c880cf132d54ea62d8d3516f27a570bc44bb7e": {
+    "portfolio": "60_40",
+    "path": "60_40",
+    "weight_hash": "4c6d2ce676df92917d8df1ddedd24faddb94cfb1da861a0ebaa3eaae47ef6b00"
+  },
+  "e232f3fd5507717ef9c71eb356ae1b9992704664e7226d7633bcf012810e4909": {
+    "portfolio": "60_40",
+    "path": "60_40",
+    "weight_hash": "4c6d2ce676df92917d8df1ddedd24faddb94cfb1da861a0ebaa3eaae47ef6b00"
+  },
+  "da305bc793edd3fb54b72f84a654c894739195c4600598867b2fe7d0e47072eb": {
+    "portfolio": "60_40",
+    "path": "60_40",
+    "weight_hash": "4c6d2ce676df92917d8df1ddedd24faddb94cfb1da861a0ebaa3eaae47ef6b00"
+  },
+  "dd8d9c0e98d958de7178879d5c802f03232e36e18ccc32952ff4c77af352d7b6": {
+    "portfolio": "equal_weight",
+    "path": "equal_weight",
+    "weight_hash": "9bed070558db9353d44783da140a73fb826ef94b2ae14b99f047eba5a8a9b112"
+  },
+  "bdf0bfa6ed26f02ddb6480feab3b76a8f3cbd7cfef2de393c97617b682e15a67": {
+    "portfolio": "equal_weight",
+    "path": "equal_weight",
+    "weight_hash": "9bed070558db9353d44783da140a73fb826ef94b2ae14b99f047eba5a8a9b112"
+  },
+  "a39dedbb7957b9a6d2deef502f4f6e44d32f8665b37f7af866e77d605a7ced71": {
+    "portfolio": "equal_weight",
+    "path": "equal_weight",
+    "weight_hash": "9bed070558db9353d44783da140a73fb826ef94b2ae14b99f047eba5a8a9b112"
+  },
+  "844098f0180b24246e933596161cb3e9b7b8a3c79401c49cee402c8834e4823c": {
+    "portfolio": "equal_weight",
+    "path": "equal_weight",
+    "weight_hash": "9bed070558db9353d44783da140a73fb826ef94b2ae14b99f047eba5a8a9b112"
+  },
+  "cab0c685b407bc69c90658ba79da74bc390a4c9ccc2a50dc395a40023fd23c65": {
+    "portfolio": "equal_weight",
+    "path": "equal_weight",
+    "weight_hash": "9bed070558db9353d44783da140a73fb826ef94b2ae14b99f047eba5a8a9b112"
+  },
+  "dae9a65e8c8d78b25a0f6a541539782b78186ecebaccc4250799cdeeb5e08274": {
+    "portfolio": "equal_weight",
+    "path": "equal_weight",
+    "weight_hash": "9bed070558db9353d44783da140a73fb826ef94b2ae14b99f047eba5a8a9b112"
+  },
+  "0cfa962a5b2bf67c4c9d8259133494fde773b5f632cc459b13be27143a29dffd": {
+    "portfolio": "equal_weight",
+    "path": "equal_weight",
+    "weight_hash": "9bed070558db9353d44783da140a73fb826ef94b2ae14b99f047eba5a8a9b112"
+  },
+  "0c5cc8475e7c97ba166ee319b26e9ef358c92670bec7e19dd2057d411a36a80c": {
+    "portfolio": "equal_weight",
+    "path": "equal_weight",
+    "weight_hash": "9bed070558db9353d44783da140a73fb826ef94b2ae14b99f047eba5a8a9b112"
+  },
+  "7f7ad2a1ff4f62f17ab66e43a1587060b57b6d5838fd6c5005b29b6e584889cd": {
+    "portfolio": "permanent",
+    "path": "permanent",
+    "weight_hash": "ba0ae18ea8b89e6ecdc4084189e84fc534213f6c925d5f41209eda20a0b950b7"
+  },
+  "a6abf47a4a74d73f43a9e330d072a750b37a3202d7091ed159bec6e58cd50475": {
+    "portfolio": "permanent",
+    "path": "permanent",
+    "weight_hash": "ba0ae18ea8b89e6ecdc4084189e84fc534213f6c925d5f41209eda20a0b950b7"
+  },
+  "033a612d1e19e8b98fa42126feac04a6ebc94d7bb73d72dd4180371a834799d0": {
+    "portfolio": "permanent",
+    "path": "permanent",
+    "weight_hash": "ba0ae18ea8b89e6ecdc4084189e84fc534213f6c925d5f41209eda20a0b950b7"
+  },
+  "80c329d85e92bc15a398d10ab09bc8e598fef01b24bcffc2116e5830c6a2bcd9": {
+    "portfolio": "permanent",
+    "path": "permanent",
+    "weight_hash": "ba0ae18ea8b89e6ecdc4084189e84fc534213f6c925d5f41209eda20a0b950b7"
+  },
+  "52bdadd1915833fe4fb0060e20366f434594f13e1ffede2e8570b29550281607": {
+    "portfolio": "permanent",
+    "path": "permanent",
+    "weight_hash": "ba0ae18ea8b89e6ecdc4084189e84fc534213f6c925d5f41209eda20a0b950b7"
+  },
+  "b3d72b1c456642a70ec141e2e48a0ca1150ba331dad9d7b2fd99b8cfb09f4954": {
+    "portfolio": "permanent",
+    "path": "permanent",
+    "weight_hash": "ba0ae18ea8b89e6ecdc4084189e84fc534213f6c925d5f41209eda20a0b950b7"
+  },
+  "8d4dd86388997bf6f7bf1088516f48a9ca415d89cc6670e1fd750c174c3c1089": {
+    "portfolio": "permanent",
+    "path": "permanent",
+    "weight_hash": "ba0ae18ea8b89e6ecdc4084189e84fc534213f6c925d5f41209eda20a0b950b7"
+  },
+  "5cd724f9f07f6da7e3dc753fd67ba8899ba7fb43bd931585b049e6436d03cf2f": {
+    "portfolio": "permanent",
+    "path": "permanent",
+    "weight_hash": "ba0ae18ea8b89e6ecdc4084189e84fc534213f6c925d5f41209eda20a0b950b7"
+  },
+  "b418b6badd13f38bf3f4dce88f029deeaee956ed733ccd058f921a3185e6648c": {
+    "portfolio": "balanced_35_50_15",
+    "path": "balanced_35_50_15",
+    "weight_hash": "8a0a00d9af7c68bd9189b598a066490817fa09f9c9f2acd4922fbe62077899cf"
+  },
+  "db66d0dfb5ca7481e5b3a65ae68184d63b1dd18a5d0395d9888257947fe1d3bd": {
+    "portfolio": "balanced_35_50_15",
+    "path": "balanced_35_50_15",
+    "weight_hash": "8a0a00d9af7c68bd9189b598a066490817fa09f9c9f2acd4922fbe62077899cf"
+  },
+  "fa01b681232822dde03067f26d0863dd36787a3d43851dffdd6b59e94b5412f8": {
+    "portfolio": "balanced_35_50_15",
+    "path": "balanced_35_50_15",
+    "weight_hash": "8a0a00d9af7c68bd9189b598a066490817fa09f9c9f2acd4922fbe62077899cf"
+  },
+  "8a4ffd952e75755ee0b6e1fea3d4e7d5f41015684b354968273c8e6523da9d4a": {
+    "portfolio": "balanced_35_50_15",
+    "path": "balanced_35_50_15",
+    "weight_hash": "8a0a00d9af7c68bd9189b598a066490817fa09f9c9f2acd4922fbe62077899cf"
+  },
+  "1a8f5b9d451149972713b2869d0f29e2f1d06a12455dd9de0407575b72190609": {
+    "portfolio": "balanced_35_50_15",
+    "path": "balanced_35_50_15",
+    "weight_hash": "8a0a00d9af7c68bd9189b598a066490817fa09f9c9f2acd4922fbe62077899cf"
+  },
+  "822093464d789a70ab295ecc029fa2dbf99ac651e2400e996cdff41e3e5909cc": {
+    "portfolio": "balanced_35_50_15",
+    "path": "balanced_35_50_15",
+    "weight_hash": "8a0a00d9af7c68bd9189b598a066490817fa09f9c9f2acd4922fbe62077899cf"
+  },
+  "730e2ed3bfa5d37114263b15c26ddc6318e32422568e034e1b0260dabd1ae42f": {
+    "portfolio": "balanced_35_50_15",
+    "path": "balanced_35_50_15",
+    "weight_hash": "8a0a00d9af7c68bd9189b598a066490817fa09f9c9f2acd4922fbe62077899cf"
+  },
+  "8ed5ea6fcaf082ee19a77b63c2e781c9978a2cc66e548f028ecb747aa5ad79c3": {
+    "portfolio": "balanced_35_50_15",
+    "path": "balanced_35_50_15",
+    "weight_hash": "8a0a00d9af7c68bd9189b598a066490817fa09f9c9f2acd4922fbe62077899cf"
+  },
+  "1b99c9ba1d195722c2bf3f4b98bde0f0ef7ad113507f2786547803b6634264d2": {
+    "portfolio": "W_train",
+    "path": "W_train",
+    "weight_hash": "7d8b34477700c0a282a22a97611d4c5898bb9a1fda44cb301dfa7a5f17a84891"
+  },
+  "7ce641360e90ca9f04c30f2745855d3eaf8856d2953b898679d376285d052439": {
+    "portfolio": "W_train",
+    "path": "W_train",
+    "weight_hash": "7d8b34477700c0a282a22a97611d4c5898bb9a1fda44cb301dfa7a5f17a84891"
+  },
+  "51e18660e141f75fafeaa7d5c36b7421d9d3d2b45ad69d5d847eae292d5b63eb": {
+    "portfolio": "W_train",
+    "path": "W_train",
+    "weight_hash": "7d8b34477700c0a282a22a97611d4c5898bb9a1fda44cb301dfa7a5f17a84891"
+  },
+  "43991be7daaedf7883561553f43da4f8d13f833f9f061e647d9b11a1d4053cbb": {
+    "portfolio": "W_train",
+    "path": "W_train",
+    "weight_hash": "7d8b34477700c0a282a22a97611d4c5898bb9a1fda44cb301dfa7a5f17a84891"
+  },
+  "bf8e43b9b66fe31a3b8173f44ee57d998b6ea563ba92f9581a21e77a7a58f035": {
+    "portfolio": "W_train",
+    "path": "W_train",
+    "weight_hash": "7d8b34477700c0a282a22a97611d4c5898bb9a1fda44cb301dfa7a5f17a84891"
+  },
+  "467155d8205e6747d0a2c74e12306191b2e3ccf5596450832a3101626eb49e0f": {
+    "portfolio": "W_train",
+    "path": "W_train",
+    "weight_hash": "7d8b34477700c0a282a22a97611d4c5898bb9a1fda44cb301dfa7a5f17a84891"
+  },
+  "89e54882b36517e61fd607691b90b4f4f051cdf164a56d3373c9c136917166e1": {
+    "portfolio": "W_train",
+    "path": "W_train",
+    "weight_hash": "7d8b34477700c0a282a22a97611d4c5898bb9a1fda44cb301dfa7a5f17a84891"
+  },
+  "e549af3bb12b65d08ac1623a618cc372332791ca5207c3d55b11e3439c37edd1": {
+    "portfolio": "W_train",
+    "path": "W_train",
+    "weight_hash": "7d8b34477700c0a282a22a97611d4c5898bb9a1fda44cb301dfa7a5f17a84891"
+  },
+  "2a960c6bb9f90a40982da35ca10d3543af7e472983a6c958a570dc13d14dc31a": {
+    "portfolio": "A2",
+    "path": "A2",
+    "weight_hash": "bd13d8979ea90bd195fc97c16af6d8923a6a8537159887b9ffb110953163d87f"
+  },
+  "14c6de986d71e5687fe9b0a2a6eaf32982a305b5060d91b8774d763ccae4c09d": {
+    "portfolio": "A2",
+    "path": "A2",
+    "weight_hash": "bd13d8979ea90bd195fc97c16af6d8923a6a8537159887b9ffb110953163d87f"
+  },
+  "c4b1aca91030df00b0bb098196617bb31a7b2d2a9f127cbdfd6257c47788ec4e": {
+    "portfolio": "A2",
+    "path": "A2",
+    "weight_hash": "bd13d8979ea90bd195fc97c16af6d8923a6a8537159887b9ffb110953163d87f"
+  },
+  "8b809230ba5c87bb1d983314c78379c51a8922ef587158fba4ceb55b756cf41f": {
+    "portfolio": "A2",
+    "path": "A2",
+    "weight_hash": "bd13d8979ea90bd195fc97c16af6d8923a6a8537159887b9ffb110953163d87f"
+  },
+  "8166bafa29cff3d4b040027c17f2f04a4dd3dabba9c8d890e91040c830845519": {
+    "portfolio": "A2",
+    "path": "A2",
+    "weight_hash": "bd13d8979ea90bd195fc97c16af6d8923a6a8537159887b9ffb110953163d87f"
+  },
+  "dfbbf77ae6ac5886307a1f10fb9e0881fc6c58af269aab8a0ec6683e2f5f2cfc": {
+    "portfolio": "A2",
+    "path": "A2",
+    "weight_hash": "bd13d8979ea90bd195fc97c16af6d8923a6a8537159887b9ffb110953163d87f"
+  },
+  "78ddac2ff4a4caa75b81178a8c3ba45cc50e775e4e0972abef27c0393f44a1e2": {
+    "portfolio": "A2",
+    "path": "A2",
+    "weight_hash": "bd13d8979ea90bd195fc97c16af6d8923a6a8537159887b9ffb110953163d87f"
+  },
+  "4f23112df1ae693914651958981057c798353cbf6e7ff05a584513a611ee322c": {
+    "portfolio": "A2",
+    "path": "A2",
+    "weight_hash": "bd13d8979ea90bd195fc97c16af6d8923a6a8537159887b9ffb110953163d87f"
+  }
+}

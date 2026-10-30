@@ -1,0 +1,15 @@
+{
+ "data_hash": "76bac76cbc98b5ce62291bd6257600047cc20857943d363edd1f807f743d4d0d",
+ "config_hash": "9f479f0580ba79d3d53b063058ec72f51ddf0e118fe19f3da2757eef39d88a92",
+ "code_rev": "27678a5f6482047e46edf4d64ffd8a52adfbf870",
+ "universe": [
+  "SPY",
+  "XLE",
+  "AGG",
+  "GLD"
+ ],
+ "mandate": "v2",
+ "prereg_tag": "prereg-v2",
+ "label": "retrospective portfolio evaluation; C4 uses each candidate's own sequential forecasts",
+ "python": "3.12.3"
+}

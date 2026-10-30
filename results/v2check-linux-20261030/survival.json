@@ -1,0 +1,83 @@
+{
+  "selected": {
+    "status": "illustrative",
+    "paths": 10000,
+    "block": "non-circular joint 12 months",
+    "horizon_years": 25,
+    "schedule": "USD reserve_initial x (1+reserve_growth)^(t-1) withdrawn each 1 January; cash earns 0",
+    "results": [
+      {
+        "year": 10,
+        "all_payments_funded": 1.0,
+        "mc_se": 0.0,
+        "real_capital_preserved": 0.0033,
+        "median_real_balance_usd": 6499835.555377098,
+        "p10_real_balance_usd": 4903166.438891763,
+        "median_depletion_year": null
+      },
+      {
+        "year": 25,
+        "all_payments_funded": 0.6744,
+        "mc_se": 0.0046859859154717905,
+        "real_capital_preserved": 0.0,
+        "median_real_balance_usd": 682854.4936630115,
+        "p10_real_balance_usd": 0.0,
+        "median_depletion_year": 24.0
+      }
+    ]
+  },
+  "40_60": {
+    "status": "illustrative",
+    "paths": 10000,
+    "block": "non-circular joint 12 months",
+    "horizon_years": 25,
+    "schedule": "USD reserve_initial x (1+reserve_growth)^(t-1) withdrawn each 1 January; cash earns 0",
+    "results": [
+      {
+        "year": 10,
+        "all_payments_funded": 1.0,
+        "mc_se": 0.0,
+        "real_capital_preserved": 0.2841,
+        "median_real_balance_usd": 8624569.208278194,
+        "p10_real_balance_usd": 5720021.822827422,
+        "median_depletion_year": null
+      },
+      {
+        "year": 25,
+        "all_payments_funded": 0.9327,
+        "mc_se": 0.0025054083499501637,
+        "real_capital_preserved": 0.1649,
+        "median_real_balance_usd": 5149981.903212244,
+        "p10_real_balance_usd": 600078.4073074864,
+        "median_depletion_year": 23.0
+      }
+    ]
+  },
+  "permanent": {
+    "status": "illustrative",
+    "paths": 10000,
+    "block": "non-circular joint 12 months",
+    "horizon_years": 25,
+    "schedule": "USD reserve_initial x (1+reserve_growth)^(t-1) withdrawn each 1 January; cash earns 0",
+    "results": [
+      {
+        "year": 10,
+        "all_payments_funded": 1.0,
+        "mc_se": 0.0,
+        "real_capital_preserved": 0.4341,
+        "median_real_balance_usd": 9576091.485168586,
+        "p10_real_balance_usd": 6519978.272621514,
+        "median_depletion_year": null
+      },
+      {
+        "year": 25,
+        "all_payments_funded": 0.9795,
+        "mc_se": 0.001417030345476058,
+        "real_capital_preserved": 0.3778,
+        "median_real_balance_usd": 8106714.621477864,
+        "p10_real_balance_usd": 2410885.8846290475,
+        "median_depletion_year": 24.0
+      }
+    ]
+  }
+}
