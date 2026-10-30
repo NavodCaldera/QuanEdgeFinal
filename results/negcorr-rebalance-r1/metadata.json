@@ -15,6 +15,7 @@
   "tilt": 0.05,
   "band": 0.05,
   "trigger_months": 66,
+  "trigger_quarters": 9,
   "cost": 0.0,
   "reserve": "not withdrawn",
   "label": "retrospective portfolio evaluation; full-sample weights, rule proposed after seeing 2020-2026 correlations"

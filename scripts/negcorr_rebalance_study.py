@@ -6,7 +6,8 @@ one that went up and buy the one that went down, and rebalance the risk-parity w
 Rules fixed in this docstring before the first run. Target = v3 static near parity
 (SPY 14.0 / AGG 60.9 / GLD 16.3 / XLE 8.8, results/final-v3-20261030/A1_near_parity).
 Trigger: at a month-end close, the correlation of daily log returns within that calendar
-month is below -0.5 for at least one of the six pairs. Trades happen at that close and the
+month is below -0.5 for at least one of the six pairs. Quarterly trigger (added at the owner's
+request after the monthly run): the same test on the calendar quarter, at quarter-end closes. Trades happen at that close and the
 new weights apply from the next day. 0% cost, no reserve withdrawals, weights drift between trades.
   Normal          Quarter-end rebalance to target, plus any day an ETF drifts 5 points (portfolio.replay rule).
   Trigger only    Rebalance to target only at triggered month-ends (this sells the winners and buys the losers).
@@ -31,11 +32,11 @@ CRISES = {"GFC": ("2007-10-09", "2009-03-09"), "COVID": ("2020-02-19", "2020-03-
           "2022": ("2022-01-03", "2022-10-12")}
 
 
-def triggers(prices):
-    """Month-end date -> list of (winner, loser, corr) for pairs below THRESHOLD in that month."""
+def triggers(prices, freq="M"):
+    """Period-end date -> list of (winner, loser, corr) for pairs below THRESHOLD in that month ("M") or quarter ("Q")."""
     lr = np.log(prices).diff().dropna(); simple = prices.pct_change()
     out = {}
-    for m, d in lr.groupby(lr.index.to_period("M")):
+    for m, d in lr.groupby(lr.index.to_period(freq)):
         end = d.index[-1]; month_ret = (1+simple.loc[d.index]).prod()-1; hits = []
         for a, b in itertools.combinations(FOUR, 2):
             c = d[a].corr(d[b])
@@ -84,25 +85,31 @@ def main():
     R = prices.pct_change().dropna()
     raw = json.load(open(f"{RUN}/A1_near_parity/weights.json"))["weights"]
     target = {c: raw[c] for c in FOUR}
-    trig = triggers(prices)
-    rules = ["Normal", "Trigger only", "Normal+trigger", "Contrarian tilt", "Buy-and-hold"]
+    trig = {"M": triggers(prices), "Q": triggers(prices, "Q")}
+    # (label, rule, trigger frequency); a quarterly trigger with the normal rule adds no extra trade,
+    # because the normal rule already rebalances to target at every quarter-end.
+    rules = [("Normal", "Normal", "M"), ("Trigger only, monthly", "Trigger only", "M"),
+             ("Normal+trigger, monthly", "Normal+trigger", "M"), ("Contrarian tilt, monthly", "Contrarian tilt", "M"),
+             ("Trigger only, quarterly", "Trigger only", "Q"), ("Contrarian tilt, quarterly", "Contrarian tilt", "Q"),
+             ("Buy-and-hold", "Buy-and-hold", "M")]
     tables = {}
     for label, start in (("2005-2026", "2005"), ("2020-2026", "2020")):
         sub = R.loc[start:]
-        tables[label] = pd.DataFrame({rule: metrics(*simulate(sub, target, rule, trig)) for rule in rules}).T
+        tables[label] = pd.DataFrame({label: metrics(*simulate(sub, target, rule, trig[fq])) for label, rule, fq in rules}).T
     os.makedirs(OUT, exist_ok=True)
     for k, v in tables.items():
         v.to_csv(f"{OUT}/summary_{k}.csv")
-    pd.DataFrame([(d.date(), win, lose, round(c, 4)) for d, h in trig.items() for win, lose, c in h],
-                 columns=["month_end", "went_up_more", "went_down_more", "corr"]).to_csv(f"{OUT}/triggers.csv", index=False)
+    pd.DataFrame([(fq, d.date(), win, lose, round(c, 4)) for fq, t in trig.items() for d, h in t.items() for win, lose, c in h],
+                 columns=["period", "period_end", "went_up_more", "went_down_more", "corr"]).to_csv(f"{OUT}/triggers.csv", index=False)
     cw = canonical_weights(target)
     json.dump({"task": "PORT-019", "source_sha256": hashlib.sha256(open("data/clean/prices_clean.csv", "rb").read()).hexdigest(),
                "target": cw, "weight_hash": weight_hash(cw), "threshold": THRESHOLD, "tilt": TILT, "band": BAND,
-               "trigger_months": len(trig), "cost": 0.0, "reserve": "not withdrawn",
+               "trigger_months": len(trig["M"]), "trigger_quarters": len(trig["Q"]), "cost": 0.0, "reserve": "not withdrawn",
                "label": "retrospective portfolio evaluation; full-sample weights, rule proposed after seeing 2020-2026 correlations"},
               open(f"{OUT}/metadata.json", "w"), indent=2)
     pd.set_option("display.width", 220)
-    print(f"Trigger months: {len(trig)} of {R.index.to_period('M').nunique()}")
+    print(f"Trigger months: {len(trig['M'])} of {R.index.to_period('M').nunique()}, "
+          f"quarters: {len(trig['Q'])} of {R.index.to_period('Q').nunique()}")
     for k, v in tables.items():
         print(f"\n{k}\n", v.round(2))
 
