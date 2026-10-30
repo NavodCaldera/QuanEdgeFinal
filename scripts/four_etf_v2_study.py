@@ -85,7 +85,7 @@ if __name__ == "__main__":
                 "weights (2005-2026 estimate)": " / ".join(f"{t} {100*cand['weights'][t]:.0f}" for t in FOUR if cand["weights"][t] > 5e-4),
                 "weights (2005-2016 estimate)": " / ".join(f"{t} {100*tw[t]:.0f}" for t in FOUR if tw.get(t, 0) > 5e-4),
                 "exp real %": 100 * cand["expected_real"], "exp vol %": 100 * cand["volatility"], "ES99 %": 100 * cand["es99"],
-                "CAGR 2005-26 %": 100 * res["performance"]["cagr"], "max DD %": 100 * res["performance"]["max_drawdown"],
+                "CAGR 2005-26 %": 100 * res["performance"]["cagr"], "max DD %": 100 * res["performance"]["maximum_drawdown"],
                 "GFC DD %": 100 * st["GFC"]["drawdown"], "2022 %": 100 * st["Rates 2022"]["return"],
                 "FHS breaches (24.5 exp)": fhs["breaches"], "FHS Kupiec p": fhs["kupiec_p"], "FHS CC p": fhs["conditional_coverage_p"],
                 "GARCH-EVT breaches": ge["breaches"], "GARCH-EVT Kupiec p": ge["kupiec_p"], "GARCH-EVT CC p": ge["conditional_coverage_p"],
