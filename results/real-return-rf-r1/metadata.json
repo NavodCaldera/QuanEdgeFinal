@@ -1,0 +1,124 @@
+{
+  "task": "PORT-023",
+  "sources_sha256": {
+    "data/clean/prices_clean.csv": "76bac76cbc98b5ce62291bd6257600047cc20857943d363edd1f807f743d4d0d",
+    "data/clean/macro_clean.csv": "082d2010e99c1e2e1c98e1e509137fb4204bbf37edc9d7b54a9b05431f0187b1"
+  },
+  "series": {
+    "inflation": "FRED CPIAUCSL, index ratio as published by each date",
+    "risk_free": "FRED DTB3, bond-equivalent yield, daily (rf_daily_effective)",
+    "prices": "Yahoo Finance adjusted close"
+  },
+  "weights": {
+    "Min CVaR (v3 W_rec)": {
+      "weights": {
+        "SPY": 0.058351,
+        "EFA": 0.0,
+        "EEM": 0.0,
+        "AGG": 0.879582,
+        "GLD": 0.060358,
+        "XLE": 0.001709,
+        "XLK": 0.0
+      },
+      "weight_hash": "bd13d8979ea90bd195fc97c16af6d8923a6a8537159887b9ffb110953163d87f"
+    },
+    "Risk parity": {
+      "weights": {
+        "SPY": 0.140294,
+        "EFA": 0.0,
+        "EEM": 0.0,
+        "AGG": 0.608741,
+        "GLD": 0.162509,
+        "XLE": 0.088456,
+        "XLK": 0.0
+      },
+      "weight_hash": "ece535c3eb7c2caab5cd5fa4c7e0cf9e107f51c1c01031eb724e104dc8005dc3"
+    },
+    "SPY 25 / AGG 50 / GLD 25": {
+      "weights": {
+        "SPY": 0.25,
+        "EFA": 0.0,
+        "EEM": 0.0,
+        "AGG": 0.5,
+        "GLD": 0.25,
+        "XLE": 0.0,
+        "XLK": 0.0
+      },
+      "weight_hash": "ba0ae18ea8b89e6ecdc4084189e84fc534213f6c925d5f41209eda20a0b950b7"
+    },
+    "SPY 35 / AGG 50 / GLD 15": {
+      "weights": {
+        "SPY": 0.35,
+        "EFA": 0.0,
+        "EEM": 0.0,
+        "AGG": 0.5,
+        "GLD": 0.15,
+        "XLE": 0.0,
+        "XLK": 0.0
+      },
+      "weight_hash": "8a0a00d9af7c68bd9189b598a066490817fa09f9c9f2acd4922fbe62077899cf"
+    },
+    "SPY 28 / AGG 42 / GLD 30 (4% real, raw means)": {
+      "weights": {
+        "SPY": 0.28,
+        "EFA": 0.0,
+        "EEM": 0.0,
+        "AGG": 0.42,
+        "GLD": 0.3,
+        "XLE": 0.0,
+        "XLK": 0.0
+      },
+      "weight_hash": "e2dac5ffdcd08a71a68889d61780d332ad82634c637b8214272ebb9e03668c39"
+    },
+    "60/40 SPY/AGG": {
+      "weights": {
+        "SPY": 0.6,
+        "EFA": 0.0,
+        "EEM": 0.0,
+        "AGG": 0.4,
+        "GLD": 0.0,
+        "XLE": 0.0,
+        "XLK": 0.0
+      },
+      "weight_hash": "4c6d2ce676df92917d8df1ddedd24faddb94cfb1da861a0ebaa3eaae47ef6b00"
+    },
+    "100% SPY": {
+      "weights": {
+        "SPY": 1.0,
+        "EFA": 0.0,
+        "EEM": 0.0,
+        "AGG": 0.0,
+        "GLD": 0.0,
+        "XLE": 0.0,
+        "XLK": 0.0
+      },
+      "weight_hash": "ca799e1b42a2c4e17482cb5374bee3f5ec6d24222b473af38e699d4298eceea6"
+    },
+    "100% AGG": {
+      "weights": {
+        "SPY": 0.0,
+        "EFA": 0.0,
+        "EEM": 0.0,
+        "AGG": 1.0,
+        "GLD": 0.0,
+        "XLE": 0.0,
+        "XLK": 0.0
+      },
+      "weight_hash": "d279328da502c456dcb0bf57cdf7f3fa8dc2b9cfc4648ade1a4bdc6072b67df7"
+    },
+    "100% GLD": {
+      "weights": {
+        "SPY": 0.0,
+        "EFA": 0.0,
+        "EEM": 0.0,
+        "AGG": 0.0,
+        "GLD": 1.0,
+        "XLE": 0.0,
+        "XLK": 0.0
+      },
+      "weight_hash": "8a0de5bb6b79e0650c7deb6d5eb4e01d5462c4bc135a164bb4a2679859db4ba9"
+    }
+  },
+  "assumptions": "quarterly + 5-pt drift rebalancing, 0% cost, no reserve; partial 2026 to 30 September",
+  "label": "retrospective portfolio evaluation"
+}
