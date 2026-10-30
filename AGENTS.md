@@ -543,3 +543,11 @@ AI assistance and actual human review:
 - Operational: same Windows rename lock as v2; the complete, sealed staging folder was renamed and results/latest.txt set by hand. quanedge.verify PASS (18 allocations, 139 files); AppTest all eight pages without errors; memorandum 11 pages, tear sheet and committee memo one page. PPTX not rebuilt.
 - Claude Code ran and checked this work; owner review pending.
 
+
+2026-10-30, PORT-010 (exploratory), portfolio history chart and regime/dynamic comparisons:
+- State: ready for review. Owner asked how each candidate would have performed from 2005. `python scripts/portfolio_history_chart.py` writes results/charts/portfolio_history_2005.png: USD 10m from 3 January 2005 to 30 September 2026 in the final-v3-20261030 weights (W_rec, max Sharpe, static risk parity, permanent 25/50/25, balanced 35/50/15, 60/40) plus monthly EWMA (lambda 0.97) dynamic risk parity from January 2007.
+- Ending values: W_rec USD 23.0m (CAGR 3.9%, max drawdown 17.1%); static risk parity 39.0m (6.5%, 19.1%); dynamic risk parity 6.2% from 2007 (18.5%); permanent 45.7m (7.3%, 19.1%); balanced 46.3m (7.3%, 22.0% on the rebalanced path although its C5 buy-and-hold GFC check passes); 60/40 53.3m (8.0%, 35.1%).
+- Also shown to the owner in conversation, not saved as artifacts: per-ETF crisis versus normal risk (crisis ES99 multipliers SPY 2.6, XLE 2.9, AGG 4.3, GLD 1.3); FZ0 VaR/ES scoring of the run's own 2017-2026 forecasts, where GARCH-EVT ranks first on all seven portfolios scored and FHS second.
+- Retrospective and descriptive only: weights estimated on the full sample, 0% cost, no reserve withdrawals. No change to policy, W_rec, the frozen run or the v3 verdict (evaluation incomplete). Any switch of primary model or selection rule needs a logged owner decision and a new tag.
+- Validation: script re-run from the repository reproduced the conversation figures. No unit tests added for this exploratory script.
+- AI: Claude Code. Owner review pending.
