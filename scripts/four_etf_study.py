@@ -1,4 +1,4 @@
-"""Exploratory study: a SPY/AGG/GLD/XLE portfolio under the frozen policy, plus risk-mitigation overlays.
+"""Exploratory study: a SPY/AGG/GLD/XLE portfolio under the mandate v1 (prereg-v1) policy, plus risk-mitigation overlays.
 
 Weights come from the repository's own estimator and optimiser (quanedge.portfolio.construct) with
 EFA, EEM and XLK forced to zero. Retrospective and descriptive: not part of the frozen run, no change to
@@ -6,14 +6,16 @@ policy or W_rec. Run from the repository root: python scripts/four_etf_study.py
 """
 import os, sys
 os.chdir(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")); sys.path.insert(0, os.getcwd())
-import numpy as np, pandas as pd, yaml
+import numpy as np, pandas as pd
 from scipy.optimize import minimize
 import quanedge.portfolio as qp
 from quanedge.config import TICKERS
 from quanedge.stress import stress_tests
 pd.set_option("display.width",250); pd.set_option("display.max_columns",30); pd.set_option("display.precision",2)
 
-cfg=yaml.safe_load(open("config/final.yaml")); FOUR=["SPY","AGG","GLD","XLE"]
+from quanedge.config import frozen_policy
+cfg=frozen_policy("prereg-v1")  # mandate v1 limits; config/final.yaml now holds mandate v2
+FOUR=["SPY","AGG","GLD","XLE"]
 prices=pd.read_csv("data/clean/prices_clean.csv",index_col=0,parse_dates=True)[TICKERS]
 R=prices.pct_change().dropna(); train=R.loc[:cfg["training_end"]]; evalr=R.loc[cfg["evaluation_start"]:]
 H=qp.hurdle(cfg["inflation"],cfg["spending"])
