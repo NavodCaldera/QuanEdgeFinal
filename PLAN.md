@@ -276,6 +276,27 @@ The owner changed the mandate after reviewing the v1 run (`final-20261027`, verd
 
 **Disclosure before the tag:** the v2 run (final-v2-20261030) was already seen. The v2 selection already held only these four ETFs, and a pre-tag check confirmed that v3 selects the same weights (SPY 5.8 / AGG 88.0 / GLD 6.0 / XLE 0.2), so the same risk-model result is expected. The comparison candidates change (for example, maximum Sharpe becomes about SPY 13 / AGG 79 / GLD 8.5).
 
+### 13d. Candidate v4c: risk parity plus volatility overlay (pre-registered 30 October 2026, before its run)
+
+A candidate for a possible mandate v4, not a mandate change. The v3 policy, run (final-v3-20261030) and verdict (evaluation incomplete) stay as recorded. Everything below was fixed and committed before any overlay path on these weights was computed.
+
+| Item | Fixed choice |
+|---|---|
+| Base weights | The v3 run's `A1_near_parity` weights, full-sample estimate: SPY 14.03 / AGG 60.87 / GLD 16.25 / XLE 8.85, weight hash ece535c3 |
+| Overlay | `quanedge.hedging.vol_target` with PORT-004 settings unchanged: EWMA lambda 0.94, weekly review, 5-point minimum change, 252-day minimum history, scale = min(1, expanding vol / EWMA vol) on the equity sleeve (SPY, XLE). Under v3 there are no caps, so freed weight goes to AGG |
+| Policy | v3 config as tagged `prereg-v3`: USD 9.6m invested, 0% cost, quarterly plus 5-point drift rebalancing, FHS primary and GARCH-EVT challenger (window 750, refit 21) |
+| Evaluation | 2017-01-01 to 2026-09-30; forecasts carry a strategy hash (base weight hash plus overlay settings) |
+| C1 | Every overlay target is long-only, fully invested and inside the four-ETF universe |
+| C2 | Base weights' estimation-sample ES99 and the overlay path's realised ES99 both at or below 2.5% |
+| C3 | Base expected geometric return minus the overlay's realised log-return drag against static parity; real return at 3.64% inflation at least 1% |
+| C4 | `model_pass` for FHS or GARCH-EVT at 99% on the overlay path's own forecasts |
+| C5 | Overlay path from each scenario start (GFC, COVID, Rates 2022): loss at most 20% of value and GFC drawdown at most 20% |
+| Descriptive only | Walk-forward (yearly near-parity weights on earlier data, then the overlay), 25-year reserve survival, daily-path replay of the 11 crisis windows in PORT-010, turnover, comparison with static parity and W_rec |
+
+**Outcome rule:** if C1-C5 all pass, the result reads "would be Accept under v3 criteria for this candidate". It does not replace the v3 verdict; adopting it needs a new owner-logged mandate v4. If any check fails, the failure is the result. The base weights, overlay settings and windows are not retuned in response.
+
+**Seen before this registration:** the v3 static near-parity results (FHS 33 breaches vs 24.5 expected, conditional coverage p 0.009, GFC drawdown 18.1%), the PORT-010 crisis replay, and PORT-005 (the same overlay on the v1 selection passed C1-C5). The overlay was designed after 2008 had been seen. Several weighting methods have been compared, so a pass is after multiple tries.
+
 ## 14. Work plan
 
 Fix phase timeboxes as shares of the time left once the deadline is known. Two milestones are hard: the **thin slice** at about 15% of the time and the **minimum viable submission** at about 60%.
