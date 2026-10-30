@@ -1,0 +1,14 @@
+{
+  "weights": {
+    "SPY": 0.072091,
+    "EFA": 0.0,
+    "EEM": 0.0,
+    "AGG": 0.863335,
+    "GLD": 0.064574,
+    "XLE": 0.0,
+    "XLK": 0.0
+  },
+  "weight_hash": "681ba54480d0b4402d789087a0608a9a3ab954cd0437df8fce550f1901019cce",
+  "effective_date": "2026-09-30",
+  "estimation_end": "2016-12-31"
+}

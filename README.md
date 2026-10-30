@@ -46,7 +46,11 @@ Risk values distinguish log loss, simple percentage points and USD. Dollar ES av
 
 ### Current mandate (v3)
 
-Mandate v3 (tag `prereg-v3`, PLAN.md section 13c) keeps every v2 rule below and limits holdings to SPY, AGG, GLD and XLE. Its run will replace the v2 results described below once complete.
+Mandate v3 (tag `prereg-v3`, PLAN.md section 13c) keeps every v2 rule below and limits holdings to SPY, AGG, GLD and XLE, because EFA, EEM and XLK move almost in step with SPY (daily correlation 0.82-0.91). SPY and XLE are still 0.70 correlated; AGG and GLD are the diversifiers.
+
+Run `final-v3-20261030` returns **evaluation incomplete**, with the same allocation and evidence as v2: **SPY 5.8%, AGG 88.0%, GLD 6.0%, XLE 0.2%** (the v2 pick already used only these four ETFs). C1-C3 and C5 pass; the risk-model check fails (FHS 41 breaches vs 24.5 expected, Kupiec p 0.002; GARCH-EVT 36, p 0.026). No A1-A2 alternative passes all checks: the four-ETF risk-parity mix (SPY 14 / AGG 61 / GLD 16 / XLE 9) now passes the stress limit (GFC 18.1%) but fails conditional coverage (FHS p 0.009). The fixed benchmarks SPY 35 / AGG 50 / GLD 15 and SPY 25 / AGG 50 / GLD 25 pass all five checks but are outside the selection rule. The return and reserve qualifications under v2 below apply unchanged.
+
+Review the [v3 investment memorandum](results/final-v3-20261030/documents/investment_memorandum.pdf), [executive tear sheet](results/final-v3-20261030/documents/executive_tear_sheet.pdf), [committee memo](results/final-v3-20261030/documents/committee_memo.pdf) and [speaker/Q&A notes](results/final-v3-20261030/documents/speaker_qa_notes.md); verify with `python -m quanedge.verify results/final-v3-20261030`.
 
 ### Mandate v2
 

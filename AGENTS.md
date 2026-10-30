@@ -538,3 +538,8 @@ AI assistance and actual human review:
 - Evidence recorded with the rule: EFA/EEM/XLK correlate 0.82-0.91 with SPY daily; XLE 0.70 (0.76 on SPY's worst 5% of days), so the low-correlation reason holds for AGG and GLD, not for SPY-XLE. Pre-tag check: v3 selects the same weights as v2.
 - Validation before the run: 175 tests passed, including a new test that no construction method holds an excluded ETF and that holding one is outside policy. Claude Code implemented; owner review pending.
 
+2026-10-30, PORT-009 / VAL-005, mandate v3 final run final-v3-20261030 (ready for review):
+- Outcome: evaluation incomplete. W_rec identical to v2 (weight hash bd13d897): SPY 5.8 / AGG 88.0 / GLD 6.0 / XLE 0.2; C1-C3, C5 pass; C4 fails (FHS 41 vs 24.5, p 0.002; GARCH-EVT 36, p 0.026). A1: min variance and max Sharpe fail C4, four-ETF near parity (SPY 14.0 / AGG 60.9 / GLD 16.3 / XLE 8.8) passes C5 (GFC 18.1%) but fails C4 (FHS conditional coverage p 0.009). Benchmarks SPY35/AGG50/GLD15 and SPY25/AGG50/GLD25 pass C1-C5; outside the selection rule.
+- Operational: same Windows rename lock as v2; the complete, sealed staging folder was renamed and results/latest.txt set by hand. quanedge.verify PASS (18 allocations, 139 files); AppTest all eight pages without errors; memorandum 11 pages, tear sheet and committee memo one page. PPTX not rebuilt.
+- Claude Code ran and checked this work; owner review pending.
+
