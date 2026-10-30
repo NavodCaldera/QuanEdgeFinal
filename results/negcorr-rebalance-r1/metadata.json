@@ -1,0 +1,22 @@
+{
+  "task": "PORT-019",
+  "source_sha256": "76bac76cbc98b5ce62291bd6257600047cc20857943d363edd1f807f743d4d0d",
+  "target": {
+    "SPY": 0.140294,
+    "EFA": 0.0,
+    "EEM": 0.0,
+    "AGG": 0.608741,
+    "GLD": 0.162509,
+    "XLE": 0.088456,
+    "XLK": 0.0
+  },
+  "weight_hash": "ece535c3eb7c2caab5cd5fa4c7e0cf9e107f51c1c01031eb724e104dc8005dc3",
+  "threshold": -0.5,
+  "tilt": 0.05,
+  "band": 0.05,
+  "trigger_months": 66,
+  "trigger_quarters": 9,
+  "cost": 0.0,
+  "reserve": "not withdrawn",
+  "label": "retrospective portfolio evaluation; full-sample weights, rule proposed after seeing 2020-2026 correlations"
+}

@@ -1,0 +1,15 @@
+{
+  "task": "PORT-021",
+  "source": "data/clean/prices_clean.csv",
+  "source_sha256": "76bac76cbc98b5ce62291bd6257600047cc20857943d363edd1f807f743d4d0d",
+  "ewma_memory": {
+    "lambda": 0.97,
+    "half_life_days": 22.75657306277341,
+    "effective_sample_days": 65.66666666666661,
+    "new_information_5d": 0.1412659743000001,
+    "new_information_21d": 0.4725194873610554,
+    "new_information_63d": 0.8532360949640706
+  },
+  "garch": "GJR-GARCH(1,1), Student-t, arch package, full sample 2005-2026, percent log returns",
+  "label": "descriptive; retrospective; shown to the owner in conversation"
+}
