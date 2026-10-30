@@ -299,6 +299,28 @@ A candidate for a possible mandate v4, not a mandate change. The v3 policy, run 
 
 **Result (run results/parity-overlay-r1, PORT-011):** C1, C2, C3 and C5 pass; C4 fails, so the outcome is "evaluation incomplete", the same as v3. FHS 37 breaches vs 24.5 expected (Kupiec p 0.018, conditional coverage p 0.0005); GARCH-EVT 30 (Kupiec p 0.28, independence p 0.0004). The overlay made clustering worse, not better (static parity: FHS conditional coverage p 0.009, GARCH-EVT 0.011). Breaches bunch in 2018, 2020, 2024 and 2025 on the first days of sudden shocks, before a weekly reaction can act. Per the outcome rule, nothing is retuned.
 
+### 13e. Candidates v4d and v4e: dynamic EWMA risk parity, monthly and weekly (pre-registered 30 October 2026, before their C4 backtests)
+
+Candidates for a possible mandate v4, not a mandate change. The v3 policy, run and verdict stay as recorded. Fixed and committed before any risk forecast on these strategies was computed.
+
+| Item | Fixed choice |
+|---|---|
+| Strategy | Long-only risk parity over SPY, AGG, GLD, XLE: weights with equal volatility risk contributions (Spinu convex form, `quanedge.comparison.risk_parity`) from an EWMA covariance of daily simple returns, lambda 0.97, last 750 days |
+| v4d | Re-estimated at each month-end close (PORT-013 strategy, as shown in the app) |
+| v4e | Re-estimated at each week's last trading close; otherwise identical |
+| Timing | First target from the first 500 return days (start 2006-12-28); each target uses data through its decision close only; holdings drift between decisions |
+| Policy | v3 config as tagged `prereg-v3`: USD 9.6m invested, 0% cost, FHS primary and GARCH-EVT challenger (window 750, refit 21), evaluation 2017-01-01 to 2026-09-30; forecasts carry a strategy hash |
+| C1 | Every target is long-only, fully invested and inside the four-ETF universe |
+| C2 | The strategy path's realised daily ES99 and the latest target's estimation-sample (2005-2026) ES99 both at or below 2.5% |
+| C3 | Frozen v3 estimator (50% mean shrinkage, Ledoit-Wolf) applied to the latest target: expected real geometric return at 3.64% inflation at least 1% |
+| C4 | `model_pass` for FHS or GARCH-EVT at 99% on the strategy path's own forecasts |
+| C5 | Strategy path from each scenario start (GFC, COVID, Rates 2022): loss at most 20% of value and GFC drawdown at most 20% |
+| Descriptive only | Realised CAGR, volatility, drawdowns, turnover, number of rebalances, comparison with static parity and W_rec |
+
+**Outcome rule:** as 13d. A pass reads "would be Accept under v3 criteria for this candidate" and does not replace the v3 verdict; any failure is the result, and nothing is retuned.
+
+**Seen before this registration:** the monthly path's realised statistics (CAGR 6.2%, maximum drawdown 18.5%, GFC -4.9%, COVID -9.3%, 2022 -10.3%), its 30 September 2026 target (SPY 20.8 / AGG 51.7 / GLD 8.4 / XLE 19.1), and that target's full-sample fixed-weight ES99 of about 2.6% (USD 250k on USD 9.6m), which would fail the second part of C2. The C2 definition copies 13d unchanged. Static parity and v4c already failed C4 on breach clustering. No weekly result and no C4 result for either strategy had been computed.
+
 ## 14. Work plan
 
 Fix phase timeboxes as shares of the time left once the deadline is known. Two milestones are hard: the **thin slice** at about 15% of the time and the **minimum viable submission** at about 60%.
