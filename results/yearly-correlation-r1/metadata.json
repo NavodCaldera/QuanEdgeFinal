@@ -1,0 +1,8 @@
+{
+  "task": "PORT-024",
+  "source": "data/clean/log_returns.csv",
+  "source_sha256": "512fcea2c0c7d74fe9bb4d90b81870660ea48059c2b982de906b4bc2e20067ca",
+  "method": "Pearson correlation of daily log returns within each calendar year",
+  "partial_year": "2026 to 2026-09-30",
+  "label": "descriptive"
+}
