@@ -680,3 +680,8 @@ AI assistance and actual human review:
 - Findings: SPY-AGG correlation negative 2007-2019, positive from 2020. Shorter risk-parity windows take more risk; use all history with a 3-year check. 4% real (break-even 4.17%) was met historically only by SPY 28 / AGG 42 / GLD 30 at a 19.9% GFC fall.
 - Code issue: near_parity squared-gap solver can return a corner on short windows (2007 data: AGG 0%); committed runs unaffected (match convex ERC). Not fixed, to keep frozen source hashes; fix with a test before any new risk-parity run.
 - Tag prereg-v4c could not be pushed (remote refused, HTTP 403); its commit 085b621 is on GitHub. No change to policy, W_rec, runs or verdict. No unit tests for the exploratory scripts. AI: Claude Code. Owner review pending.
+
+2026-10-30, PORT-027 (renumbered from PORT-017 at merge; exploratory), correlation tables by period:
+- State: ready for review. These are the yearly, half-yearly and quarterly correlation tables reviewed with the owner in chat, now reproducible with `python scripts/correlation_periods.py` and saved in `results/correlation-periods-r1/` (CSVs plus metadata with the source hash). Summary in PLAN.md section 19a.
+- Descriptive and retrospective. 2026 is January-September only, and averages are simple means of period correlations. No change to any mandate, run or verdict.
+- AI: Claude Code. Owner review pending.
