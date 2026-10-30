@@ -1,0 +1,76 @@
+{
+  "label": "Exploratory mandate-change comparison, added after preregistration; retrospective portfolio evaluation, not part of the frozen analytical run.",
+  "evaluation_label": "retrospective portfolio evaluation",
+  "task": "PORT-003",
+  "created": "2026-10-30T13:49:20+00:00",
+  "data_returns_sha256": "08e98e2da60e3a7693dffadefc17c086163b6285a7f8fbb8ed2e84f5d125e338",
+  "period": [
+    "2005-01-04",
+    "2026-09-30"
+  ],
+  "portfolios": {
+    "A1_min_cvar": {
+      "weights": {
+        "SPY": 0.15,
+        "EFA": 0.0,
+        "EEM": 0.0,
+        "AGG": 0.7,
+        "GLD": 0.15,
+        "XLE": 0.0,
+        "XLK": 0.0
+      },
+      "weight_hash": "a4698cec361f42b3f9b23598dcaba6ad09e21328a7dd894cc66c1f2a988fc897"
+    },
+    "selected": {
+      "weights": {
+        "SPY": 0.352579,
+        "EFA": 0.0,
+        "EEM": 0.0,
+        "AGG": 0.397421,
+        "GLD": 0.15,
+        "XLE": 0.0,
+        "XLK": 0.1
+      },
+      "weight_hash": "c19708dc2a4b32fa1ccfdba40dec45b62b29e366d6d7a1a4ad4d316bce2648d3"
+    },
+    "open_bounds_es2.5": {
+      "weights": {
+        "SPY": 0.0,
+        "EFA": 0.0,
+        "EEM": 0.0,
+        "AGG": 0.345801,
+        "GLD": 0.282253,
+        "XLE": 0.0,
+        "XLK": 0.371946
+      },
+      "weight_hash": "7ff8e6494c41bdc76c3f3a5987117e88e240cd18d471c6c80665f5bc8036498d"
+    }
+  },
+  "tiers": [
+    [
+      0.05,
+      0.025
+    ],
+    [
+      0.1,
+      0.02
+    ],
+    [
+      0.15,
+      0.015
+    ],
+    [
+      0.2,
+      null
+    ]
+  ],
+  "emergency": 0.15,
+  "hysteresis": 0.025,
+  "cppi_multiplier": 8,
+  "limit": 0.2,
+  "min_history": 252,
+  "es": "historical 99% one-day, expanding window from 2005, simple returns",
+  "decline_basis": "pre-spending wealth index after costs, from running high-water mark",
+  "timing": "decision on returns through the close; trade at that close",
+  "spending": "4% at December year-ends applied to reported end NAV only; rule unaffected"
+}
