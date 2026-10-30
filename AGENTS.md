@@ -464,3 +464,10 @@ AI assistance and actual human review:
 - Browser: localhost:8501 returned HTTP 200; desktop and 390-pixel mobile layouts inspected, risk page had zero Streamlit exceptions. All 12 pitch slides and PDF pages were rendered/reviewed; native-table PPTX integrity, typography/layout and first-party import checks passed. Current reviewed deck is committee_pitch_v2.pptx.
 - Frozen run was tagged before a separate monitoring download. monitoring/final-20261027 covers 18 sessions, 2026-10-01 through 2026-10-26: zero 99% breaches for FHS and GARCH-EVT, exact count probability about 0.8345. Descriptive only, no traffic light, no selection/verdict change. Initial final-run tag retained; final-run-final-20261027-v2 includes checkout-byte preservation and this closure record.
 - Remaining dependencies are human/organiser decisions already identified above; no additional numerical or application blocker is known. No independent human sign-off is claimed.
+
+2026-10-30, PORT-003 (exploratory), correlation study and "winner to loser" rebalancing rule:
+- State: ready for review. Owner asked whether the seven ETFs are correlated, and whether to sell an ETF after a 10% rise and buy the one that fell. Findings are in PLAN.md section 19a; reproduce with `python scripts/correlation_rebalancing_study.py`.
+- Equities form one block (first factor 58% of variance; SPY-XLK 0.91). AGG/GLD are the diversifiers, but SPY-AGG correlation changes sign by regime. The rule showed no reversal signal. Its best-looking variant broke the gold cap (52%) and the AGG minimum (20%). Decision: reject as a trading rule; keep quarterly-plus-drift rebalancing.
+- Retrospective and descriptive only. No change to policy, weights, the frozen run or the verdict at `prereg-v1`. No new results artifacts.
+- Validation: the script runs offline on data/clean. Its cost convention matches `portfolio.replay`. PLAN.md numbers were copied from its output. No unit tests were added for this exploratory script.
+- AI: Claude Code wrote the analysis and text. Owner review is pending.
