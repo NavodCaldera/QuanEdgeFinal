@@ -1,0 +1,164 @@
+{
+  "label": "Exploratory mandate-change comparison, added after preregistration; retrospective portfolio evaluation, not part of the frozen analytical run.",
+  "evaluation_label": "retrospective portfolio evaluation",
+  "task": "PORT-004",
+  "created": "2026-10-30T14:31:10+00:00",
+  "data_returns_sha256": "08e98e2da60e3a7693dffadefc17c086163b6285a7f8fbb8ed2e84f5d125e338",
+  "period": [
+    "2005-01-04",
+    "2026-09-30"
+  ],
+  "portfolios": {
+    "A1_min_cvar": {
+      "weights": {
+        "SPY": 0.15,
+        "EFA": 0.0,
+        "EEM": 0.0,
+        "AGG": 0.7,
+        "GLD": 0.15,
+        "XLE": 0.0,
+        "XLK": 0.0
+      },
+      "weight_hash": "a4698cec361f42b3f9b23598dcaba6ad09e21328a7dd894cc66c1f2a988fc897"
+    },
+    "A1_min_cvar+XLE5%": {
+      "weights": {
+        "SPY": 0.1,
+        "EFA": 0.0,
+        "EEM": 0.0,
+        "AGG": 0.7,
+        "GLD": 0.15,
+        "XLE": 0.05,
+        "XLK": 0.0
+      },
+      "weight_hash": "c86f6cd87737bf986f4dcd4983166fa3f0c48dbf94399162816530305e06a788"
+    },
+    "A1_min_cvar+XLE10%": {
+      "weights": {
+        "SPY": 0.05,
+        "EFA": 0.0,
+        "EEM": 0.0,
+        "AGG": 0.7,
+        "GLD": 0.15,
+        "XLE": 0.1,
+        "XLK": 0.0
+      },
+      "weight_hash": "dd647d8f48751cc52853182ca8d7ea4827b08e8e1a6af9aae7f8c3a082246c65"
+    },
+    "selected": {
+      "weights": {
+        "SPY": 0.352579,
+        "EFA": 0.0,
+        "EEM": 0.0,
+        "AGG": 0.397421,
+        "GLD": 0.15,
+        "XLE": 0.0,
+        "XLK": 0.1
+      },
+      "weight_hash": "c19708dc2a4b32fa1ccfdba40dec45b62b29e366d6d7a1a4ad4d316bce2648d3"
+    },
+    "selected+XLE5%": {
+      "weights": {
+        "SPY": 0.302579,
+        "EFA": 0.0,
+        "EEM": 0.0,
+        "AGG": 0.397421,
+        "GLD": 0.15,
+        "XLE": 0.05,
+        "XLK": 0.1
+      },
+      "weight_hash": "8ff0d66bf47c61a8b7998d40369db8433c5e3895509f2bd720fc0ed5c507a1b8"
+    },
+    "selected+XLE10%": {
+      "weights": {
+        "SPY": 0.252579,
+        "EFA": 0.0,
+        "EEM": 0.0,
+        "AGG": 0.397421,
+        "GLD": 0.15,
+        "XLE": 0.1,
+        "XLK": 0.1
+      },
+      "weight_hash": "d36869c487a6eda30faec42d36a65e499bea8134b7450fb301f259c5da204865"
+    },
+    "scenario_cap_15%": {
+      "weights": {
+        "SPY": 0.247115,
+        "EFA": 0.0,
+        "EEM": 0.0,
+        "AGG": 0.45547,
+        "GLD": 0.15,
+        "XLE": 0.047415,
+        "XLK": 0.1
+      },
+      "weight_hash": "549124418ac454687b26fcc25774ce043f716be658418c46a8d5414f797d2f5d"
+    },
+    "scenario_cap_12%": {
+      "weights": {
+        "SPY": 0.063837,
+        "EFA": 0.0,
+        "EEM": 0.0,
+        "AGG": 0.617911,
+        "GLD": 0.15,
+        "XLE": 0.068252,
+        "XLK": 0.1
+      },
+      "weight_hash": "3703403b1e1cfab95884128715b69cd181f0c3ce18623bff5f66ef3b1f8cd2b3"
+    }
+  },
+  "xle_levels": [
+    0.05,
+    0.1
+  ],
+  "scenario_caps": [
+    0.15,
+    0.12
+  ],
+  "scenario_shocks": {
+    "GFC": {
+      "SPY": -0.5476740764179608,
+      "EFA": -0.5978557458464908,
+      "EEM": -0.5850587913680619,
+      "AGG": 0.07165584953122806,
+      "GLD": 0.2487246824644469,
+      "XLE": -0.4686536606828713,
+      "XLK": -0.5103939749257174
+    },
+    "COVID": {
+      "SPY": -0.33400352086424046,
+      "EFA": -0.3237347383762573,
+      "EEM": -0.3028923783922056,
+      "AGG": -0.01370058873686153,
+      "GLD": -0.030548012050105378,
+      "XLE": -0.5548232306699766,
+      "XLK": -0.3033310727504257
+    },
+    "Rates 2022": {
+      "SPY": -0.24059234750637493,
+      "EFA": -0.27627754845013464,
+      "EEM": -0.28507082889942337,
+      "AGG": -0.1496030801586281,
+      "GLD": -0.08756434623776166,
+      "XLE": 0.48982407023600016,
+      "XLK": -0.32496744748469897
+    },
+    "Hypothetical": {
+      "SPY": -0.25,
+      "EFA": -0.28595247171158805,
+      "EEM": -0.28895954348566566,
+      "AGG": -0.1,
+      "GLD": 0.0,
+      "XLE": -0.34123707228639183,
+      "XLK": -0.18959550985240495
+    }
+  },
+  "ewma_lambda": 0.94,
+  "review": "W",
+  "min_equity_change": 0.05,
+  "min_history": 252,
+  "notes": [
+    "scenario-robust weights use full-sample estimates and crises already observed",
+    "volatility overlay only de-risks (scale <= 1); weights stay within the base portfolio's bounds",
+    "static paths: quarterly or 5-point drift rebalancing at 5 bp, as portfolio.replay"
+  ]
+}
