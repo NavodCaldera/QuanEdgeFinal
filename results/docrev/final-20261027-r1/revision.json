@@ -1,0 +1,34 @@
+{
+  "revision": "r1",
+  "label": "Documentation revision; analysis unchanged; added after preregistration",
+  "created_at_utc": "2026-10-29T17:30:22.767088+00:00",
+  "git_head_at_build": "0b515d701afd9de9f50b2d85b95314da727900d1",
+  "parent_run": "final-20261027",
+  "parent_manifest_sha256": "2df0807e512332fb6b35a0ae75629bd8cc2569888359e59990f0fe14a02eb816",
+  "parent_documents": {
+    "investment_memorandum.pdf": "2507a3430e296facd6ef65fbb4a6f870628f294c8fb67f398c7d41b48789b775",
+    "executive_tear_sheet.pdf": "a6d76f95db100316720144a5adc1c15e904fb369220ebf926c878610d50c8fc5",
+    "speaker_qa_notes.md": "c5ca5e6c8f469bd9a8e272eccca66000574884d8be2f5a86220db46f2ec5413c"
+  },
+  "context_manifest_sha256": "3c100d254ce006c35fc04f87e7f7f61eb3ff1f4050d02e2c2ed952f6f82f5e58",
+  "reported_portfolio": "A1_min_cvar",
+  "reported_weight_hash": "a4698cec361f42b3f9b23598dcaba6ad09e21328a7dd894cc66c1f2a988fc897",
+  "verdict": "Adjust",
+  "changes": [
+    "Memorandum: two addendum pages appended (return-estimator sensitivity and spending sustainability; standalone long-history context). Parent pages unchanged.",
+    "Executive tear sheet: parent page with a labelled revision box added in its unused lower space.",
+    "Speaker/Q&A notes: parent notes plus revision questions. The PPTX deck and committee memo are not revised."
+  ],
+  "page_counts": {
+    "executive_tear_sheet.pdf": 1,
+    "investment_memorandum.pdf": 13
+  },
+  "files": {
+    "estimator_sensitivity.png": "8e65cb42cc556ed16d141417a4fd3dc4b143243adaac8ee8784552b82f71b30d",
+    "executive_tear_sheet.pdf": "d4b28621292d6cc9e5074ff0af7b2c1a888c55f92a6306e8f11d4e1dc3dbf991",
+    "investment_memorandum.md": "cb3ffd0f27673f93bca06dee3c9a19ff9a95fe5509220037ca80cbee71e4eaad",
+    "investment_memorandum.pdf": "100e969e50065f69255e5084ad8df5688acf2dc35d6aa944042c45d9eac5f391",
+    "page_counts.json": "75d8f5c5392fe2bf9afc6f69409d0e6c49a28273a974475f76a03f8aa4678dea",
+    "speaker_qa_notes.md": "69856a1975c4d3729c8e4837719e28c02e4078f12e01746bc950f530f86aa7c1"
+  }
+}

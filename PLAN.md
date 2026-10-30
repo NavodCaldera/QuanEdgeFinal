@@ -69,7 +69,7 @@ Teams have full discretion over analytical approach, risk metrics, lookback peri
 | 6 | XLE | Energy Select Sector SPDR | Energy / commodities proxy (an equity sector, not oil futures) |
 | 7 | XLK | Technology Select Sector SPDR | Technology sector |
 
-Only these seven. No futures, options or FX overlays from the teaching decks. Treating the universe as excluding a cash sleeve is our reading of "eligible funds"; ask the organisers and state it as an interpretation. Long-only and full investment are our policy choices, not brief rules. Common history starts at GLD's inception (18 Nov 2004), so the sample covers the 2008 crisis.
+Only these seven. No futures, options or FX overlays from the teaching decks. Treating the universe as excluding a cash sleeve is our reading of "eligible funds"; ask the organisers and state it as an interpretation. Long-only and full investment are our policy choices, not brief rules. GLD's first price is 18 Nov 2004; the frozen common sample starts on 3 Jan 2005, the first full year with all seven ETFs, so it covers the 2008 crisis but not 2000-02 (see the standalone context, CTX-001).
 
 **Base currency:** USD (the mandate is USD and all funds are US-listed). Inflation is US CPI. Sri Lankan rupee exposure is out of scope and listed under Limitations.
 

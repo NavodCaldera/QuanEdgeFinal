@@ -1,0 +1,9 @@
+{
+  "source": "context\\raw\\prices_full_history.csv",
+  "source_sha256": "362bff5c9f7b255c0b2b9df945279f4562e52867fc2c51f7a2b52bfbb2667cfc",
+  "as_of": "2026-09-30",
+  "method": "Non-overlapping episodes below a running all-time adjusted-price high, ranked by peak-to-trough depth; nested declines are not separate episodes.",
+  "timing": "Calendar years = elapsed calendar days / 365.25; peak uses the most recent equal high before the decline.",
+  "average": "Arithmetic mean of completed peak-to-recovery durations among the three deepest episodes only; unrecovered episodes are excluded and counts disclosed.",
+  "interpretation": "Descriptive nominal adjusted-price history, not recovery forecasts or the frozen portfolio analysis."
+}

@@ -56,6 +56,19 @@ python -m quanedge.verify results/final-20261027
 
 This read-only check verifies artifact/input/source hashes, forecast timing, allocation identities, recomputed backtests, ES reconciliation and document page counts. Source hashes normalize line endings; data hashes preserve exact bytes. Post-snapshot descriptive monitoring, when present under `monitoring/`, is separate from the frozen selection and never changes its verdict.
 
+### Standalone history and documentation revision r1
+
+Added after preregistration; neither changes the frozen data, weights, forecasts, gates or verdict.
+
+```powershell
+python -m quanedge.context --download   # each ETF's full Yahoo history to 2026-09-30, then tables
+python -m quanedge.context              # rebuild tables from the saved, hash-checked snapshot
+python -m quanedge.docrev               # memorandum addenda, tear-sheet box and Q&A from the run
+python -m quanedge.docrev --verify      # read-only: parent identity, own hashes, page limits
+```
+
+The snapshot and tables live in `context/` (outside `data/`, which the final pipeline hashes). The app's ETF charts page reads them when present and falls back to the frozen panel otherwise. Revision r1 is in `results/docrev/final-20261027-r1/`: [memorandum with addenda](results/docrev/final-20261027-r1/investment_memorandum.pdf), [tear sheet](results/docrev/final-20261027-r1/executive_tear_sheet.pdf), [Q&A notes](results/docrev/final-20261027-r1/speaker_qa_notes.md). It discloses that C3 passes only under the frozen mean shrinkage, compares spending shortfall for both allocations, and reports what pre-2005 ETF history shows. The parent run's documents, manifest and the PPTX deck are unchanged.
+
 Use release tag `final-run-final-20261027-v2` for the verified checkout, including attributes that preserve exact artifact bytes. The earlier `prereg-v1` policy freeze remains unchanged.
 
 Traditional Basel zones are used only for 250 observations at 99%, following [BIS guidance](https://www.bis.org/committees/bcbs/basel-framework/standard/mar/99/inforce/2019-12-15/published/2019-12-15). They are a monitoring comparison, not an endowment regulatory requirement.

@@ -1,0 +1,8 @@
+ticker,first_price_date,first_return_date,last_date,price_observations,omitted_before_frozen_start,Dot-com bear market,September 2001 market closure,Global financial crisis,COVID crash,2022 rate-hiking drawdown
+SPY,1993-01-29,1993-02-01,2026-09-30,8475,3005,full,full,full,full,full
+EFA,2001-08-27,2001-08-28,2026-09-30,6310,840,partial,full,full,full,full
+EEM,2003-04-14,2003-04-15,2026-09-30,5904,434,none,none,full,full,full
+AGG,2003-09-29,2003-09-30,2026-09-30,5788,318,none,none,full,full,full
+GLD,2004-11-18,2004-11-19,2026-09-30,5500,30,none,none,full,full,full
+XLE,1998-12-22,1998-12-23,2026-09-30,6985,1515,full,full,full,full,full
+XLK,1998-12-22,1998-12-23,2026-09-30,6985,1515,full,full,full,full,full
