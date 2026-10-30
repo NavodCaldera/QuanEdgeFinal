@@ -15,9 +15,10 @@ import pandas as pd
 import yaml
 from scipy.stats import binomtest
 from .config import ROOT,TICKERS
-from .portfolio import construct,canonical_weights,weight_hash,hurdle,replay,kpis,feasible,money_weighted,estimates
+from .portfolio import (construct,canonical_weights,weight_hash,hurdle,replay,kpis,feasible,money_weighted,estimates,
+                        return_check,spending_replay,real_return)
 from .backtest import assess,model_pass,verdict
-from .stress import stress_tests,hypothetical,attribution,reverse_stress,survival
+from .stress import stress_tests,hypothetical,attribution,reverse_stress,survival,reserve_survival
 from .results import digest,artifact_key
 from .risk import fit_models,risk_table,portfolio_log_returns,rolling_forecasts,save_forecasts
 from .risk.uncertainty import bootstrap_intervals,with_intervals
@@ -53,13 +54,17 @@ def load_inputs(cfg):
     return prices,returns,macro
 
 
+def v2(cfg):return "real_return_target" in cfg
+
+
 def make_candidates(x,cfg):
-    result={name:construct(x,cfg,kind) for name,kind in
-            [("selected","selected"),("min_cvar","min_cvar"),("min_variance","min_variance"),
-             ("near_parity","near_parity"),("max_sharpe","max_sharpe")]}
+    kinds=[("selected","selected"),("min_cvar","min_cvar"),("min_variance","min_variance"),
+           ("near_parity","near_parity"),("max_sharpe","max_sharpe")]
+    if v2(cfg):kinds.append(("max_return","max_return"))      # the mandate v1 rule, for comparison only
+    result={name:construct(x,cfg,kind) for name,kind in kinds}
     for name,w in {"40_60":{"SPY":.4,"AGG":.6},"60_40":{"SPY":.6,"AGG":.4},
                    "equal_weight":{t:1/7 for t in TICKERS},"permanent":{"SPY":.25,"AGG":.5,"GLD":.25},
-                   "in_policy":{"SPY":.35,"AGG":.5,"GLD":.15}}.items():
+                   ("balanced_35_50_15" if v2(cfg) else "in_policy"):{"SPY":.35,"AGG":.5,"GLD":.15}}.items():
         w=canonical_weights(w);result[name]={"status":"benchmark","weights":w,"weight_hash":weight_hash(w)}
     _,cov=estimates(x,cfg)
     from scipy.optimize import minimize
@@ -82,6 +87,10 @@ def adjustments(train,full,cfg):
     benchmark=canonical_weights({"SPY":.6,"AGG":.4})
     from .portfolio import es
     raised=max(cfg["es_budget"],min(.03,es(train,benchmark)))
+    if v2(cfg):
+        # Mandate v2: no ETF limits to relax; the reserve schedule and 1% real floor are client needs.
+        policy=dict(cfg,es_budget=raised);alts.append(("A2",construct(full,policy),policy))
+        return alts,raised
     for name,changes in [("A2",{"gold_cap":.20}),("A3",{"spending":.035}),
                          ("A4",{"es_budget":raised}),("A5",{"gold_cap":.20,"spending":.035,"es_budget":raised})]:
         policy=dict(cfg,**changes);alts.append((name,construct(full,policy),policy))
@@ -90,13 +99,16 @@ def adjustments(train,full,cfg):
 
 def constraint_effects(x,cfg):
     baseline=construct(x,cfg);rows=[]
-    for field,values in [("gold_cap",[.20,.25,.4]),("equity_cap",[.60,.65]),("agg_min",[0.]),("agg_max",[1.]),("es_budget",[.03])]:
+    fields=([("es_budget",[.02,.03]),("real_return_target",[.02,.01])] if v2(cfg) else
+            [("gold_cap",[.20,.25,.4]),("equity_cap",[.60,.65]),("agg_min",[0.]),("agg_max",[1.]),("es_budget",[.03])])
+    for field,values in fields:
         for value in values:
             alternative=construct(x,dict(cfg,**{field:value}))
             row={"constraint":field,"from":cfg[field],"to":value,"status":alternative["status"],
                  "baseline":baseline,"relaxed":alternative,"label":"in-sample, estimator-dependent controlled re-solve"}
             if baseline["weights"] and alternative["weights"]:
                 row["objective_change"]=alternative["expected_arithmetic"]-baseline["expected_arithmetic"]
+                row["es99_change"]=alternative["es99"]-baseline["es99"]
                 row["same_scenarios"]=baseline["scenario_hash"]==alternative["scenario_hash"]
             rows.append(row)
     return rows
@@ -110,7 +122,7 @@ def evaluate(name,candidate,cfg,prices,returns,macro,out,meta,cache,full=True):
     write_json(folder/"weights.json",dict(weights=w,weight_hash=wh,effective_date=cfg["snapshot_end"],
                 estimation_end=candidate.get("estimation_end",cfg["snapshot_end"])))
     series=replay(returns,w,cfg["cost"],cfg["drift"]);series.to_csv(folder/"performance.csv")
-    draw=replay(returns,w,cfg["cost"],cfg["drift"],cfg["spending"])
+    draw=spending_replay(returns,w,cfg)
     draw.to_csv(folder/"spending.csv")
     benchmark=replay(returns,canonical_weights({"SPY":.4,"AGG":.6}),cfg["cost"],cfg["drift"])["return"]
     rf=macro.rf_daily_effective.reindex(returns.index)
@@ -143,7 +155,7 @@ def evaluate(name,candidate,cfg,prices,returns,macro,out,meta,cache,full=True):
     from .portfolio import es
     policy_es=es(estimation,w)
     checks={"C1":feasible(w,cfg),"C2":policy_es<=cfg["es_budget"]+1e-6,
-            "C3":candidate.get("expected_geometric",-1)>=hurdle(cfg["inflation"],cfg["spending"]),
+            "C3":return_check(candidate.get("expected_geometric",-1),cfg),
             "C4":bool(model_ok),"C5":bool(all(s.get("status")=="ok" for s in historical) and
              all(s.get("loss_usd",np.inf)<=cfg["drawdown_limit"]*cfg["value"] for s in historical) and
              -historical[0].get("drawdown",-1)<=cfg["drawdown_limit"])}
@@ -173,17 +185,21 @@ def walk_forward(returns,cfg):
 def run(cfg_path,stage="final",run_id=None):
     cfg=yaml.safe_load(Path(cfg_path).read_text(encoding="utf-8"))
     if stage=="final":
-        frozen=yaml.safe_load(git("show","prereg-v1:config/final.yaml"))
-        if cfg!=frozen:raise ValueError("policy/config differs from prereg-v1; log a mandate change explicitly")
+        tag=cfg.get("prereg_tag","prereg-v1")
+        frozen=yaml.safe_load(git("show",f"{tag}:config/final.yaml"))
+        if cfg!=frozen:raise ValueError(f"policy/config differs from {tag}; log a mandate change explicitly")
     prices,returns,macro=load_inputs(cfg);train=returns.loc[:cfg["training_end"]]
     candidates=make_candidates(train,cfg)
     if stage=="training":
-        out=ROOT/"results/training";out.mkdir(parents=True,exist_ok=True)
+        out=ROOT/"results"/("training-"+cfg["mandate"] if v2(cfg) else "training");out.mkdir(parents=True,exist_ok=True)
         write_json(out/"candidates.json",candidates)
         write_json(out/"constraint_effects.json",constraint_effects(train,cfg))
         from .portfolio import es
         write_json(out/"freeze_values.json",{"A4_budget":max(cfg["es_budget"],min(.03,es(train,canonical_weights({"SPY":.6,"AGG":.4})))),
-                    "policy":cfg,"hurdle":hurdle(cfg["inflation"],cfg["spending"]),"training_end":cfg["training_end"]})
+                    "policy":cfg,"training_end":cfg["training_end"],
+                    **({"nominal_target":(1+cfg["inflation"])*(1+cfg["real_return_target"])-1,
+                        "nominal_floor":(1+cfg["inflation"])*(1+cfg["real_return_floor"])-1} if v2(cfg) else
+                       {"hurdle":hurdle(cfg["inflation"],cfg["spending"])})})
         print(out);return out
     run_id=run_id or datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     out=ROOT/"results"/("."+run_id+".staging");out.mkdir(parents=True,exist_ok=False)
@@ -217,7 +233,8 @@ def run(cfg_path,stage="final",run_id=None):
         selected["conditional_attribution"]="unavailable: FHS is fitted to portfolio returns"
         monthly=(1+returns).resample("ME").prod()-1
         cpi=macro.CPIAUCSL.resample("ME").last().pct_change()
-        write_json(out/"survival.json",{n:survival(monthly,cpi,allocations[n]["weights"],cfg) for n in ["selected","40_60","permanent"]})
+        write_json(out/"survival.json",{n:(reserve_survival(monthly,allocations[n]["weights"],cfg) if v2(cfg) else
+                                           survival(monthly,cpi,allocations[n]["weights"],cfg)) for n in ["selected","40_60","permanent"]})
         scans=threshold_scan(-portfolio_log_returns(np.log1p(returns),w).to_numpy())
         scans.to_csv(out/"selected/evt_thresholds.csv",index=False)
         from .robustness import additional_evidence

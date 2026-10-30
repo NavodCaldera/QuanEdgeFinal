@@ -7,6 +7,12 @@ from quanedge.hedging import with_xle, scaled, robust, vol_target, EQUITY
 from quanedge.portfolio import canonical_weights, feasible
 from test_dynamic import synthetic, BASE
 
+
+@pytest.fixture
+def cfg(cfg_v1):
+    """These are mandate v1 comparisons: use the policy frozen at prereg-v1."""
+    return cfg_v1
+
 CORNER = canonical_weights({"SPY": .15, "AGG": .70, "GLD": .15})
 
 

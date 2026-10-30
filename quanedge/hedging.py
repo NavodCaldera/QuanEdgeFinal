@@ -131,7 +131,7 @@ def extra(path, w, shocks):
 
 def run(out=None):
     from .data import load_clean_prices
-    cfg = yaml.safe_load((config.ROOT/"config/final.yaml").read_text())
+    cfg = config.frozen_policy("prereg-v1")       # mandate v1 comparison
     prices = load_clean_prices().loc[:cfg["snapshot_end"], TICKERS]
     returns = prices.pct_change().dropna(); train = returns.loc[:cfg["training_end"]]
     shocks = scenario_shocks(prices, train)

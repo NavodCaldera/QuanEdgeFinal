@@ -5,6 +5,12 @@ from quanedge.config import TICKERS
 from quanedge.dynamic import step_band, cppi_budget, simulate, Targets
 from quanedge.portfolio import replay, es, canonical_weights
 
+
+@pytest.fixture
+def cfg(cfg_v1):
+    """These are mandate v1 comparisons: use the policy frozen at prereg-v1."""
+    return cfg_v1
+
 BASE = canonical_weights({"SPY": .35, "AGG": .40, "GLD": .15, "XLK": .10})
 
 

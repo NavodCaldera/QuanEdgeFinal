@@ -197,7 +197,7 @@ For every restored module: the owner writes a short summary of what it does, add
 
 ## 13. Investment policy (owner-approved values, frozen in the decision log and tagged `prereg-v1` before any post-2016 result is computed)
 
-The values below are proposals until the owner approves them. Once tagged they are fixed; later changes are logged mandate changes and do not alter the verdict on the original mandate.
+**Mandate v1, superseded by section 13b on 30 October 2026; kept as the record of the `prereg-v1` run.** The values below are proposals until the owner approves them. Once tagged they are fixed; later changes are logged mandate changes and do not alter the verdict on the original mandate.
 
 | Item | Policy | Notes |
 |---|---|---|
@@ -241,6 +241,32 @@ Risk is raised last, in line with "avoiding large losses is more important than 
 4. **Reject** if every A1-A5 alternative was fully evaluated and none passes.
 
 With h at 6.77% and equity capped at 55%, Adjust or Reject is a realistic outcome; prepare the dollar trade-off (each 0.5% of spending is USD 50k a year of scholarships).
+
+### 13b. Mandate v2 (owner change, 30 October 2026, tagged `prereg-v2`; supersedes sections 13 and 13a)
+
+The owner changed the mandate after reviewing the v1 run (`final-20261027`, verdict Adjust to SPY 15 / AGG 70 / GLD 15) and an exploratory run without ETF limits. Sections 13 and 13a stay as the record of mandate v1; its run, tag and verdict are unchanged. Mandate v2 is evaluated in its own run.
+
+| Item | Mandate v2 policy | Notes |
+|---|---|---|
+| ETF limits | None. Long-only and fully invested in the seven ETFs; any single fund or combination | Owner decision. The AGG range, equity cap, gold cap, XLE/XLK caps and 40% single-ETF cap are removed |
+| Trading cost | 0% | Owner assumption. Spreads and market impact are not modelled; the expected-cost reserve is zero |
+| Cash reserve | Each 1 January, cash for the university's spending that year is withdrawn from the portfolio: USD 400,000 in year 1, then growing 3.64% a year (year 2 USD 414,560; year t USD 400,000 × 1.0364^(t-1)) | The reserve earns 0% and is paid out; it is not an investment and not part of the universe. Year 1 invests USD 9,600,000. Fixed real schedule (Ideas.md section 1), not a percentage of NAV |
+| Inflation | 3.64% a year | Owner's figure, described as an average world inflation rate; its source, period and calculation are not yet verified. The client is USD-based, so US CPI remains the reference series in data |
+| Return objective | 1-3% real a year: nominal target (1.0364)(1.03)-1 = 6.75%; acceptance floor (1.0364)(1.01)-1 = 4.68% | Compared with the expected geometric return from the frozen estimator. A 4%-of-initial real reserve exceeds this objective, so real capital is expected to decline |
+| Selection rule | Minimise historical CVaR99 subject to expected geometric return ≥ the 6.75% target and CVaR99 ≤ B (Rockafellar-Uryasev LP, HiGHS); the smallest arithmetic floor meeting the geometric target is found by bisection. If minimum CVaR already meets the target, the target does not bind | Owner choice ("minimum tail risk, aim 3% real"). The v1 rule (maximise return within B) is kept as the `max_return` comparison candidate |
+| Return estimator | Unchanged: sample means shrunk 50% toward the cross-asset mean; Ledoit-Wolf covariance | Owner kept it after being shown that it decides the outcome (see disclosure below) |
+| Risk budget | Historical 1-day ES99 ≤ 2.5% of invested NAV (USD 240,000 at inception), on the weights' estimation sample | Kept by the owner |
+| Drawdown/stress limit | 20%, GFC replay and worst historical scenario (C5) | Kept by the owner. Dollar limits use the USD 9.6m invested at inception |
+| Risk model | FHS primary, GARCH-EVT challenger, unchanged | |
+| Rebalancing, horizon, benchmarks | Unchanged from section 13 (benchmarks no longer have an "in policy" variant; the 35/50/15 mix is named `balanced_35_50_15`) | |
+
+**Checks (v2):** C1 feasibility; C2 ES99 ≤ B; C3 expected real geometric return ≥ 1% (nominal ≥ 4.68%); C4 risk model, unchanged; C5 stress, unchanged.
+
+**Adjustment set (v2, in order):** A1 the other candidates (minimum CVaR, minimum variance, risk parity, maximum Sharpe) in ascending training ES99; A2 B raised to the frozen training value (lower of 3.0% of NAV and the 60/40 training ES99, never below B). The reserve schedule and the 1% real floor are client needs and are not relaxed. The decision order (incomplete, Accept, Adjust, Reject) is unchanged.
+
+**Spending evidence (not gating):** 25-year joint 12-month block bootstrap reporting the share of paths that pay every reserve in full, depletion year, real balances and the share preserving the initial USD 10m in real terms.
+
+**Disclosure before the tag:** full-sample results were seen before `prereg-v2`. An exploratory run without ETF limits (AGG 50 / GLD 22 / XLK 28 at a 2.0% ES budget, which failed C4 with 40 FHS breaches against 24.5 expected) was shown to the owner. While choosing the estimator, the owner was also shown that under v2 the frozen estimator selects about SPY 6 / AGG 88 / GLD 6 (about 3.5% real expected, but about 0.25% real on raw historical means). Raw means would select about AGG 65 / GLD 17 / XLK 18. The owner kept the frozen estimator. No v2 backtest (C4) was computed before the tag.
 
 ## 14. Work plan
 

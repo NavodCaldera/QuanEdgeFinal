@@ -33,6 +33,37 @@ def hurdle(inflation=.025, spending=.04):
     return (1+inflation)/(1-spending)-1
 
 
+def nominal_target(inflation, real):
+    """Nominal geometric return needed for a real return under a stated inflation rate."""
+    if not -.1 < inflation < .5:
+        raise ValueError("inflation must be a decimal rate, not a CPI index level")
+    return (1+inflation)*(1+real)-1
+
+
+def real_return(nominal, inflation):
+    return (1+nominal)/(1+inflation)-1
+
+
+def reserve_schedule(cfg, years):
+    """Cash set aside each 1 January, in USD: reserve_initial grown at reserve_growth."""
+    return [cfg["reserve_initial"]*(1+cfg["reserve_growth"])**t for t in range(years)]
+
+
+def return_check(expected_geometric, cfg):
+    """C3: v2 compares expected real return with the floor; v1 with the spending hurdle."""
+    if "real_return_floor" in cfg:
+        return bool(real_return(expected_geometric, cfg["inflation"]) >= cfg["real_return_floor"])
+    return bool(expected_geometric >= hurdle(cfg["inflation"], cfg["spending"]))
+
+
+def spending_replay(returns, weights, cfg):
+    """Replay with the mandate's withdrawal rule: v2 cash reserve, v1 percentage spending."""
+    if "reserve_initial" in cfg:
+        return replay(returns, weights, cfg["cost"], cfg["drift"],
+                      reserve=(cfg["reserve_initial"]/cfg["fund_value"], cfg["reserve_growth"]))
+    return replay(returns, weights, cfg["cost"], cfg["drift"], cfg["spending"])
+
+
 def estimates(returns, cfg):
     mu = returns.mean().to_numpy()*252
     f = cfg["mean_shrinkage"]
@@ -74,7 +105,12 @@ def es(returns,w,alpha=.99):
 
 
 def construct(returns,cfg,kind="selected"):
-    """LP return/CVaR selection; SLSQP comparison candidates with explicit failures."""
+    """LP return/CVaR selection; SLSQP comparison candidates with explicit failures.
+    With a real return target (mandate v2) "selected" minimises CVaR99 subject to the
+    target and the ES budget; "max_return" keeps the mandate v1 rule for comparison."""
+    if kind=="selected" and "real_return_target" in cfg:
+        return target_selection(returns,cfg)
+    if kind=="max_return":kind="selected"
     x=returns[TICKERS].to_numpy(); n,k=x.shape
     mu,cov=estimates(returns,cfg); equity=np.array([1,1,1,0,0,1,1.])
     if kind in ("selected","min_cvar"):
@@ -122,18 +158,74 @@ def construct(returns,cfg,kind="selected"):
             "scenario_hash":hashlib.sha256(x.tobytes()).hexdigest()}
 
 
-def replay(returns,weights,cost=.0005,drift=.05,spending=0.,buy_hold=False):
-    """Returns enter before period-end rebalancing; annual spending after net returns."""
+def cvar_lp(x,mu,cfg,minimum_return=None):
+    """Minimum historical CVaR99 subject to the ES budget and optional arithmetic return floor."""
+    from scipy.sparse import csr_matrix, eye, hstack, vstack
+    n,k=x.shape;tail=1/(n*.01);equity=np.array([1,1,1,0,0,1,1.])
+    risk=np.r_[np.zeros(k),1,np.full(n,tail)]
+    rows=[hstack([csr_matrix(-x),csr_matrix(-np.ones((n,1))),-eye(n)],format="csr"),
+          csr_matrix(np.r_[equity,np.zeros(n+1)][None,:]),csr_matrix(risk[None,:])]
+    rhs=[np.zeros(n),[cfg["equity_cap"]],[cfg["es_budget"]]]
+    if minimum_return is not None:
+        rows.append(csr_matrix(np.r_[-mu,np.zeros(n+1)][None,:]));rhs.append([-minimum_return])
+    return linprog(risk,A_ub=vstack(rows,format="csr"),b_ub=np.concatenate(rhs),
+                   A_eq=np.r_[np.ones(k),np.zeros(n+1)][None,:],b_eq=[1],
+                   bounds=bounds(cfg)+[(None,None)]+[(0,None)]*n,method="highs")
+
+
+def target_selection(returns,cfg,iterations=60):
+    """Lowest-CVaR99 allocation whose expected geometric return reaches the real target.
+    The LP is linear in the arithmetic mean, so the smallest arithmetic floor meeting the
+    geometric target is found by bisection. A non-binding target returns minimum CVaR."""
+    x=returns[TICKERS].to_numpy();mu,cov=estimates(returns,cfg)
+    cost=cfg.get("expected_annual_turnover",0)*cfg["cost"]
+    goal=nominal_target(cfg["inflation"],cfg["real_return_target"])
+    def geometric(w):return float(np.expm1(np.log1p(w@mu-cost)-w@cov@w/2))
+    base=cvar_lp(x,mu,cfg)
+    if not base.success:return {"status":"infeasible","reason":base.message,"weights":None}
+    w=base.x[:7];binding=geometric(w)<goal
+    if binding:
+        best=construct(returns,cfg,"max_return")
+        if best["weights"] is None:return best
+        lo=float(w@mu);hi=float(np.array(list(best["weights"].values()))@mu)-1e-9
+        top=cvar_lp(x,mu,cfg,hi)
+        if not top.success or geometric(top.x[:7])<goal:
+            return {"status":"infeasible","reason":"real return target unreachable within the ES budget","weights":None}
+        w=top.x[:7]
+        for _ in range(iterations):
+            mid=(lo+hi)/2;sol=cvar_lp(x,mu,cfg,mid)
+            if sol.success and geometric(sol.x[:7])>=goal:hi,w=mid,sol.x[:7]
+            else:lo=mid
+    weights=canonical_weights(dict(zip(TICKERS,w)))
+    if not feasible(weights,cfg):return {"status":"failed","reason":"rounded weights violate constraints","weights":None}
+    v=np.array(list(weights.values()));variance=float(v@cov@v);net=float(v@mu-cost)
+    nominal=float(np.expm1(np.log1p(net)-variance/2))
+    return {"status":"ok","weights":weights,"weight_hash":weight_hash(weights),"expected_arithmetic":net,
+            "expected_geometric":nominal,"expected_real":real_return(nominal,cfg["inflation"]),
+            "nominal_target":goal,"target_binding":bool(binding),"volatility":np.sqrt(variance),"es99":es(x,weights),
+            "duals":[],"scenario_hash":hashlib.sha256(x.tobytes()).hexdigest()}
+
+
+def replay(returns,weights,cost=.0005,drift=.05,spending=0.,buy_hold=False,reserve=None):
+    """Returns enter before period-end rebalancing; annual spending after net returns.
+    reserve=(initial, growth) instead withdraws a cash reserve, as a fraction of the initial
+    fund, before the first trading day of each year; a depleted fund stays at zero."""
     target=np.array([weights[t] for t in returns.columns]); positions=target.copy()
-    nav=1.; rows=[]; dates=returns.index
+    nav=1.; rows=[]; dates=returns.index; year=-1
     for i,(date,row) in enumerate(returns.iterrows()):
+        draw=0.
+        if reserve and (i==0 or dates[i-1].year!=date.year):
+            year+=1;draw=min(nav,reserve[0]*(1+reserve[1])**year)
+            positions*=(nav-draw)/nav if nav>0 else 0.;nav-=draw
+        if nav<=0:
+            rows.append((date,0.,0.,0.,draw));continue
         old=nav; positions*=1+row.to_numpy(); gross=positions.sum()
         current=positions/gross; turnover=0.
         quarter_end=i==len(dates)-1 or dates[i+1].quarter!=date.quarter
         if not buy_hold and (quarter_end or np.max(abs(current-target))>drift):
             turnover=float(np.abs(target-current).sum())
             positions=target*gross*(1-cost*turnover)
-        net=positions.sum(); draw=0.
+        net=positions.sum()
         year_end=i==len(dates)-1 or dates[i+1].year!=date.year
         if spending and year_end and date.month==12:
             draw=spending*net;positions*=1-spending

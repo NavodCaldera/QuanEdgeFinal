@@ -158,7 +158,7 @@ def portfolios(returns, cfg):
 
 def run(out=None):
     from .data import load_clean_prices
-    cfg = yaml.safe_load((config.ROOT/"config/final.yaml").read_text())
+    cfg = config.frozen_policy("prereg-v1")       # mandate v1 comparison
     prices = load_clean_prices().loc[:cfg["snapshot_end"], TICKERS]
     returns = prices.pct_change().dropna()
     out = out or config.RESULTS_DIR/"dynamic-risk-r1"; out.mkdir(parents=True, exist_ok=True)
