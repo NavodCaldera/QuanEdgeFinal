@@ -297,6 +297,8 @@ A candidate for a possible mandate v4, not a mandate change. The v3 policy, run 
 
 **Seen before this registration:** the v3 static near-parity results (FHS 33 breaches vs 24.5 expected, conditional coverage p 0.009, GFC drawdown 18.1%), the PORT-010 crisis replay, and PORT-005 (the same overlay on the v1 selection passed C1-C5). The overlay was designed after 2008 had been seen. Several weighting methods have been compared, so a pass is after multiple tries.
 
+**Result (run results/parity-overlay-r1, PORT-011):** C1, C2, C3 and C5 pass; C4 fails, so the outcome is "evaluation incomplete", the same as v3. FHS 37 breaches vs 24.5 expected (Kupiec p 0.018, conditional coverage p 0.0005); GARCH-EVT 30 (Kupiec p 0.28, independence p 0.0004). The overlay made clustering worse, not better (static parity: FHS conditional coverage p 0.009, GARCH-EVT 0.011). Breaches bunch in 2018, 2020, 2024 and 2025 on the first days of sudden shocks, before a weekly reaction can act. Per the outcome rule, nothing is retuned.
+
 ## 14. Work plan
 
 Fix phase timeboxes as shares of the time left once the deadline is known. Two milestones are hard: the **thin slice** at about 15% of the time and the **minimum viable submission** at about 60%.

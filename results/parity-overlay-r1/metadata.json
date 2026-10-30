@@ -1,0 +1,27 @@
+{
+  "task": "PORT-011",
+  "prereg_tag": "prereg-v4c",
+  "label": "Pre-registered candidate v4c (prereg-v4c) under v3 criteria; designed after the data were seen, so not the v3 verdict and not an untouched test.",
+  "created": "2026-10-30T17:29:23+00:00",
+  "data_hash": "76bac76cbc98b5ce62291bd6257600047cc20857943d363edd1f807f743d4d0d",
+  "config_hash": "40ea58f7aaf1a15e376c5c78ddb592624ea3c44c1c1f416f8d2014f7c0f50cbd",
+  "overlay": {
+    "type": "ewma_volatility_target",
+    "ewma_lambda": 0.94,
+    "review": "W",
+    "min_equity_change": 0.05,
+    "min_history": 252,
+    "scale": "min(1, expanding vol / EWMA vol)",
+    "freed_weight": "AGG then GLD within caps"
+  },
+  "strategy_hash": "bc8a9fba23380bf45761af4002af7b1b52ed43a16f92d776e6dc4c2ce98cec07",
+  "base": "final-v3-20261030/A1_near_parity",
+  "base_weight_hash": "ece535c3eb7c2caab5cd5fa4c7e0cf9e107f51c1c01031eb724e104dc8005dc3",
+  "departures_from_fixed_weight_evaluation": [
+    "risk forecasts use the overlay path's realised daily returns, not a fixed-weight replay",
+    "C2 requires both the base weights' estimation-sample ES99 and the path's realised ES99 within budget",
+    "C3 subtracts the overlay's realised log-return drag against static parity from the base expected return",
+    "C5 uses the overlay path from each scenario start close, with rebalancing, not buy-and-hold",
+    "reserve survival bootstraps each strategy's monthly returns as one asset"
+  ]
+}
