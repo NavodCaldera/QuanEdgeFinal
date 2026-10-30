@@ -1,0 +1,104 @@
+{
+  "task": "PORT-012",
+  "source": "data/clean/prices_clean.csv",
+  "source_sha256": "76bac76cbc98b5ce62291bd6257600047cc20857943d363edd1f807f743d4d0d",
+  "weights": {
+    "Minimum CVaR (W_rec)": {
+      "weights": {
+        "SPY": 0.058351,
+        "EFA": 0.0,
+        "EEM": 0.0,
+        "AGG": 0.879582,
+        "GLD": 0.060358,
+        "XLE": 0.001709,
+        "XLK": 0.0
+      },
+      "weight_hash": "bd13d8979ea90bd195fc97c16af6d8923a6a8537159887b9ffb110953163d87f"
+    },
+    "Risk parity": {
+      "weights": {
+        "SPY": 0.140294,
+        "EFA": 0.0,
+        "EEM": 0.0,
+        "AGG": 0.608741,
+        "GLD": 0.162509,
+        "XLE": 0.088456,
+        "XLK": 0.0
+      },
+      "weight_hash": "ece535c3eb7c2caab5cd5fa4c7e0cf9e107f51c1c01031eb724e104dc8005dc3"
+    },
+    "Inverse variance": {
+      "weights": {
+        "SPY": 0.07,
+        "EFA": 0.0,
+        "EEM": 0.0,
+        "AGG": 0.83,
+        "GLD": 0.07,
+        "XLE": 0.03,
+        "XLK": 0.0
+      },
+      "weight_hash": "ea7b8e8fd9b2eab02310dc128670cbf6e42437faa2f4eff311d639ce2a179a5e"
+    }
+  },
+  "rules": {
+    "Daily": {
+      "calendar": "D",
+      "band": null
+    },
+    "Monthly": {
+      "calendar": "M",
+      "band": null
+    },
+    "Quarterly": {
+      "calendar": "Q",
+      "band": null
+    },
+    "Quarterly + 5-pt band (current)": {
+      "calendar": "Q",
+      "band": 0.05
+    },
+    "Annual": {
+      "calendar": "Y",
+      "band": null
+    },
+    "Band only, 5 pt": {
+      "calendar": null,
+      "band": 0.05
+    },
+    "Band only, 10 pt": {
+      "calendar": null,
+      "band": 0.1
+    },
+    "Never (buy-and-hold)": {
+      "calendar": null,
+      "band": null
+    }
+  },
+  "value_usd": 9600000.0,
+  "cost": 0.0,
+  "reserve": "not withdrawn (paths comparable across rules)",
+  "risk_measures": "historical 1-day VaR/ES99 on the rule's own daily path, full 2005-2026 sample",
+  "gfc_example_trough_weights": {
+    "Never": {
+      "SPY": 0.06521076739337787,
+      "XLE": 0.04778927367581643,
+      "AGG": 0.6781166143188974,
+      "GLD": 0.20888334461190863
+    },
+    "Quarterly": {
+      "SPY": 0.140294,
+      "XLE": 0.088456,
+      "AGG": 0.608741,
+      "GLD": 0.162509
+    },
+    "target": {
+      "SPY": 0.140294,
+      "XLE": 0.088456,
+      "AGG": 0.608741,
+      "GLD": 0.162509
+    },
+    "Never_return_pct": -3.5948951505042404,
+    "Quarterly_return_pct": -6.748758713693359
+  },
+  "label": "retrospective portfolio evaluation; descriptive, not a validation of any risk model"
+}

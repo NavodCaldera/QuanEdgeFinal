@@ -1,0 +1,265 @@
+crisis,method,ticker,contribution_usd
+GFC,Inverse variance (1/var),SPY,-386326.17164581025
+GFC,Inverse variance (1/var),XLE,-143748.4193475283
+GFC,Inverse variance (1/var),AGG,613534.6135690665
+GFC,Inverse variance (1/var),GLD,167410.08295153306
+GFC,Inverse volatility (1/vol),SPY,-883031.2494761376
+GFC,Inverse volatility (1/vol),XLE,-479161.3978250944
+GFC,Inverse volatility (1/vol),AGG,421343.0478727324
+GFC,Inverse volatility (1/vol),GLD,406567.34431086597
+GFC,Risk parity (ERC),SPY,-772652.3432916205
+GFC,Risk parity (ERC),XLE,-431245.2580425849
+GFC,Risk parity (ERC),AGG,450910.9810567838
+GFC,Risk parity (ERC),GLD,382651.61817493266
+GFC,Minimum variance,SPY,-331136.7185535516
+GFC,Minimum variance,XLE,-47916.13978250944
+GFC,Minimum variance,AGG,672670.4799371694
+GFC,Minimum variance,GLD,47831.45227186658
+GFC,Minimum CVaR (v2/v3 W_rec),SPY,-320098.8279350999
+GFC,Minimum CVaR (v2/v3 W_rec),XLE,-9583.227956501889
+GFC,Minimum CVaR (v2/v3 W_rec),AGG,650494.5300491308
+GFC,Minimum CVaR (v2/v3 W_rec),GLD,143494.35681559975
+GFC,Maximum Sharpe,SPY,-717462.8901993618
+GFC,Maximum Sharpe,XLE,-0.0
+GFC,Maximum Sharpe,AGG,576574.6970890022
+GFC,Maximum Sharpe,GLD,215241.5352233996
+Lehman liquidity shock,Inverse variance (1/var),SPY,-194330.61008076565
+Lehman liquidity shock,Inverse variance (1/var),XLE,-93486.37125915695
+Lehman liquidity shock,Inverse variance (1/var),AGG,-1065327.0305148873
+Lehman liquidity shock,Inverse variance (1/var),GLD,61589.782735305096
+Lehman liquidity shock,Inverse volatility (1/vol),SPY,-444184.2516131786
+Lehman liquidity shock,Inverse volatility (1/vol),XLE,-311621.23753052315
+Lehman liquidity shock,Inverse volatility (1/vol),AGG,-731610.1293897417
+Lehman liquidity shock,Inverse volatility (1/vol),GLD,149575.18664288378
+Lehman liquidity shock,Risk parity (ERC),SPY,-388661.2201615313
+Lehman liquidity shock,Risk parity (ERC),XLE,-280459.11377747083
+Lehman liquidity shock,Risk parity (ERC),AGG,-782951.1911013026
+Lehman liquidity shock,Risk parity (ERC),GLD,140776.6462521259
+Lehman liquidity shock,Minimum variance,SPY,-166569.09435494195
+Lehman liquidity shock,Minimum variance,XLE,-31162.123753052318
+Lehman liquidity shock,Minimum variance,AGG,-1168009.153938009
+Lehman liquidity shock,Minimum variance,GLD,17597.08078151574
+Lehman liquidity shock,Minimum CVaR (v2/v3 W_rec),SPY,-161016.79120977726
+Lehman liquidity shock,Minimum CVaR (v2/v3 W_rec),XLE,-6232.424750610464
+Lehman liquidity shock,Minimum CVaR (v2/v3 W_rec),AGG,-1129503.3576543382
+Lehman liquidity shock,Minimum CVaR (v2/v3 W_rec),GLD,52791.242344547216
+Lehman liquidity shock,Maximum Sharpe,SPY,-360899.70443570765
+Lehman liquidity shock,Maximum Sharpe,XLE,-0.0
+Lehman liquidity shock,Maximum Sharpe,AGG,-1001150.7033754361
+Lehman liquidity shock,Maximum Sharpe,GLD,79186.86351682083
+Gold bear market,Inverse variance (1/var),SPY,688058.7118618916
+Gold bear market,Inverse variance (1/var),XLE,14851.13712689028
+Gold bear market,Inverse variance (1/var),AGG,824670.3325120412
+Gold bear market,Inverse variance (1/var),GLD,-318885.0891397992
+Gold bear market,Inverse volatility (1/vol),SPY,1572705.6271128948
+Gold bear market,Inverse volatility (1/vol),XLE,49503.790422967606
+Gold bear market,Inverse volatility (1/vol),AGG,566339.8669058596
+Gold bear market,Inverse volatility (1/vol),GLD,-774435.2164823693
+Gold bear market,Risk parity (ERC),SPY,1376117.423723783
+Gold bear market,Risk parity (ERC),XLE,44553.411380670834
+Gold bear market,Risk parity (ERC),AGG,606083.0154606568
+Gold bear market,Risk parity (ERC),GLD,-728880.2037481122
+Gold bear market,Minimum variance,SPY,589764.6101673355
+Gold bear market,Minimum variance,XLE,4950.3790422967595
+Gold bear market,Minimum variance,AGG,904156.6296216357
+Gold bear market,Minimum variance,GLD,-91110.02546851402
+Gold bear market,Minimum CVaR (v2/v3 W_rec),SPY,570105.7898284243
+Gold bear market,Minimum CVaR (v2/v3 W_rec),XLE,990.0758084593521
+Gold bear market,Minimum CVaR (v2/v3 W_rec),AGG,874349.2682055377
+Gold bear market,Minimum CVaR (v2/v3 W_rec),GLD,-273330.0764055421
+Gold bear market,Maximum Sharpe,SPY,1277823.3220292272
+Gold bear market,Maximum Sharpe,XLE,0.0
+Gold bear market,Maximum Sharpe,AGG,774991.3968185448
+Gold bear market,Maximum Sharpe,GLD,-409995.11460831313
+Oil collapse,Inverse variance (1/var),SPY,-15947.730071521482
+Oil collapse,Inverse variance (1/var),XLE,-140237.2769139104
+Oil collapse,Inverse variance (1/var),AGG,335148.9217266443
+Oil collapse,Inverse variance (1/var),GLD,-118533.6790709135
+Oil collapse,Inverse volatility (1/vol),SPY,-36451.95444919196
+Oil collapse,Inverse volatility (1/vol),XLE,-467457.5897130348
+Oil collapse,Inverse volatility (1/vol),AGG,230162.51251106893
+Oil collapse,Inverse volatility (1/vol),GLD,-287867.5063150757
+Oil collapse,Risk parity (ERC),SPY,-31895.460143042965
+Oil collapse,Risk parity (ERC),XLE,-420711.8307417312
+Oil collapse,Risk parity (ERC),AGG,246314.2677750036
+Oil collapse,Risk parity (ERC),GLD,-270934.1235906594
+Oil collapse,Minimum variance,SPY,-13669.482918446984
+Oil collapse,Minimum variance,XLE,-46745.758971303476
+Oil collapse,Minimum variance,AGG,367452.4322545136
+Oil collapse,Minimum variance,GLD,-33866.765448832426
+Oil collapse,Minimum CVaR (v2/v3 W_rec),SPY,-13213.833487832087
+Oil collapse,Minimum CVaR (v2/v3 W_rec),XLE,-9349.151794260695
+Oil collapse,Minimum CVaR (v2/v3 W_rec),AGG,355338.6158065626
+Oil collapse,Minimum CVaR (v2/v3 W_rec),GLD,-101600.29634649729
+Oil collapse,Maximum Sharpe,SPY,-29617.21298996847
+Oil collapse,Maximum Sharpe,XLE,-0.0
+Oil collapse,Maximum Sharpe,AGG,314959.227646726
+Oil collapse,Maximum Sharpe,GLD,-152400.4445197459
+2018 trade tensions,Inverse variance (1/var),SPY,-116728.75470174682
+2018 trade tensions,Inverse variance (1/var),XLE,-85269.87187880946
+2018 trade tensions,Inverse variance (1/var),AGG,52352.15190869435
+2018 trade tensions,Inverse variance (1/var),GLD,-43999.43120594351
+2018 trade tensions,Inverse volatility (1/vol),SPY,-266808.5821754213
+2018 trade tensions,Inverse volatility (1/vol),XLE,-284232.9062626982
+2018 trade tensions,Inverse volatility (1/vol),AGG,35952.682636091304
+2018 trade tensions,Inverse volatility (1/vol),GLD,-106855.76150014851
+2018 trade tensions,Risk parity (ERC),SPY,-233457.50940349363
+2018 trade tensions,Risk parity (ERC),XLE,-255809.61563642832
+2018 trade tensions,Risk parity (ERC),AGG,38475.677908799466
+2018 trade tensions,Risk parity (ERC),GLD,-100570.12847072801
+2018 trade tensions,Minimum variance,SPY,-100053.21831578297
+2018 trade tensions,Minimum variance,XLE,-28423.290626269816
+2018 trade tensions,Minimum variance,AGG,57398.14245411068
+2018 trade tensions,Minimum variance,GLD,-12571.266058841002
+2018 trade tensions,Minimum CVaR (v2/v3 W_rec),SPY,-96718.11103859021
+2018 trade tensions,Minimum CVaR (v2/v3 W_rec),XLE,-5684.658125253964
+2018 trade tensions,Minimum CVaR (v2/v3 W_rec),AGG,55505.89599957956
+2018 trade tensions,Minimum CVaR (v2/v3 W_rec),GLD,-37713.79817652301
+2018 trade tensions,Maximum Sharpe,SPY,-216781.9730175298
+2018 trade tensions,Maximum Sharpe,XLE,-0.0
+2018 trade tensions,Maximum Sharpe,AGG,49198.40781780915
+2018 trade tensions,Maximum Sharpe,GLD,-56570.69726478451
+COVID crash,Inverse variance (1/var),SPY,-236020.85780865338
+COVID crash,Inverse variance (1/var),XLE,-168200.06786286
+COVID crash,Inverse variance (1/var),AGG,-111569.04092610691
+COVID crash,Inverse variance (1/var),GLD,-25317.82946203997
+COVID crash,Inverse volatility (1/vol),SPY,-539476.2464197791
+COVID crash,Inverse volatility (1/vol),XLE,-560666.8928762
+COVID crash,Inverse volatility (1/vol),AGG,-76619.70280467584
+COVID crash,Inverse volatility (1/vol),GLD,-61486.15726495421
+COVID crash,Risk parity (ERC),SPY,-472041.71561730676
+COVID crash,Risk parity (ERC),XLE,-504600.20358857996
+COVID crash,Risk parity (ERC),AGG,-81996.52405412677
+COVID crash,Risk parity (ERC),GLD,-57869.32448466278
+COVID crash,Minimum variance,SPY,-202303.5924074172
+COVID crash,Minimum variance,XLE,-56066.68928762
+COVID crash,Minimum variance,AGG,-122322.6834250088
+COVID crash,Minimum variance,GLD,-7233.665560582847
+COVID crash,Minimum CVaR (v2/v3 W_rec),SPY,-195560.13932716995
+COVID crash,Minimum CVaR (v2/v3 W_rec),XLE,-11213.337857524
+COVID crash,Minimum CVaR (v2/v3 W_rec),AGG,-118290.06748792059
+COVID crash,Minimum CVaR (v2/v3 W_rec),GLD,-21700.99668174854
+COVID crash,Maximum Sharpe,SPY,-438324.4502160705
+COVID crash,Maximum Sharpe,XLE,-0.0
+COVID crash,Maximum Sharpe,AGG,-104848.01436429325
+COVID crash,Maximum Sharpe,GLD,-32551.49502262281
+COVID dash for cash,Inverse variance (1/var),SPY,-135218.22743927766
+COVID dash for cash,Inverse variance (1/var),XLE,-130729.37349352406
+COVID dash for cash,Inverse variance (1/var),AGG,-795071.2876482345
+COVID dash for cash,Inverse variance (1/var),GLD,-74865.1478514163
+COVID dash for cash,Inverse volatility (1/vol),SPY,-309070.2341469204
+COVID dash for cash,Inverse volatility (1/vol),XLE,-435764.5783117469
+COVID dash for cash,Inverse volatility (1/vol),AGG,-546012.81199939
+COVID dash for cash,Inverse volatility (1/vol),GLD,-181815.3590677253
+COVID dash for cash,Risk parity (ERC),SPY,-270436.4548785553
+COVID dash for cash,Risk parity (ERC),XLE,-392188.12048057216
+COVID dash for cash,Risk parity (ERC),AGG,-584329.5005607506
+COVID dash for cash,Risk parity (ERC),GLD,-171120.3379460944
+COVID dash for cash,Minimum variance,SPY,-115901.33780509511
+COVID dash for cash,Minimum variance,XLE,-43576.45783117469
+COVID dash for cash,Minimum variance,AGG,-871704.664770956
+COVID dash for cash,Minimum variance,GLD,-21390.0422432618
+COVID dash for cash,Minimum CVaR (v2/v3 W_rec),SPY,-112037.95987825864
+COVID dash for cash,Minimum CVaR (v2/v3 W_rec),XLE,-8715.291566234937
+COVID dash for cash,Minimum CVaR (v2/v3 W_rec),AGG,-842967.1483499354
+COVID dash for cash,Minimum CVaR (v2/v3 W_rec),GLD,-64170.12672978539
+COVID dash for cash,Maximum Sharpe,SPY,-251119.5652443728
+COVID dash for cash,Maximum Sharpe,XLE,-0.0
+COVID dash for cash,Maximum Sharpe,AGG,-747175.4269465337
+COVID dash for cash,Maximum Sharpe,GLD,-96255.1900946781
+Bond bear market,Inverse variance (1/var),SPY,100973.46978296169
+Bond bear market,Inverse variance (1/var),XLE,461431.47570600675
+Bond bear market,Inverse variance (1/var),AGG,-1529932.3904169626
+Bond bear market,Inverse variance (1/var),GLD,-140819.663950899
+Bond bear market,Inverse volatility (1/vol),SPY,230796.5023610553
+Bond bear market,Inverse volatility (1/vol),XLE,1538104.9190200225
+Bond bear market,Inverse volatility (1/vol),AGG,-1050676.4608887574
+Bond bear market,Inverse volatility (1/vol),GLD,-341990.61245218327
+Bond bear market,Risk parity (ERC),SPY,201946.93956592339
+Bond bear market,Risk parity (ERC),XLE,1384294.4271180201
+Bond bear market,Risk parity (ERC),AGG,-1124408.1423546353
+Bond bear market,Risk parity (ERC),GLD,-321873.51760205475
+Bond bear market,Minimum variance,SPY,86548.68838539573
+Bond bear market,Minimum variance,XLE,153810.49190200225
+Bond bear market,Minimum variance,AGG,-1677395.7533487182
+Bond bear market,Minimum variance,GLD,-40234.189700256844
+Bond bear market,Minimum CVaR (v2/v3 W_rec),SPY,83663.73210588255
+Bond bear market,Minimum CVaR (v2/v3 W_rec),XLE,30762.098380400446
+Bond bear market,Minimum CVaR (v2/v3 W_rec),AGG,-1622096.9922493098
+Bond bear market,Minimum CVaR (v2/v3 W_rec),GLD,-120702.56910077055
+Bond bear market,Maximum Sharpe,SPY,187522.15816835745
+Bond bear market,Maximum Sharpe,XLE,0.0
+Bond bear market,Maximum Sharpe,AGG,-1437767.7885846156
+Bond bear market,Maximum Sharpe,GLD,-181053.8536511558
+China / global tightening,Inverse variance (1/var),SPY,-7179.701187248967
+China / global tightening,Inverse variance (1/var),XLE,309088.1611153256
+China / global tightening,Inverse variance (1/var),AGG,-1398406.7228770892
+China / global tightening,Inverse variance (1/var),GLD,-53363.82767081782
+China / global tightening,Inverse volatility (1/vol),SPY,-16410.74557085478
+China / global tightening,Inverse volatility (1/vol),XLE,1030293.8703844188
+China / global tightening,Inverse volatility (1/vol),AGG,-960351.6048673985
+China / global tightening,Inverse volatility (1/vol),GLD,-129597.86720055754
+China / global tightening,Risk parity (ERC),SPY,-14359.402374497933
+China / global tightening,Risk parity (ERC),XLE,927264.4833459767
+China / global tightening,Risk parity (ERC),AGG,-1027744.6999458125
+China / global tightening,Risk parity (ERC),GLD,-121974.46324758357
+China / global tightening,Minimum variance,SPY,-6154.029589070542
+China / global tightening,Minimum variance,XLE,103029.38703844187
+China / global tightening,Minimum variance,AGG,-1533192.913033917
+China / global tightening,Minimum variance,GLD,-15246.807905947946
+China / global tightening,Minimum CVaR (v2/v3 W_rec),SPY,-5948.895269434857
+China / global tightening,Minimum CVaR (v2/v3 W_rec),XLE,20605.877407688375
+China / global tightening,Minimum CVaR (v2/v3 W_rec),AGG,-1482648.0917251064
+China / global tightening,Minimum CVaR (v2/v3 W_rec),GLD,-45740.423717843834
+China / global tightening,Maximum Sharpe,SPY,-13333.73077631951
+China / global tightening,Maximum Sharpe,XLE,0.0
+China / global tightening,Maximum Sharpe,AGG,-1314165.3540290718
+China / global tightening,Maximum Sharpe,GLD,-68610.63557676575
+Rates 2022,Inverse variance (1/var),SPY,-171474.70934575525
+Rates 2022,Inverse variance (1/var),XLE,133512.27682836185
+Rates 2022,Inverse variance (1/var),AGG,-1193113.3567233626
+Rates 2022,Inverse variance (1/var),GLD,-51315.85185386626
+Rates 2022,Inverse volatility (1/vol),SPY,-391942.19279029773
+Rates 2022,Inverse volatility (1/vol),XLE,445040.9227612062
+Rates 2022,Inverse volatility (1/vol),AGG,-819367.0040148393
+Rates 2022,Inverse volatility (1/vol),GLD,-124624.21164510377
+Rates 2022,Risk parity (ERC),SPY,-342949.4186915105
+Rates 2022,Risk parity (ERC),XLE,400536.8304850856
+Rates 2022,Risk parity (ERC),AGG,-876866.4428930738
+Rates 2022,Risk parity (ERC),GLD,-117293.37566598003
+Rates 2022,Minimum variance,SPY,-146978.32229636164
+Rates 2022,Minimum variance,XLE,44504.092276120624
+Rates 2022,Minimum variance,AGG,-1308112.2344798313
+Rates 2022,Minimum variance,GLD,-14661.671958247503
+Rates 2022,Minimum CVaR (v2/v3 W_rec),SPY,-142079.04488648294
+Rates 2022,Minimum CVaR (v2/v3 W_rec),XLE,8900.818455224124
+Rates 2022,Minimum CVaR (v2/v3 W_rec),AGG,-1264987.6553211557
+Rates 2022,Minimum CVaR (v2/v3 W_rec),GLD,-43985.01587474251
+Rates 2022,Maximum Sharpe,SPY,-318453.0316421169
+Rates 2022,Maximum Sharpe,XLE,0.0
+Rates 2022,Maximum Sharpe,AGG,-1121239.0581255697
+Rates 2022,Maximum Sharpe,GLD,-65977.52381211377
+Gold correction 2026,Inverse variance (1/var),SPY,61190.53377804865
+Gold correction 2026,Inverse variance (1/var),XLE,43336.69373239753
+Gold correction 2026,Inverse variance (1/var),AGG,-4736.155820807452
+Gold correction 2026,Inverse variance (1/var),GLD,-184831.62499920765
+Gold correction 2026,Inverse volatility (1/vol),SPY,139864.0772069683
+Gold correction 2026,Inverse volatility (1/vol),XLE,144455.64577465842
+Gold correction 2026,Inverse volatility (1/vol),AGG,-3252.540744409937
+Gold correction 2026,Inverse volatility (1/vol),GLD,-448876.80356950435
+Gold correction 2026,Risk parity (ERC),SPY,122381.0675560973
+Gold correction 2026,Risk parity (ERC),XLE,130010.08119719257
+Gold correction 2026,Risk parity (ERC),AGG,-3480.7892177018625
+Gold correction 2026,Risk parity (ERC),GLD,-422472.28571247467
+Gold correction 2026,Minimum variance,SPY,52449.02895261312
+Gold correction 2026,Minimum variance,XLE,14445.564577465842
+Gold correction 2026,Minimum variance,AGG,-5192.652767391304
+Gold correction 2026,Minimum variance,GLD,-52809.03571405933
+Gold correction 2026,Minimum CVaR (v2/v3 W_rec),SPY,50700.727987526014
+Gold correction 2026,Minimum CVaR (v2/v3 W_rec),XLE,2889.1129154931687
+Gold correction 2026,Minimum CVaR (v2/v3 W_rec),AGG,-5021.466412422359
+Gold correction 2026,Minimum CVaR (v2/v3 W_rec),GLD,-158427.107142178
+Gold correction 2026,Maximum Sharpe,SPY,113639.56273066177
+Gold correction 2026,Maximum Sharpe,XLE,0.0
+Gold correction 2026,Maximum Sharpe,AGG,-4450.845229192546
+Gold correction 2026,Maximum Sharpe,GLD,-237640.66071326696

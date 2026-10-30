@@ -1,6 +1,6 @@
 """Chart: USD 10m from January 2005 in the candidate portfolios of run final-v3-20261030.
 
-Retrospective replay (PORT-010, exploratory): quarterly rebalancing with a 5-point drift
+Retrospective replay (PORT-013, exploratory): quarterly rebalancing with a 5-point drift
 trigger, zero cost, no cash-reserve withdrawals; fixed weights were estimated on the full
 sample. Dynamic EWMA risk parity re-estimates monthly from prior data and joins in
 January 2007 at the static risk-parity value. Writes results/charts/portfolio_history_2005.png
