@@ -555,6 +555,38 @@ Reproduce with `python scripts/correlation_rebalancing_study.py` (offline, `data
 
 Review record (second critic pair): both agreed the hurdle must come from the spending need, which also fixed a circularity in the first version of section 13 that made Reject impossible, and they found the accidental 40% cap on AGG. They differed on keeping a realised NPV (dropped as redundant), on the AGG ceiling (60% vs 70%; 70% chosen, with its constraint effect reported) and on co-exceedance versus a simulated-null correlation test (co-exceedance chosen as plainer and cheaper; the simulated null is on the cut list).
 
+### 19b. Contrarian rules, correlation and dynamic risk parity (exploratory, 30 October 2026; AGENTS.md PORT-017 to PORT-022)
+
+Retrospective portfolio evaluations on the frozen panel, four-ETF universe, 0% cost, no reserve withdrawals. None changes policy, W_rec, a frozen run or a verdict. Each rule was fixed in its script's docstring before its first run, but every idea was prompted by history already seen (mostly 2008, 2020 and 2022).
+
+**Correlation-triggered tilts and rebalancing (PORT-017 to 019).** Base: risk parity (static SPY 14.0 / AGG 60.9 / GLD 16.3 / XLE 8.8, or quarterly ERC on 750 days).
+
+| Rule | Result | Reading |
+|---|---|---|
+| Move 10 pts SPY -> GLD when 63-day corr(SPY, AGG) > +0.3 | CAGR 6.24% vs 6.37%; 2022 -10.5% vs -10.6% | Correlation was -0.26 at end-2021 and first exceeded 0.3 in Sep 2022, after the losses. Trailing correlation confirms regimes late |
+| Same move when corr < -0.25 (SPY-AGG or SPY-GLD) | SPY-GLD: CAGR 6.53%, max fall 16.0% vs 18.2%, ES99 1.64% vs 1.72%; SPY-AGG: 6.32% | SPY-GLD acts as a flight-to-safety signal, but fired in 11 of 80 quarters and the level was chosen after seeing 2021-22 values |
+| Rebalance to target, or tilt 5 pts winner -> loser, when a pair's within-month (or quarter) corr < -0.5 | All within 0.4 pts of normal CAGR and max fall; tilt turnover 1.00x vs 0.15x | No reversal effect after a negative-correlation month |
+
+Correlation is scale-free: it says whether two ETFs move oppositely, not how far apart their returns end up (XLE-AGG -0.68 in Mar 2023 with a 2.6-point gap; -0.51 in Nov 2020 with a 26.8-point gap). Gap measures are the return spread, spread volatility sqrt(s_a^2 + s_b^2 - 2 rho s_a s_b) and the spread z-score. Since 2020 only XLE-AGG 2026 (-0.38) is below -0.3 over a full year; below -0.5 occurs in 12 months, 8 of them XLE-AGG (tables in results/session-evidence-r1).
+
+**Buy low, sell high (PORT-020, PORT-021).** Evidence against fixed "+20% sell / -30% buy" triggers: after its first 30% fall, SPY went on to -55% (+3.4% a year later), XLE to -57% in 2009 and -71% by 2020 (-7.2% a year later), GLD to -46% (+2.3%). After a +20% year, next-year returns stayed positive (SPY 10.5%, XLE 8.9%, GLD 17.8%). Criticisms: 3-12-month time-series momentum works against selling winners (Moskowitz, Ooi and Pedersen 2012), reversal is a 3-5-year effect (De Bondt and Thaler 1985); ETFs have no floor; buying a falling asset adds exposure rather than hedging; buying equity in a crash works against the drawdown limit. The disciplined form is rebalancing to targets, whose benefit (about 0.75% a year for risk parity, from half the gap between weighted asset variance and portfolio variance) comes from diversification, not timing.
+
+| Rule, 2005-04-06 to 2026-09-30 | CAGR | Vol | Max fall | ES99 1d | GFC | COVID | 2022 | Turnover/yr |
+|---|---|---|---|---|---|---|---|---|
+| Normal: quarter-end + 5-pt drift | 6.47% | 6.98% | -19.1% | 1.73% | -6.5% | -11.2% | -10.3% | 0.15x |
+| Relative band +/-20% of each weight | 6.47% | 7.02% | -18.8% | 1.76% | -5.7% | -12.2% | -10.2% | 0.17x |
+| Band + capped dip ladder (+2.5/+5 pts at -30/-45% from 3-yr high) | 6.67% | 7.71% | -19.3% | 2.01% | -9.0% | -14.4% | -10.2% | 0.26x |
+| Buy-and-hold | 7.13% | 8.33% | -20.4% | 2.14% | -4.8% | -12.5% | -11.9% | 0 |
+| Dynamic EWMA risk parity, monthly | 6.43% | 6.43% | -18.5% | 1.64% | -4.9% | -9.3% | -10.3% | 0.96x |
+| Dynamic EWMA risk parity, weekly | 5.99% | 6.62% | -20.7% | 1.74% | -8.1% | -10.5% | -9.9% | 1.74x |
+| Dynamic EWMA risk parity, quarterly | 6.22% | 6.54% | -18.1% | 1.69% | -4.4% | -12.9% | -11.7% | 0.55x |
+
+Static rules use full-sample weights (hindsight); dynamic risk parity uses only data through each decision. 2020-2026: normal 7.29%, dynamic monthly 7.62% (max fall 13.5%, ES99 1.96%). The ladder bought too early in every crash (Oct 2008, 9-20 Mar 2020) and re-triggered XLE repeatedly in 2014-2021.
+
+**Why monthly re-estimation (defence text).** Volatility shocks fade with half-lives of about 34 (SPY), 49 (AGG), 68 (XLE) and 219 (GLD) trading days (GJR-GARCH, full-sample fit); after a month 65% of an SPY shock remains, after a quarter 28%. The EWMA lambda 0.97 estimator has a 23-day half-life and a 66-day effective sample; 47% of its information is new after a month (14% after a week, 85% after a quarter). CPI, payrolls and PMI are monthly and the FOMC meets eight times a year. Weekly re-estimation trades noise and breached the 20% limit in the GFC; quarterly held stale weights through COVID. Business cycles and stock-bond correlation regimes change over years, so gradual monthly target moves suit them; no calendar rule catches day-scale crashes.
+
+**Status of dynamic risk parity as the final portfolio (PORT-022).** Under mandate v4: C1 pass; C2 fail (30 Sep 2026 target ES99 2.60%, USD 250k vs USD 240k); C3 fail (realised real CAGR 2.4-2.7% vs 4%; 4.9% expected real under v3's measure); C4 pass via the GARCH-EVT challenger only; C5 pass (GFC drawdown 18.5%). Not the v4 selection rule's choice. Adoption needs owner decisions on C2 (monthly ES cap proposed) and C3, a mandate v5 tagged prereg-v5, and a full run before it can appear as the recommendation.
+
 ## 20. External audit: accounting, validation and decision rules
 
 Source: an audit supplied by the owner with seven recommendations, reviewed by a third pair of critics (committee view and implementation view) who cross-critiqued. All seven were adopted; item 1 (dollar ES contributions) had already been applied (AGENTS.md DOC-005).
