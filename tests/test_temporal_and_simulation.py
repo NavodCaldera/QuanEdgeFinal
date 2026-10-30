@@ -30,7 +30,9 @@ def test_matching_one_asset_monte_carlo():
             assert abs(m.es(alpha)-analytical.es(alpha))<=4*se
 
 
-def test_walk_forward_weights_ignore_current_year(cfg):
+def test_walk_forward_weights_ignore_current_year():
+    from quanedge.config import frozen_policy
+    cfg=frozen_policy("prereg-v3")          # the fixed-weight v3 rule; v5's strategy is walk-forward by construction
     idx=pd.bdate_range("2012-01-01","2017-12-29")
     x=pd.DataFrame(np.random.default_rng(7).normal(.0004,.005,(len(idx),7)),index=idx,columns=TICKERS)  # reaches the v2 real target
     _,first=walk_forward(x,cfg)

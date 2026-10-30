@@ -68,7 +68,8 @@ def reverse_stress(training,weights,limit=.20):
 def reserve_survival(monthly,weights,cfg,years=None):
     """Fixed real cash reserve paid each 1 January before returns (mandate v2).
     Joint non-circular 12-month blocks; quarterly/drift rebalancing; real values deflate
-    by the policy inflation assumption, matching the reserve's growth."""
+    by the policy inflation assumption (v2-v4: equal to the reserve growth; v5: US CPI 2.59%,
+    below the 3.64% reserve growth)."""
     years=years or cfg["survival_years"];x=monthly[TICKERS].dropna().to_numpy()
     if len(x)<24:return {"status":"unavailable: insufficient monthly data"}
     n=cfg["survival_paths"];rng=np.random.default_rng(cfg["seed"]);fund=cfg["fund_value"]

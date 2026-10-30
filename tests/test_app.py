@@ -117,7 +117,8 @@ def synthetic_run(root,cfg,sensitivity_hash=None):
 
 @pytest.mark.parametrize("mandate",["v2","v1"])
 def test_estimator_disclosure_requires_matching_hash(tmp_path,monkeypatch,cfg,mandate):
-    cfg=cfg if mandate=="v2" else v1_policy(cfg)
+    from quanedge.config import frozen_policy
+    cfg=frozen_policy("prereg-v3") if mandate=="v2" else v1_policy(cfg)      # reserve mandate as frozen, 3.64% inflation
     monkeypatch.setattr(config,"ROOT",tmp_path);st.cache_data.clear()
     synthetic_run(tmp_path,cfg)
     app=AppTest.from_file(str(Path(__file__).resolve().parents[1]/"app.py")).run(timeout=30)

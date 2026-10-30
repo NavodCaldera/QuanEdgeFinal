@@ -32,7 +32,7 @@ def verify(run):
         fc=load_forecasts(run/name/"forecasts.csv")
         if not (fc.train_end<fc.index).all():errors.append(name+" timing")
         for saved in p["validation"]:
-            current=assess(fc,wh,saved["method"],saved["alpha"],bundle["policy"]["evaluation_start"],bundle["policy"]["snapshot_end"])
+            current=assess(fc,p.get("forecast_hash",wh),saved["method"],saved["alpha"],bundle["policy"]["evaluation_start"],bundle["policy"]["snapshot_end"])
             for key in ["days","breaches","zone","coverage","kupiec_p","conditional_coverage_p"]:
                 a,b=current.get(key),saved.get(key)
                 if a is None and b is None:continue

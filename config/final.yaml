@@ -1,6 +1,6 @@
 schema_version: 3
-mandate: v4
-prereg_tag: prereg-v4
+mandate: v5
+prereg_tag: prereg-v5
 universe: [SPY, AGG, GLD, XLE]
 snapshot_end: '2026-09-30'
 training_end: '2016-12-31'
@@ -10,11 +10,10 @@ value: 9600000
 reserve_initial: 400000
 reserve_growth: 0.0364
 reserve_rate: 0.0
-inflation: 0.0364
+inflation: 0.0259
+inflation_source: FRED CPIAUCSL as published, 2005-01-03 to 2026-09-30 (191.700 to 334.131)
 real_return_floor: 0.01
-real_return_target: 0.03
-real_cagr_floor: 0.04
-es_budget: 0.025
+es_budget: 0.030
 drawdown_limit: 0.20
 gold_cap: 1.0
 equity_cap: 1.0
@@ -25,6 +24,12 @@ sector_cap: 1.0
 cost: 0.0
 expected_annual_turnover: 0.0
 drift: 0.05
+strategy:
+  type: dynamic_ewma_risk_parity
+  rebalance: M
+  ewma_lambda: 0.97
+  window: 750
+  min_history: 500
 seed: 20261026
 mean_shrinkage: 0.50
 covariance: LedoitWolf

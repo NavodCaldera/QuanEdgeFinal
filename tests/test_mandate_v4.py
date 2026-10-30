@@ -22,8 +22,7 @@ def test_v4_c3_uses_realised_floor_not_expected():
 
 
 def test_config_records_v4_floor():
-    import yaml
-    from quanedge.config import ROOT
-    cfg=yaml.safe_load((ROOT/"config/final.yaml").read_text())
+    from quanedge.config import frozen_policy
+    cfg=frozen_policy("prereg-v4")
     assert cfg["mandate"]=="v4" and cfg["prereg_tag"]=="prereg-v4" and cfg["real_cagr_floor"]==.04
     assert cfg["real_return_target"]==.03

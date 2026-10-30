@@ -33,14 +33,22 @@ if not latest.exists():
     st.stop()
 run=latest.read_text(encoding="utf-8").strip();folder=ROOT/"results"/run
 bundle,index=read_run(run);meta=bundle["metadata"];cfg=bundle["policy"];portfolios=bundle["portfolios"]
-v2="real_return_target" in cfg
-if v2:
+v2="reserve_initial" in cfg
+rec=portfolios["selected"]
+dyn=rec.get("kind")=="dynamic strategy"      # mandate v5: the recommendation is a monthly method
+if dyn:
+    st.caption(f"Mandate {cfg['mandate']}: dynamic EWMA risk parity over {', '.join(cfg['universe'])}, re-estimated each month-end · ES99 budget {cfg['es_budget']:.1%} · "
+               f"1 January cash reserve USD {cfg['reserve_initial']:,.0f} growing {cfg['reserve_growth']:.2%} a year · at least 1% real after {cfg['inflation']:.2%} US CPI inflation · zero trading cost")
+elif v2:
     st.caption(f"Mandate {cfg['mandate']}: "+(f"universe {', '.join(cfg['universe'])} only · " if "universe" in cfg else "")+f"no ETF percentage limits · zero trading cost · 1 January cash reserve USD {cfg['reserve_initial']:,.0f} "
                f"growing {cfg['reserve_growth']:.2%} a year · target 1-3% real after {cfg['inflation']:.2%} inflation")
-rec=portfolios["selected"]
 with st.expander("Frozen recommendation",expanded=True):
-    st.write(f"Run {run} · weights {rec.get('weight_hash','unavailable')[:8]}")
+    st.write(f"Run {run} · weights {rec.get('weight_hash','unavailable')[:8]}"+(f" · strategy {rec['forecast_hash'][:8]}" if dyn else ""))
     st.write(f"Verdict: {bundle['decision']['outcome']} — {bundle['decision']['action']}")
+    if dyn:
+        s=rec["strategy"]
+        st.write(f"Method: equal volatility risk contributions from an EWMA covariance (lambda {s['ewma_lambda']}, last {s['window']} days), "
+                 f"re-estimated at each month-end close. Target from 1 October 2026 (data through {cfg['snapshot_end']}):")
     if rec.get("weights"):
         st.write(" · ".join(f"{t} {v:.2%}" for t,v in rec["weights"].items() if v))
         primary=next((r for r in rec.get("validation",[]) if r["method"]==rec.get("model_used") and r["alpha"]==.99),{})
@@ -131,12 +139,12 @@ if page=="Recommendation":
         shown["window"]=shown.lookback_years.map(lambda y:"Full sample" if y=="all" else f"{y} years")
         pivot=shown.pivot(index="window",columns="estimate",values="expected_geometric").loc[["5 years","10 years","Full sample"]]
         st.write(f"{reported} ({' · '.join(f'{t} {v:.0%}' for t,v in portfolios[reported]['weights'].items() if v)}), weights {reported_hash[:8]}. "+
-                 (f"Expected nominal geometric annual return against the {h:.2%} floor (1% real) and the "
-                  f"{nominal_target(cfg['inflation'],cfg['real_return_target']):.2%} target (3% real)." if v2 else
+                 (f"Expected nominal geometric annual return against the {h:.2%} floor (1% real)"+
+                  (f" and the {nominal_target(cfg['inflation'],cfg['real_return_target']):.2%} target (3% real)." if "real_return_target" in cfg else ".") if v2 else
                   f"Expected geometric annual return after the {cfg['cost']*cfg['expected_annual_turnover']:.2%} cost reserve, against the {h:.2%} hurdle."))
         fig=go.Figure([go.Bar(name=c,x=pivot.index,y=100*pivot[c]) for c in pivot.columns])
         fig.add_hline(y=100*h,line_dash="dash",annotation_text=f"{'Floor, 1% real' if v2 else 'Hurdle'} {h:.2%}")
-        if v2:
+        if "real_return_target" in cfg:
             goal=nominal_target(cfg["inflation"],cfg["real_return_target"])
             fig.add_hline(y=100*goal,line_dash="dot",annotation_text=f"Target, 3% real {goal:.2%}")
         fig.update_layout(barmode="group",height=360,yaxis_title="Expected geometric return (%)",margin=dict(l=15,r=20,t=25,b=15))
@@ -154,6 +162,19 @@ if page=="Recommendation":
             st.dataframe(pd.DataFrame(survival_rows).rename(columns={"shortfall_probability":"probability below inflation-adjusted USD 10m"}),hide_index=True)
         if v2:st.caption(f"Illustrative reserve sustainability for {reported}: share of resampled-history paths that pay every inflation-linked 1 January reserve, share keeping the initial USD 10 million in real terms, and real balances. A reserve of 4% of the initial fund exceeds the 1-3% real return objective, so real capital is expected to decline.")
         else:st.caption(f"Illustrative spending sustainability for {reported}. Real-capital shortfall means the fund ends below USD 10 million grown with CPI after spending, under the documented resampled-history simulation. It does not mean the fund is exhausted.")
+elif page=="Portfolio" and dyn and matched_name=="selected":
+    st.subheader("Recommended method: dynamic EWMA risk parity, monthly")
+    st.bar_chart(pd.Series(weights,name="Target from 1 Oct 2026 (%)")*100)
+    held=pd.read_csv(folder/"selected/targets.csv",index_col=0,parse_dates=True)[list(cfg["universe"])]
+    fig=go.Figure([go.Scatter(x=held.index,y=100*held[t],name=t,stackgroup="w",mode="lines",line=dict(shape="hv",width=.5)) for t in held])
+    fig.update_layout(title="Monthly targets (each from data through its month-end close)",yaxis_title="Weight (%)",height=360,hovermode="x unified",margin=dict(l=15,r=20,t=45,b=15))
+    st.plotly_chart(fig,use_container_width=True,config={"displaylogo":False})
+    p=pd.read_csv(folder/"selected/performance.csv",index_col=0,parse_dates=True)
+    st.line_chart(p[["wealth"]].rename(columns={"wealth":"Wealth per initial USD, strategy path"}))
+    st.line_chart((p.wealth/p.wealth.cummax()-1).rename("Drawdown"))
+    st.json(result["performance"])
+    st.caption(f"Frozen run {run}. Retrospective portfolio evaluation of the strategy's own path from {p.index[0].date()} (the first 500 return days estimate the first target), "
+               f"{result['rebalances']} monthly decisions, turnover {result['turnover_per_year']:.2f}x NAV a year, zero cost, before cash-reserve withdrawals.")
 elif page=="Portfolio":
     st.bar_chart(pd.Series(weights,name="Weight %")*100)
     p=replay(returns,weights,cfg["cost"],cfg["drift"])
@@ -172,11 +193,12 @@ elif page=="Portfolio comparison":
     labels={"selected":"W_rec (selected)","near_parity":"Risk parity (near parity)","permanent":"Permanent 25/50/25",
             "balanced_35_50_15":"Balanced 35/50/15","max_sharpe":"Max Sharpe","min_variance":"Min variance",
             "60_40":"60/40 SPY/AGG","40_60":"40/60 SPY/AGG","equal_weight":"Equal weight","max_return":"Max return"}
-    options=[c for c in choices if not c.startswith(("A1_","A2","W_train","unconstrained"))]
+    # The v5 recommendation is the monthly dynamic line itself; its latest target held fixed would misrepresent it.
+    options=[c for c in choices if not c.startswith(("A1_","A2","W_train","unconstrained")) and not (dyn and c=="selected")]
     picked=st.sidebar.multiselect("Portfolios to compare",options,
-        default=[c for c in ["selected","near_parity","permanent","balanced_35_50_15","max_sharpe","60_40"] if c in options],
+        default=[c for c in ["selected","min_cvar","near_parity","permanent","balanced_35_50_15","max_sharpe","60_40"] if c in options],
         format_func=lambda c:labels.get(c,c))
-    dynamic=st.sidebar.checkbox("Add dynamic EWMA risk parity, monthly (exploratory)",value=True)
+    dynamic=st.sidebar.checkbox("Add dynamic EWMA risk parity, monthly"+(" (W_rec)" if dyn else " (exploratory)"),value=True)
     weekly=st.sidebar.checkbox("Add dynamic EWMA risk parity, weekly (exploratory)",value=True)
     common=st.sidebar.radio("Comparison start",["Full history (dynamic joins later)","Common start with dynamic"],
                             disabled=not (dynamic or weekly),help="The dynamic strategies need 500 days of history before their first allocation.")=="Common start with dynamic"
@@ -189,7 +211,8 @@ elif page=="Portfolio comparison":
 
     def weight_text(w):
         return " / ".join(f"{100*w[t]:.1f}".removesuffix(".0") for t in universe)
-    DYN={"M":"Dynamic EWMA risk parity (monthly)","W":"Dynamic EWMA risk parity (weekly)"}
+    DYN={"M":"W_rec: dynamic EWMA risk parity (monthly)" if dyn else "Dynamic EWMA risk parity (monthly)","W":"Dynamic EWMA risk parity (weekly)"}
+    labels["min_cvar"]="Min CVaR"
     if not picked and not dynamic and not weekly:
         st.info("Select at least one portfolio in the sidebar.")
     else:
@@ -207,7 +230,7 @@ elif page=="Portfolio comparison":
                 rp=wealth[labels["near_parity"]];base=rp.loc[:p.index[0]].iloc[-2];joined=labels["near_parity"]
             wealth[DYN[f]]=base*p.wealth
             initial[DYN[f]]=weight_text({t:p[f"target_{t}"].iloc[0] for t in universe})+(" (changes monthly)" if f=="M" else " (changes weekly)")
-        dyn=pd.Series(dtype=float) if not paths else next(iter(paths.values()))["return"]
+        dyn_returns=pd.Series(dtype=float) if not paths else next(iter(paths.values()))["return"]
         for title,frame,unit in [("Portfolio value",wealth/1e6,"USD m"),("Drawdown from peak",100*(wealth/wealth.cummax()-1),"%")]:
             fig=go.Figure([go.Scatter(x=frame.index,y=frame[c],name=c,mode="lines",line=dict(width=2.5 if c.startswith(("W_rec","Dynamic")) else 1.5),
                                       hovertemplate="%{x|%d %b %Y}<br>%{y:,.2f} "+unit+"<extra>"+c+"</extra>") for c in frame])
@@ -233,10 +256,11 @@ elif page=="Portfolio comparison":
                    f"quarterly or {cfg['drift']*100:g}-point drift rebalancing, {cfg['cost']*1e4:g} bp one-way costs, no "+("cash-reserve withdrawals" if v2 else "spending")+". "
                    "Fixed weights come from run "+run+" and were estimated on data that includes this period. "
                    +(("Dynamic risk parity re-estimates an EWMA (lambda 0.97) covariance over "+", ".join(universe)+" at each month-end or week-end close from data up to that close; its weights column shows the first target. "
-                      f"It needs 500 days of history, so it starts on {dyn.index[0].date()}"
+                      f"It needs 500 days of history, so it starts on {dyn_returns.index[0].date()}"
                       +(", and every line starts there. " if common else (f" at the value of {joined} on that day; its CAGR, volatility and drawdown are measured from its own start. " if joined else
                         " at USD 10 million; its value is not comparable with lines that started earlier. "))
-                      +"It has no frozen weights, no weight hash and no risk-model backtest, so checks C1-C5 and the verdict do not apply to it. ") if len(dyn) else "")
+                      +("The monthly line is the recommended method; its frozen C1-C5 evidence (strategy hash "+rec["forecast_hash"][:8]+") is on the Recommendation and Backtesting pages, and this chart recomputes the same path in the app. The weekly line is exploratory. " if dyn else
+                        "It has no frozen weights, no weight hash and no risk-model backtest, so checks C1-C5 and the verdict do not apply to it. ")) if len(dyn_returns) else "")
                    +"Shaded: project stress windows. Real CAGR uses the mandate inflation assumption.")
 elif page=="ETF charts":
     st.subheader("ETF price comparison")
@@ -315,7 +339,8 @@ elif page=="Risk":
         value=frame.iloc[0][field] if len(frame) else np.nan
         column.metric(label,f"${value:,.0f}" if np.isfinite(value) else "Unavailable")
     st.dataframe(selected[["method","alpha","var_pct","es_pct","var_usd","es_usd","basis","status"]],hide_index=True)
-    st.caption("One trading day. Percent columns are percentage points; dollar ES averages dollar tail losses.")
+    st.caption("One trading day. Percent columns are percentage points; dollar ES averages dollar tail losses."+
+               (" For the recommended method these are the risks of its current target held at fixed weights; the strategy path's own forecasts are on the Backtesting page." if dyn and matched_name=="selected" else ""))
     uncertainty=folder/(matched_name or "")/"uncertainty.csv"
     if matched and uncertainty.exists():st.dataframe(pd.read_csv(uncertainty),hide_index=True)
     else:st.info("Bootstrap intervals unavailable for this portfolio — rerun required.")
@@ -323,14 +348,18 @@ elif page=="Backtesting":
     if matched:
         fc=load_forecasts(folder/matched_name/"forecasts.csv")
         start,end=dates if len(dates)==2 else (None,None)
-        assessment=assess(fc,wh,method,alpha,start,end)
+        # A dynamic strategy's forecasts carry its strategy hash, not the hash of its latest target.
+        assessment=assess(fc,result.get("forecast_hash",wh),method,alpha,start,end)
         zone=assessment.get("zone","unavailable")
         {"green":st.success,"yellow":st.warning,"red":st.error}.get(zone,st.info)("Traffic light: "+zone)
         st.json(assessment)
         col=f"var_{method}_{alpha*100:g}"
         if col in fc:
             show=fc.loc[start:end];st.line_chart(pd.DataFrame({"Realised log loss":-show["return"],"VaR log loss":show[col]}))
-        st.caption("Sequential risk-forecast evaluation. Allocation selected using its stated estimation cutoff. Strict breach: loss > VaR. Basel colours apply only to 250 observations at 99%.")
+        st.caption("Sequential risk-forecast evaluation. "+("Forecasts on the strategy's own daily path (monthly targets, drift between), strategy hash "+result["forecast_hash"][:8]+". " if result.get("kind")=="dynamic strategy" else
+                   "Allocation selected using its stated estimation cutoff. ")+"Strict breach: loss > VaR. Basel colours apply only to 250 observations at 99%.")
+    else:
+        st.info("Grey traffic light: no forecasts exist for these weights.")
 elif page=="Stress & contributions":
     stresses=result["stress"] if matched else stress_tests(prices,weights,cfg["value"])+[hypothetical(returns.loc[:cfg["training_end"]],weights,cfg["value"])]
     st.dataframe(pd.DataFrame([{k:v for k,v in s.items() if not isinstance(v,dict)} for s in stresses]),hide_index=True)
@@ -343,10 +372,18 @@ elif page=="Stress & contributions":
                 if scenario.get("shocks"):st.json(scenario["shocks"])
     att=attribution(returns,weights,alpha,cfg["value"])
     st.bar_chart(pd.Series(att["components"],name="Component ES USD"));st.json(att)
-    st.caption("Historical attribution using shared portfolio tail weights. Negative contributions are retained. Attribution unavailable for portfolio-only FHS.")
+    st.caption("Historical attribution using shared portfolio tail weights. Negative contributions are retained. Attribution unavailable for portfolio-only FHS."+
+               (" For the recommended method, scenario losses follow its own path from each start close; the attribution chart is for its current target." if dyn and matched_name=="selected" else ""))
 elif page=="Assumptions & Limitations":
     st.write("The endowment is perpetual; strategic review is every five years. Policy limits and inflation/spending assumptions are chosen policy, not organiser rules.")
-    if v2:
+    if dyn:
+        st.write(f"Mandate {cfg['mandate']} (owner change, 31 October 2026): invest by dynamic EWMA risk parity over {', '.join(cfg['universe'])}. Each month-end the covariance is re-estimated "
+                 "from data up to that close and the weights are set so each ETF contributes equally to portfolio volatility. The weights therefore change every month, and the holdings drift between month-ends.")
+        st.write(f"Risk budget: one-day ES99 at most {cfg['es_budget']:.1%} of invested NAV. Real returns are measured against US CPI ({cfg['inflation']:.2%} a year, FRED CPIAUCSL 2005-2026). "
+                 f"The cash reserve grows {cfg['reserve_growth']:.2%} a year, faster than that CPI, so real capital is expected to decline while the reserve is paid. Trading cost is assumed zero.")
+        st.write("These rules were set after the strategy's results had been seen (its latest target failed the earlier 2.5% budget at 2.60%), so the Accept verdict reproduces known results and is not an independent test. "
+                 f"Validating risk model in this run: {rec.get('model_used') or 'none'} (primary {cfg['primary']}, challenger {cfg['challenger']}); a pass through the challenger is weaker evidence than a primary pass.")
+    elif v2:
         if "universe" in cfg:
             st.write(f"Only {', '.join(cfg['universe'])} may be held. EFA, EEM and XLK are left out because they move almost in step with SPY (daily correlation 0.82-0.91). "
                      "XLE is the least SPY-correlated equity ETF but still moves with it (0.70 daily, 0.76 on SPY's worst days); AGG and GLD are the diversifiers.")
@@ -358,7 +395,8 @@ elif page=="Assumptions & Limitations":
     st.write("All historical portfolio evaluations are retrospective. Forecasts use only earlier daily returns, but allocation and model choices have seen historical crises. No historical period is untouched.")
     st.write("Adjusted prices include distributions and expense ratios. No expense ratio is deducted again. Revised FRED data and approximate publication lags are not historical data vintages.")
     st.write("VaR is not maximum loss. ES is not a loss cap. Sparse extremes, model specification, liquidity, tax, execution impact and changing regimes remain risks.")
-    st.write("Risk forecasts use daily constant weights without costs; implementation uses quarterly/drift rebalancing and trading costs. USD and US CPI omit Sri Lankan currency and spending risks.")
+    st.write(("Fixed-weight candidates' risk forecasts use daily constant weights; the recommended method's forecasts use its own monthly path. " if dyn else
+              "Risk forecasts use daily constant weights without costs; implementation uses quarterly/drift rebalancing and trading costs. ")+"USD and US CPI omit Sri Lankan currency and spending risks.")
     st.write("AI assisted implementation and documents. Independent owner validation, organiser solo eligibility and deadline confirmation remain pending.")
 else:
     st.json(meta)

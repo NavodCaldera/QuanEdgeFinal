@@ -331,6 +331,27 @@ Candidates for a possible mandate v4, not a mandate change. The v3 policy, run a
 
 **Disclosure before the tag:** realised real CAGRs on this basis had already been shown to the owner: W_rec 0.3%, min variance 0.1%, max Sharpe 1.1%, static risk parity 2.7%, dynamic monthly risk parity 2.4%, permanent 3.5%, balanced 3.6%; only 60/40 (4.2%), equal weight (5.7%) and the four-ETF v1 max-return mix (4.4%) reached 4%, and all three break the 20% drawdown limit. The selection target (3% expected real) sits below the new floor, so the selected portfolio can fail its own C3. A realised-return gate uses the same history the weights were estimated on: it is retrospective, path-dependent and not a forecast.
 
+### 13g. Mandate v5: dynamic EWMA risk parity, monthly (owner change, 31 October 2026, tagged `prereg-v5`; supersedes 13f and the v2-v4 selection rule)
+
+The owner chose candidate v4d (section 13e) as the investment method and set the remaining rules below. Mandates v1-v4, their runs, tags and verdicts stay as recorded.
+
+| Item | Mandate v5 policy | Notes |
+|---|---|---|
+| Universe | SPY, AGG, GLD, XLE (v3); EFA, EEM, XLK held at zero | Unchanged |
+| Method (selection rule) | Long-only equal-volatility-risk-contribution weights (Spinu convex form, `quanedge.comparison.risk_parity`) from an EWMA covariance of daily simple returns, lambda 0.97, last 750 return days; re-estimated at each month-end close from data through that close only; holdings drift between decisions | v4d exactly as registered in 13e; lambda, window and frequency are not retuned. Data start 2005-01-03; the first target uses the first 500 return days (in force from 2006-12-28) |
+| Recommendation | Run the method monthly. The allocation to hold from 1 October 2026 is the 30 September 2026 target | The weights move each month; the method, not a fixed weight vector, is the recommendation |
+| Value, cash reserve, cost, horizon | Unchanged from v2: USD 9.6m invested, 1 January reserve USD 400,000 growing 3.64% a year, 0% trading cost | Reserve growth stays 3.64% as a conservative spending assumption |
+| Inflation (real-return basis) | 2.59% a year: FRED CPIAUCSL as published, 3 Jan 2005 to 30 Sep 2026 (191.700 to 334.131, 21.74 years) | Owner choice: approved source replaces the unverified 3.64% "world" figure. Index ratios, never the level as a rate |
+| Risk budget B | Historical 1-day ES99 ≤ 3.0% of invested NAV (USD 288,000) | Owner choice, raised from 2.5% |
+| Risk model | FHS primary, GARCH-EVT challenger (window 750, refit 21), unchanged | Owner kept the pre-registered order |
+| Drawdown/stress limit | 20%, unchanged | |
+
+**Checks (v5, for the strategy; definitions as 13e):** C1 every monthly target long-only, fully invested, inside the universe. C2 the strategy path's realised daily ES99 and the latest target's estimation-sample (2005-2026) ES99 both ≤ 3.0%. C3 frozen estimator (50% mean shrinkage, Ledoit-Wolf) on the latest target: expected real geometric return at 2.59% inflation ≥ 1% (v4's realised-CAGR floor is withdrawn; realised real CAGR is reported). C4 as 13a, on the strategy path's own sequential forecasts (strategy hash on every row), 2017-01-01 to 2026-09-30. C5 strategy path from each scenario start (GFC, COVID, Rates 2022): loss ≤ 20% of value and GFC drawdown ≤ 20%.
+
+**Adjustment set (v5, in order):** A1 the v3 fixed-weight candidates (minimum CVaR, minimum variance, near parity, maximum Sharpe) in ascending training ES99, judged with the fixed-weight checks under the v5 B, inflation and C3. No limit is relaxable further. Decision order unchanged (incomplete, Accept, Adjust, Reject).
+
+**Disclosure before the tag:** v5 was written after every input to its checks had been seen. Recorded v4d results (13e, PORT-015): path ES99 1.69%, 30 Sep 2026 target ES99 2.60% (which failed the 2.5% budget), 4.9% expected real at 3.64% inflation, FHS failed on clustering (conditional coverage p 0.011), GARCH-EVT passed (26 breaches vs 24.5, p 0.76/0.091), GFC drawdown 18.5%. The budget and inflation basis were changed knowing they turn v4d's C2 from fail to pass and raise its real return; the v5 run is therefore expected to give Accept and confirms reproducibility, not an independent test. The method was chosen after comparing about twenty allocation rules on the same history (sections 19-19c). Realised real CAGR on the CPI basis was about 3.5% (2007-2026), below the 3.64% reserve growth, so real capital is expected to erode while the reserve is paid.
+
 ## 14. Work plan
 
 Fix phase timeboxes as shares of the time left once the deadline is known. Two milestones are hard: the **thin slice** at about 15% of the time and the **minimum viable submission** at about 60%.

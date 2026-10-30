@@ -58,9 +58,10 @@ def test_mandate_v2_policy_values(cfg):
     with pytest.raises(ValueError):nominal_target(300,.01)
 
 
-def test_target_selection_binding_and_nonbinding(cfg):
+def test_target_selection_binding_and_nonbinding():
     from quanedge.portfolio import nominal_target
-    cfg=dict(cfg,mean_shrinkage=0.)          # raw means, so the low-risk allocation misses the target
+    from quanedge.config import frozen_policy
+    cfg=dict(frozen_policy("prereg-v3"),mean_shrinkage=0.)          # raw means, so the low-risk allocation misses the target
     rng=np.random.default_rng(7);n=1500
     means=np.array([.0006,.0004,.0005,.0001,.0003,.0005,.0008])
     x=pd.DataFrame(rng.normal(means,[.012,.012,.016,.003,.01,.016,.018],(n,7)),columns=TICKERS)
@@ -97,7 +98,8 @@ def test_reserve_survival_and_return_check(cfg):
     assert reserve_survival(rich,{"AGG":1,**{t:0 for t in TICKERS if t!="AGG"}},small)["results"][-1]["all_payments_funded"]==1
     bad=reserve_survival(poor,{"AGG":1,**{t:0 for t in TICKERS if t!="AGG"}},small)["results"][-1]
     assert bad["all_payments_funded"]==0 and bad["median_depletion_year"]<25
-    v3={k:v for k,v in cfg.items() if k!="real_cagr_floor"}  # v2/v3 expected-return floor
+    from quanedge.config import frozen_policy
+    v3=frozen_policy("prereg-v3")  # v2/v3 expected-return floor at 3.64% inflation
     assert return_check(.0469,v3) and not return_check(.0467,v3)
     v1=dict({k:v for k,v in v3.items() if k!="real_return_floor"},inflation=.025,spending=.04)
     assert return_check(.0678,v1) and not return_check(.0677,v1)

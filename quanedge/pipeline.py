@@ -54,11 +54,15 @@ def load_inputs(cfg):
     return prices,returns,macro
 
 
-def v2(cfg):return "real_return_target" in cfg
+def v2(cfg):return "reserve_initial" in cfg
+
+
+def dynamic(cfg):return "strategy" in cfg      # mandate v5: the recommendation is a method
 
 
 def make_candidates(x,cfg):
-    kinds=[("selected","selected"),("min_cvar","min_cvar"),("min_variance","min_variance"),
+    kinds=[] if dynamic(cfg) else [("selected","selected")]
+    kinds+=[("min_cvar","min_cvar"),("min_variance","min_variance"),
            ("near_parity","near_parity"),("max_sharpe","max_sharpe")]
     if v2(cfg):kinds.append(("max_return","max_return"))      # the mandate v1 rule, for comparison only
     result={name:construct(x,cfg,kind) for name,kind in kinds}
@@ -88,6 +92,7 @@ def adjustments(train,full,cfg):
     benchmark=canonical_weights({"SPY":.6,"AGG":.4})
     from .portfolio import es
     raised=max(cfg["es_budget"],min(.03,es(train,benchmark)))
+    if dynamic(cfg):return alts,raised      # mandate v5: A1 only; no limit is relaxable further
     if v2(cfg):
         # Mandate v2: no ETF limits to relax; the reserve schedule and 1% real floor are client needs.
         policy=dict(cfg,es_budget=raised);alts.append(("A2",construct(full,policy),policy))
@@ -100,7 +105,7 @@ def adjustments(train,full,cfg):
 
 def constraint_effects(x,cfg):
     baseline=construct(x,cfg);rows=[]
-    fields=([("es_budget",[.02,.03]),("real_return_target",[.02,.01])] if v2(cfg) else
+    fields=([("es_budget",[.025,.035])] if dynamic(cfg) else [("es_budget",[.02,.03]),("real_return_target",[.02,.01])] if v2(cfg) else
             [("gold_cap",[.20,.25,.4]),("equity_cap",[.60,.65]),("agg_min",[0.]),("agg_max",[1.]),("es_budget",[.03])])
     for field,values in fields:
         for value in values:
@@ -171,7 +176,25 @@ def evaluate(name,candidate,cfg,prices,returns,macro,out,meta,cache,full=True):
     return result
 
 
-def walk_forward(returns,cfg):
+def survival_of(result,monthly,folder,cfg):
+    """Reserve survival; a dynamic strategy resamples its own monthly returns (one-asset frame)."""
+    if result.get("kind")!="dynamic strategy":return reserve_survival(monthly,result["weights"],cfg)
+    r=pd.read_csv(folder/"performance.csv",index_col=0,parse_dates=True)["return"]
+    m=((1+r).resample("ME").prod()-1).iloc[1:]      # the first month is partial
+    frame=pd.DataFrame(0.,index=m.index,columns=TICKERS);frame["SPY"]=m
+    out=reserve_survival(frame,canonical_weights({"SPY":1.}),cfg)
+    out["sample"]=f"strategy's own monthly returns {m.index[0]:%Y-%m} to {m.index[-1]:%Y-%m}"
+    return out
+
+
+def walk_forward(returns,cfg,out=None):
+    if dynamic(cfg):
+        # The strategy is walk-forward by construction: every target uses data through its decision close.
+        p=pd.read_csv(out/"selected"/"path.csv",index_col=0,parse_dates=True)
+        from .strategy import targets
+        t=targets(p).loc[cfg["evaluation_start"]:]
+        return (p.loc[cfg["evaluation_start"]:,["return"]],
+                [{"decision_close":str(d.date()),"weights":row.to_dict()} for d,row in t.iterrows()])
     pieces=[];weights=[]
     for year in range(2017,returns.index[-1].year+1):
         train=returns.loc[returns.index<pd.Timestamp(f"{year}-01-01")]
@@ -199,7 +222,7 @@ def run(cfg_path,stage="final",run_id=None):
         from .portfolio import es
         write_json(out/"freeze_values.json",{"A4_budget":max(cfg["es_budget"],min(.03,es(train,canonical_weights({"SPY":.6,"AGG":.4})))),
                     "policy":cfg,"training_end":cfg["training_end"],
-                    **({"nominal_target":(1+cfg["inflation"])*(1+cfg["real_return_target"])-1,
+                    **({"nominal_target":(1+cfg["inflation"])*(1+cfg.get("real_return_target",cfg["real_return_floor"]))-1,
                         "nominal_floor":(1+cfg["inflation"])*(1+cfg["real_return_floor"])-1} if v2(cfg) else
                        {"hurdle":hurdle(cfg["inflation"],cfg["spending"])})})
         print(out);return out
@@ -215,10 +238,14 @@ def run(cfg_path,stage="final",run_id=None):
           "human_validation":"pending","solo_eligibility":"pending","deadline":"unknown"}
     write_json(out/"manifest.json",meta)
     full_candidates=make_candidates(returns,cfg);allocations={};cache={};index={}
+    if dynamic(cfg):
+        from .strategy import evaluate as evaluate_strategy
+        allocations["selected"]=evaluate_strategy(cfg,prices,returns,macro,out,meta)
+        write_json(out/"selected"/"summary.json",allocations["selected"])
     for name,candidate in full_candidates.items():
         allocations[name]=evaluate(name,candidate,cfg,prices,returns,macro,out,meta,cache)
     for name,candidate in candidates.items():
-        if name!="selected":continue
+        if name!="selected":continue     # W_train: the fixed-weight rule estimated through training_end
         allocations["W_train"]=evaluate("W_train",dict(candidate,estimation_end=cfg["training_end"]),cfg,prices,returns,macro,out,meta,cache)
     alternatives,a4=adjustments(train,returns,cfg);alt_checks=[]
     for name,candidate,policy in alternatives:
@@ -235,13 +262,13 @@ def run(cfg_path,stage="final",run_id=None):
         selected["conditional_attribution"]="unavailable: FHS is fitted to portfolio returns"
         monthly=(1+returns).resample("ME").prod()-1
         cpi=macro.CPIAUCSL.resample("ME").last().pct_change()
-        write_json(out/"survival.json",{n:(reserve_survival(monthly,allocations[n]["weights"],cfg) if v2(cfg) else
+        write_json(out/"survival.json",{n:(survival_of(allocations[n],monthly,out/n,cfg) if v2(cfg) else
                                            survival(monthly,cpi,allocations[n]["weights"],cfg)) for n in ["selected","40_60","permanent"]})
         scans=threshold_scan(-portfolio_log_returns(np.log1p(returns),w).to_numpy())
         scans.to_csv(out/"selected/evt_thresholds.csv",index=False)
         from .robustness import additional_evidence
         additional_evidence(returns,macro,w,cfg,out/"selected/robustness")
-    wf,annual=walk_forward(returns,cfg);wf.to_csv(out/"walk_forward.csv")
+    wf,annual=walk_forward(returns,cfg,out);wf.to_csv(out/"walk_forward.csv")
     write_json(out/"walk_forward_weights.json",annual)
     macro_table=pd.DataFrame({"spy_agg_correlation_252":returns.SPY.rolling(252).corr(returns.AGG),
                               "dgs10_change":macro.DGS10.diff().reindex(returns.index)})

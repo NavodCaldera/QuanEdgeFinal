@@ -58,10 +58,14 @@ def complete(run):
         result["risk_contribution_dispersion"]=float(rc.std())
         path=pd.read_csv(folder/"performance.csv",index_col=0,parse_dates=True)
         full_spending=pd.read_csv(folder/"spending.csv",index_col=0,parse_dates=True)
-        result["performance"]["money_weighted_return"]=money_weighted(full_spending,start_date=prices.index[0])
+        dynamic=result.get("kind")=="dynamic strategy"
+        result["performance"]["money_weighted_return"]=money_weighted(full_spending,start_date=prices.index[prices.index<full_spending.index[0]][-1])
         period=path.loc[cfg["evaluation_start"]:]
         result["retrospective_2017_onward"]=kpis(period["return"],macro.rf_daily_effective,returns.SPY,bench)
-        spending=spending_replay(returns.loc[cfg["evaluation_start"]:],w,result["policy"])
+        if dynamic:
+            from .strategy import reserve_path
+            spending=reserve_path(period["return"],result["policy"])
+        else:spending=spending_replay(returns.loc[cfg["evaluation_start"]:],w,result["policy"])
         origin=prices.loc[prices.index<spending.index[0]].index[-1]
         result["retrospective_2017_onward"]["money_weighted_return"]=money_weighted(spending,start_date=origin)
         cpi=macro.CPIAUCSL.loc[period.index].dropna();inflation=(cpi.iloc[-1]/cpi.iloc[0])**(365.25/(cpi.index[-1]-cpi.index[0]).days)-1
@@ -88,6 +92,7 @@ def complete(run):
             "max_drawdown":result["performance"]["maximum_drawdown"],"worst_scenario_usd":max(s.get("loss_usd",0) for s in result["stress"]),
             "feasible":result["checks"]["C1"],"validated_model":result.get("model_used"),"evaluation_label":"retrospective portfolio evaluation"})
         fc=load_forecasts(folder/"forecasts.csv");fc["data_hash"]=meta["data_hash"]
+        result.setdefault("forecast_hash",wh)
         fc["source_tree_hash"]=meta["source_tree_hash"]
         fc["config_hash"]=digest(result["policy"])
         fc["code_rev"]=meta["code_rev"];save_forecasts(fc,folder/"forecasts.csv")
@@ -114,9 +119,15 @@ def complete(run):
                                       "expected_geometric":geometric,"weight_hash":bundle["portfolios"][chosen]["weight_hash"],
                                       "note":"fixed reported allocation; descriptive sensitivity, not re-selection"})
         pd.DataFrame(sensitivities).to_csv(run/"estimator_sensitivity.csv",index=False)
-        x=returns.loc[cfg["evaluation_start"]:]
-        pd.DataFrame({"quarterly_or_drift_after_costs":replay(x,w,cfg["cost"],cfg["drift"]).wealth,
-                      "buy_and_hold":replay(x,w,buy_hold=True).wealth}).to_csv(run/"rebalancing_comparison.csv")
+        x=returns.loc[cfg["evaluation_start"]:];frame={}
+        if bundle["portfolios"][chosen].get("kind")=="dynamic strategy":
+            r=pd.read_csv(run/chosen/"performance.csv",index_col=0,parse_dates=True)["return"].loc[cfg["evaluation_start"]:]
+            frame["dynamic_monthly_targets"]=(1+r).cumprod()
+            w_label="latest_target_"
+        else:w_label=""
+        frame[w_label+"quarterly_or_drift_after_costs"]=replay(x,w,cfg["cost"],cfg["drift"]).wealth
+        frame[w_label+"buy_and_hold"]=replay(x,w,buy_hold=True).wealth
+        pd.DataFrame(frame).to_csv(run/"rebalancing_comparison.csv")
         # An adjusted recommendation gets its own uncertainty and robustness, never W_rec's.
         chosen_folder=run/chosen
         if not (chosen_folder/"uncertainty.csv").exists():
@@ -131,7 +142,8 @@ def complete(run):
         monthly=(1+returns).resample("ME").prod()-1
         cpi=macro.CPIAUCSL.resample("ME").last().pct_change()
         result=bundle["portfolios"][chosen]
-        result["real_capital_survival"]=(reserve_survival(monthly,w,result["policy"]) if "reserve_initial" in cfg
+        from .pipeline import survival_of
+        result["real_capital_survival"]=(survival_of(result,monthly,chosen_folder,result["policy"]) if "reserve_initial" in cfg
                                          else survival(monthly,cpi,w,result["policy"]))
         result["reverse_stress"]=reverse_stress(returns.loc[:cfg["training_end"]],w)
         write_json(chosen_folder/"summary.json",result);write_json(run/"submission.json",bundle)
