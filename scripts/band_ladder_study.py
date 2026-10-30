@@ -18,6 +18,11 @@ Trades happen at the close of the day the condition is seen; weights drift in be
                     high at the first trigger to the lowest close since. Any change in T'
                     triggers a rebalance to T' at that close.
   Buy-and-hold      Never rebalance (reference).
+Added at the owner's request after the first run: dynamic EWMA risk parity
+(quanedge.comparison.dynamic_parity_path, lambda 0.97, 750-day window, month-end targets).
+"Dynamic RP (from 2005)" uses a 63-day warm-up so that it starts in April 2005;
+"Dynamic RP (v4d, from 2007)" is the pre-registered 500-day version (starts 2006-12-28).
+Their 2020-2026 rows are slices of the full-history paths (targets keep using pre-2020 data).
 0% cost (mandate v3) for the main columns; "CAGR @5bp" charges 5 bp per unit of one-way
 turnover as in portfolio.replay. No reserve withdrawals. Weights are full-sample estimates
 and the thresholds were proposed after the 2005-2026 drawdowns were shown, so every path is a
@@ -28,6 +33,7 @@ import hashlib, json, os, sys
 os.chdir(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")); sys.path.insert(0, os.getcwd())
 import numpy as np, pandas as pd
 from quanedge.portfolio import tail_weights, canonical_weights, weight_hash
+from quanedge.comparison import dynamic_parity_path
 
 FOUR = ["SPY", "XLE", "AGG", "GLD"]
 LADDER = ["SPY", "XLE", "GLD"]
@@ -109,6 +115,13 @@ def main():
             rows[rule] = metrics(r, turn, simulate(p, target, rule, cost=.0005)[0])
             if rule == "Band + ladder" and start is None:
                 ladder_events = ev; rows[rule]["Max ladder extra pt"] = 100*float((eff[LADDER]-np.array([target[c] for c in LADDER])).max().max())
+        for name, warm in (("Dynamic RP (from 2005)", 63), ("Dynamic RP (v4d, from 2007)", 500)):
+            R = prices.pct_change().dropna()
+            path, path_c = (dynamic_parity_path(R, "M", .97, 750, warm, c) for c in (0., .0005))
+            if start is not None:
+                path, path_c = path.loc["2020":], path_c.loc["2020":]
+            rows[name] = metrics(path["return"], path["turnover"], path_c["return"])
+            rows[name]["Start"] = str(path.index[0].date())
         tables[label] = pd.DataFrame(rows).T
     os.makedirs(OUT, exist_ok=True)
     for k, v in tables.items():
