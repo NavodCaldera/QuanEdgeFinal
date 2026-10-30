@@ -16,7 +16,7 @@ import yaml
 from scipy.stats import binomtest
 from .config import ROOT,TICKERS
 from .portfolio import (construct,canonical_weights,weight_hash,hurdle,replay,kpis,feasible,money_weighted,estimates,
-                        return_check,spending_replay,real_return)
+                        return_check,spending_replay,real_return,realised_real_cagr)
 from .backtest import assess,model_pass,verdict
 from .stress import stress_tests,hypothetical,attribution,reverse_stress,survival,reserve_survival
 from .results import digest,artifact_key
@@ -156,11 +156,12 @@ def evaluate(name,candidate,cfg,prices,returns,macro,out,meta,cache,full=True):
     from .portfolio import es
     policy_es=es(estimation,w)
     checks={"C1":feasible(w,cfg),"C2":policy_es<=cfg["es_budget"]+1e-6,
-            "C3":return_check(candidate.get("expected_geometric",-1),cfg),
+            "C3":return_check(candidate.get("expected_geometric",-1),cfg,realised_real_cagr(series["return"],cfg["inflation"])),
             "C4":bool(model_ok),"C5":bool(all(s.get("status")=="ok" for s in historical) and
              all(s.get("loss_usd",np.inf)<=cfg["drawdown_limit"]*cfg["value"] for s in historical) and
              -historical[0].get("drawdown",-1)<=cfg["drawdown_limit"])}
     result={**candidate,"weight_hash":wh,"checks":checks,"policy":cfg,"performance":performance,
+            "realised_real_cagr":realised_real_cagr(series["return"],cfg["inflation"]),
             "stress":historical+[hyp],"attribution":component,"policy_es99_usd":policy_es*cfg["value"],
             "validation":assessments,"model_used":cfg["primary"] if model_pass(primary) else cfg["challenger"] if model_pass(challenger) else None,
             "model_parameters":model_params,"fit_failures":failures,

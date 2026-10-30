@@ -97,8 +97,9 @@ def test_reserve_survival_and_return_check(cfg):
     assert reserve_survival(rich,{"AGG":1,**{t:0 for t in TICKERS if t!="AGG"}},small)["results"][-1]["all_payments_funded"]==1
     bad=reserve_survival(poor,{"AGG":1,**{t:0 for t in TICKERS if t!="AGG"}},small)["results"][-1]
     assert bad["all_payments_funded"]==0 and bad["median_depletion_year"]<25
-    assert return_check(.0469,cfg) and not return_check(.0467,cfg)
-    v1=dict({k:v for k,v in cfg.items() if k!="real_return_floor"},inflation=.025,spending=.04)
+    v3={k:v for k,v in cfg.items() if k!="real_cagr_floor"}  # v2/v3 expected-return floor
+    assert return_check(.0469,v3) and not return_check(.0467,v3)
+    v1=dict({k:v for k,v in v3.items() if k!="real_return_floor"},inflation=.025,spending=.04)
     assert return_check(.0678,v1) and not return_check(.0677,v1)
 
 

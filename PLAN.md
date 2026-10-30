@@ -323,6 +323,14 @@ Candidates for a possible mandate v4, not a mandate change. The v3 policy, run a
 
 **Result (run results/dynamic-parity-r1, PORT-015):** neither candidate passes. v4d monthly passes C1, C3 (4.9% real on the latest target), C4 (FHS fails on clustering, conditional coverage p 0.011; the GARCH-EVT challenger passes: 26 breaches vs 24.5 expected, Kupiec p 0.76, conditional coverage p 0.091, green) and C5 (GFC drawdown 18.5%, COVID -9.5%, 2022 -10.0%), but fails C2: the path's ES99 is 1.69% (USD 162k) and the 30 September 2026 target's estimation-sample ES99 is 2.60% (USD 250k), above 2.5%. v4e weekly fails C2 (target ES99 2.56%), C4 (FHS conditional coverage p 0.011, GARCH-EVT 0.045) and C5 (GFC drawdown 20.7%). Per the outcome rule nothing is retuned. A first run used the 31 August target because the final-day month-end decision was skipped; it was corrected to the registered 30 September target before results were recorded (the correction changes only the last day's target, not any return or forecast).
 
+### 13f. Mandate v4: realised real CAGR floor of 4% (owner change, 30 October 2026, tagged `prereg-v4`; amends 13b/13c)
+
+**Change:** check C3 becomes "realised real CAGR at least 4%". Realised real CAGR is measured on the portfolio's own replay from 4 January 2005 to 30 September 2026: daily returns from `portfolio.replay` (quarterly or 5-point drift rebalancing, 0% cost, no cash-reserve withdrawals), nominal CAGR over calendar years, deflated by the mandate inflation of 3.64%: (1 + CAGR)/1.0364 - 1. Everything else in v3 is unchanged: universe SPY/AGG/GLD/XLE, selection rule (minimum CVaR99 subject to 3% expected real return under the frozen estimator), ES budget, C1, C2, C4, C5, adjustment set A1-A2 and decision order. The expected-return floor of 1% real no longer gates.
+
+**Owner choices when asked:** apply 4% to the C3 minimum only (not the selection target), and measure it on realised 2005-2026 CAGR rather than the frozen or raw-mean estimator.
+
+**Disclosure before the tag:** realised real CAGRs on this basis had already been shown to the owner: W_rec 0.3%, min variance 0.1%, max Sharpe 1.1%, static risk parity 2.7%, dynamic monthly risk parity 2.4%, permanent 3.5%, balanced 3.6%; only 60/40 (4.2%), equal weight (5.7%) and the four-ETF v1 max-return mix (4.4%) reached 4%, and all three break the 20% drawdown limit. The selection target (3% expected real) sits below the new floor, so the selected portfolio can fail its own C3. A realised-return gate uses the same history the weights were estimated on: it is retrospective, path-dependent and not a forecast.
+
 ## 14. Work plan
 
 Fix phase timeboxes as shares of the time left once the deadline is known. Two milestones are hard: the **thin slice** at about 15% of the time and the **minimum viable submission** at about 60%.
