@@ -1,0 +1,11 @@
+{
+  "prereg_tag": "prereg-v4",
+  "source_run": "results/final-v3-20261030",
+  "real_cagr_floor": 0.04,
+  "evaluation_label": "retrospective portfolio evaluation",
+  "decision": {
+    "outcome": "evaluation incomplete",
+    "action": "Complete matching evidence or validate a risk model before committing capital."
+  },
+  "note": "C1, C2, C4, C5 carried over from the v3 run; only C3 recomputed"
+}
