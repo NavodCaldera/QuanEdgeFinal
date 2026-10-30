@@ -1,4 +1,4 @@
-"""Exploratory study: real return (FRED CPI) and reward for risk over the 3-month T-bill (FRED DTB3) (task PORT-013).
+"""Exploratory study: real return (FRED CPI) and reward for risk over the 3-month T-bill (FRED DTB3) (task PORT-023, renumbered from PORT-013).
 
 Approved sources only (brief section 9.1): ETF prices from Yahoo Finance, CPIAUCSL and DTB3 from
 FRED, all from the frozen snapshot in data/clean (2005-01-03 to 2026-09-30).
@@ -93,7 +93,7 @@ def main():
     M.to_csv(f"{OUT}/summary.csv", index=False, float_format="%.6g")
     pd.concat(years, names=["portfolio"]).to_csv(f"{OUT}/yearly.csv", float_format="%.6g")
     sources = {p: hashlib.sha256(open(p, "rb").read()).hexdigest() for p in ("data/clean/prices_clean.csv", "data/clean/macro_clean.csv")}
-    json.dump({"task": "PORT-013", "sources_sha256": sources,
+    json.dump({"task": "PORT-023", "sources_sha256": sources,
                "series": {"inflation": "FRED CPIAUCSL, index ratio as published by each date",
                           "risk_free": "FRED DTB3, bond-equivalent yield, daily (rf_daily_effective)",
                           "prices": "Yahoo Finance adjusted close"},

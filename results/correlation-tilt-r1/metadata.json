@@ -1,0 +1,29 @@
+{
+  "task": "PORT-017",
+  "source": "data/clean/prices_clean.csv",
+  "source_sha256": "76bac76cbc98b5ce62291bd6257600047cc20857943d363edd1f807f743d4d0d",
+  "start": "2006-12-28",
+  "end": "2026-09-30",
+  "rule": {
+    "base": "ERC on sample covariance, last 750 days, quarterly",
+    "signal": "63-day corr(SPY, AGG)",
+    "threshold": 0.3,
+    "size": 0.1,
+    "trade_timing": "decision close, applies next day"
+  },
+  "static_comparison": {
+    "weights": {
+      "SPY": 0.140294,
+      "EFA": 0.0,
+      "EEM": 0.0,
+      "AGG": 0.608741,
+      "GLD": 0.162509,
+      "XLE": 0.088456,
+      "XLK": 0.0
+    },
+    "weight_hash": "ece535c3eb7c2caab5cd5fa4c7e0cf9e107f51c1c01031eb724e104dc8005dc3"
+  },
+  "cost": 0.0,
+  "reserve": "not withdrawn",
+  "label": "retrospective portfolio evaluation; exploratory, prompted by 2022"
+}

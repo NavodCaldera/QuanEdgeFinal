@@ -49,8 +49,17 @@ def reserve_schedule(cfg, years):
     return [cfg["reserve_initial"]*(1+cfg["reserve_growth"])**t for t in range(years)]
 
 
-def return_check(expected_geometric, cfg):
-    """C3: v2 compares expected real return with the floor; v1 with the spending hurdle."""
+def realised_real_cagr(returns, inflation):
+    """Real CAGR of a daily simple-return path: (1 + nominal CAGR)/(1 + inflation) - 1, calendar years."""
+    wealth = float((1+returns).prod()); years = (returns.index[-1]-returns.index[0]).days/365.25
+    return real_return(wealth**(1/years)-1, inflation)
+
+
+def return_check(expected_geometric, cfg, realised_real=None):
+    """C3: v4 compares realised real CAGR with its floor; v2/v3 expected real return with the
+    floor; v1 expected geometric return with the spending hurdle."""
+    if "real_cagr_floor" in cfg:
+        return bool(realised_real is not None and realised_real >= cfg["real_cagr_floor"])
     if "real_return_floor" in cfg:
         return bool(real_return(expected_geometric, cfg["inflation"]) >= cfg["real_return_floor"])
     return bool(expected_geometric >= hurdle(cfg["inflation"], cfg["spending"]))

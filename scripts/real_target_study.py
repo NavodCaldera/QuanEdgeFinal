@@ -1,4 +1,4 @@
-"""Exploratory study: can a 4% real return (to cover the 4% reserve) coexist with the v3 risk limits? (task PORT-016)
+"""Exploratory study: can a 4% real return (to cover the 4% reserve) coexist with the v3 risk limits? (task PORT-026)
 
 For each allocation: realised real CAGR at the mandate's 3.64% inflation assumption (2005-2026 and
 2017-2026), expected real return under the frozen estimator (50% mean shrinkage) and under raw means,
@@ -59,7 +59,7 @@ def main():
                      "es99": qp.es(R.to_numpy(), w), "gfc_drawdown": st["GFC"]["drawdown"], "rates_2022": st["Rates 2022"]["return"],
                      "reserve_all_paid_25y": sv["all_payments_funded"], "real_capital_kept_25y": sv["real_capital_preserved"]})
     M = pd.DataFrame(rows); os.makedirs(OUT, exist_ok=True); M.to_csv(f"{OUT}/real_target.csv", index=False, float_format="%.6g")
-    json.dump({"task": "PORT-016", "inflation_assumption": infl, "nominal_for_4pct_real": (1+infl)*1.04-1,
+    json.dump({"task": "PORT-026", "inflation_assumption": infl, "nominal_for_4pct_real": (1+infl)*1.04-1,
                "break_even_real_with_4pct_start_of_year_draw": 1/.96-1, "selections": selections,
                "sources_sha256": {p: hashlib.sha256(open(p, "rb").read()).hexdigest() for p in ("data/clean/prices_clean.csv", "config/final.yaml")},
                "label": "retrospective portfolio evaluation"}, open(f"{OUT}/metadata.json", "w"), indent=2)

@@ -1,6 +1,6 @@
 schema_version: 3
-mandate: v3
-prereg_tag: prereg-v3
+mandate: v4
+prereg_tag: prereg-v4
 universe: [SPY, AGG, GLD, XLE]
 snapshot_end: '2026-09-30'
 training_end: '2016-12-31'
@@ -13,6 +13,7 @@ reserve_rate: 0.0
 inflation: 0.0364
 real_return_floor: 0.01
 real_return_target: 0.03
+real_cagr_floor: 0.04
 es_budget: 0.025
 drawdown_limit: 0.20
 gold_cap: 1.0

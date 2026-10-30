@@ -299,6 +299,38 @@ A candidate for a possible mandate v4, not a mandate change. The v3 policy, run 
 
 **Result (run results/parity-overlay-r1, PORT-011):** C1, C2, C3 and C5 pass; C4 fails, so the outcome is "evaluation incomplete", the same as v3. FHS 37 breaches vs 24.5 expected (Kupiec p 0.018, conditional coverage p 0.0005); GARCH-EVT 30 (Kupiec p 0.28, independence p 0.0004). The overlay made clustering worse, not better (static parity: FHS conditional coverage p 0.009, GARCH-EVT 0.011). Breaches bunch in 2018, 2020, 2024 and 2025 on the first days of sudden shocks, before a weekly reaction can act. Per the outcome rule, nothing is retuned.
 
+### 13e. Candidates v4d and v4e: dynamic EWMA risk parity, monthly and weekly (pre-registered 30 October 2026, before their C4 backtests)
+
+Candidates for a possible mandate v4, not a mandate change. The v3 policy, run and verdict stay as recorded. Fixed and committed before any risk forecast on these strategies was computed.
+
+| Item | Fixed choice |
+|---|---|
+| Strategy | Long-only risk parity over SPY, AGG, GLD, XLE: weights with equal volatility risk contributions (Spinu convex form, `quanedge.comparison.risk_parity`) from an EWMA covariance of daily simple returns, lambda 0.97, last 750 days |
+| v4d | Re-estimated at each month-end close (PORT-013 strategy, as shown in the app) |
+| v4e | Re-estimated at each week's last trading close; otherwise identical |
+| Timing | First target from the first 500 return days (start 2006-12-28); each target uses data through its decision close only; holdings drift between decisions |
+| Policy | v3 config as tagged `prereg-v3`: USD 9.6m invested, 0% cost, FHS primary and GARCH-EVT challenger (window 750, refit 21), evaluation 2017-01-01 to 2026-09-30; forecasts carry a strategy hash |
+| C1 | Every target is long-only, fully invested and inside the four-ETF universe |
+| C2 | The strategy path's realised daily ES99 and the latest target's estimation-sample (2005-2026) ES99 both at or below 2.5% |
+| C3 | Frozen v3 estimator (50% mean shrinkage, Ledoit-Wolf) applied to the latest target: expected real geometric return at 3.64% inflation at least 1% |
+| C4 | `model_pass` for FHS or GARCH-EVT at 99% on the strategy path's own forecasts |
+| C5 | Strategy path from each scenario start (GFC, COVID, Rates 2022): loss at most 20% of value and GFC drawdown at most 20% |
+| Descriptive only | Realised CAGR, volatility, drawdowns, turnover, number of rebalances, comparison with static parity and W_rec |
+
+**Outcome rule:** as 13d. A pass reads "would be Accept under v3 criteria for this candidate" and does not replace the v3 verdict; any failure is the result, and nothing is retuned.
+
+**Seen before this registration:** the monthly path's realised statistics (CAGR 6.2%, maximum drawdown 18.5%, GFC -4.9%, COVID -9.3%, 2022 -10.3%), its 30 September 2026 target (SPY 20.8 / AGG 51.7 / GLD 8.4 / XLE 19.1), and that target's full-sample fixed-weight ES99 of about 2.6% (USD 250k on USD 9.6m), which would fail the second part of C2. The C2 definition copies 13d unchanged. Static parity and v4c already failed C4 on breach clustering. No weekly result and no C4 result for either strategy had been computed.
+
+**Result (run results/dynamic-parity-r1, PORT-015):** neither candidate passes. v4d monthly passes C1, C3 (4.9% real on the latest target), C4 (FHS fails on clustering, conditional coverage p 0.011; the GARCH-EVT challenger passes: 26 breaches vs 24.5 expected, Kupiec p 0.76, conditional coverage p 0.091, green) and C5 (GFC drawdown 18.5%, COVID -9.5%, 2022 -10.0%), but fails C2: the path's ES99 is 1.69% (USD 162k) and the 30 September 2026 target's estimation-sample ES99 is 2.60% (USD 250k), above 2.5%. v4e weekly fails C2 (target ES99 2.56%), C4 (FHS conditional coverage p 0.011, GARCH-EVT 0.045) and C5 (GFC drawdown 20.7%). Per the outcome rule nothing is retuned. A first run used the 31 August target because the final-day month-end decision was skipped; it was corrected to the registered 30 September target before results were recorded (the correction changes only the last day's target, not any return or forecast).
+
+### 13f. Mandate v4: realised real CAGR floor of 4% (owner change, 30 October 2026, tagged `prereg-v4`; amends 13b/13c)
+
+**Change:** check C3 becomes "realised real CAGR at least 4%". Realised real CAGR is measured on the portfolio's own replay from 4 January 2005 to 30 September 2026: daily returns from `portfolio.replay` (quarterly or 5-point drift rebalancing, 0% cost, no cash-reserve withdrawals), nominal CAGR over calendar years, deflated by the mandate inflation of 3.64%: (1 + CAGR)/1.0364 - 1. Everything else in v3 is unchanged: universe SPY/AGG/GLD/XLE, selection rule (minimum CVaR99 subject to 3% expected real return under the frozen estimator), ES budget, C1, C2, C4, C5, adjustment set A1-A2 and decision order. The expected-return floor of 1% real no longer gates.
+
+**Owner choices when asked:** apply 4% to the C3 minimum only (not the selection target), and measure it on realised 2005-2026 CAGR rather than the frozen or raw-mean estimator.
+
+**Disclosure before the tag:** realised real CAGRs on this basis had already been shown to the owner: W_rec 0.3%, min variance 0.1%, max Sharpe 1.1%, static risk parity 2.7%, dynamic monthly risk parity 2.4%, permanent 3.5%, balanced 3.6%; only 60/40 (4.2%), equal weight (5.7%) and the four-ETF v1 max-return mix (4.4%) reached 4%, and all three break the 20% drawdown limit. The selection target (3% expected real) sits below the new floor, so the selected portfolio can fail its own C3. A realised-return gate uses the same history the weights were estimated on: it is retrospective, path-dependent and not a forecast.
+
 ## 14. Work plan
 
 Fix phase timeboxes as shares of the time left once the deadline is known. Two milestones are hard: the **thin slice** at about 15% of the time and the **minimum viable submission** at about 60%.
@@ -523,27 +555,59 @@ Reproduce with `python scripts/correlation_rebalancing_study.py` (offline, `data
 
 Review record (second critic pair): both agreed the hurdle must come from the spending need, which also fixed a circularity in the first version of section 13 that made Reject impossible, and they found the accidental 40% cap on AGG. They differed on keeping a realised NPV (dropped as redundant), on the AGG ceiling (60% vs 70%; 70% chosen, with its constraint effect reported) and on co-exceedance versus a simulated-null correlation test (co-exceedance chosen as plainer and cheaper; the simulated null is on the cut list).
 
-### 19b. Exploratory findings for the final deliverables (30 October 2026, PORT-010 to PORT-016)
+### 19b. Contrarian rules, correlation and dynamic risk parity (exploratory, 30 October 2026; AGENTS.md PORT-017 to PORT-022)
 
-All retrospective (the weights and rules were chosen with the full 2005-2026 sample in view). None changes the v3 policy, W_rec (SPY 5.8 / AGG 88.0 / GLD 6.0 / XLE 0.2, hash bd13d897) or the v3 verdict (evaluation incomplete). Each study reruns offline from data/clean with the listed command.
+Retrospective portfolio evaluations on the frozen panel, four-ETF universe, 0% cost, no reserve withdrawals. None changes policy, W_rec, a frozen run or a verdict. Each rule was fixed in its script's docstring before its first run, but every idea was prompted by history already seen (mostly 2008, 2020 and 2022).
+
+**Correlation-triggered tilts and rebalancing (PORT-017 to 019).** Base: risk parity (static SPY 14.0 / AGG 60.9 / GLD 16.3 / XLE 8.8, or quarterly ERC on 750 days).
+
+| Rule | Result | Reading |
+|---|---|---|
+| Move 10 pts SPY -> GLD when 63-day corr(SPY, AGG) > +0.3 | CAGR 6.24% vs 6.37%; 2022 -10.5% vs -10.6% | Correlation was -0.26 at end-2021 and first exceeded 0.3 in Sep 2022, after the losses. Trailing correlation confirms regimes late |
+| Same move when corr < -0.25 (SPY-AGG or SPY-GLD) | SPY-GLD: CAGR 6.53%, max fall 16.0% vs 18.2%, ES99 1.64% vs 1.72%; SPY-AGG: 6.32% | SPY-GLD acts as a flight-to-safety signal, but fired in 11 of 80 quarters and the level was chosen after seeing 2021-22 values |
+| Rebalance to target, or tilt 5 pts winner -> loser, when a pair's within-month (or quarter) corr < -0.5 | All within 0.4 pts of normal CAGR and max fall; tilt turnover 1.00x vs 0.15x | No reversal effect after a negative-correlation month |
+
+Correlation is scale-free: it says whether two ETFs move oppositely, not how far apart their returns end up (XLE-AGG -0.68 in Mar 2023 with a 2.6-point gap; -0.51 in Nov 2020 with a 26.8-point gap). Gap measures are the return spread, spread volatility sqrt(s_a^2 + s_b^2 - 2 rho s_a s_b) and the spread z-score. Since 2020 only XLE-AGG 2026 (-0.38) is below -0.3 over a full year; below -0.5 occurs in 12 months, 8 of them XLE-AGG (tables in results/session-evidence-r1).
+
+**Buy low, sell high (PORT-020, PORT-021).** Evidence against fixed "+20% sell / -30% buy" triggers: after its first 30% fall, SPY went on to -55% (+3.4% a year later), XLE to -57% in 2009 and -71% by 2020 (-7.2% a year later), GLD to -46% (+2.3%). After a +20% year, next-year returns stayed positive (SPY 10.5%, XLE 8.9%, GLD 17.8%). Criticisms: 3-12-month time-series momentum works against selling winners (Moskowitz, Ooi and Pedersen 2012), reversal is a 3-5-year effect (De Bondt and Thaler 1985); ETFs have no floor; buying a falling asset adds exposure rather than hedging; buying equity in a crash works against the drawdown limit. The disciplined form is rebalancing to targets, whose benefit (about 0.75% a year for risk parity, from half the gap between weighted asset variance and portfolio variance) comes from diversification, not timing.
+
+| Rule, 2005-04-06 to 2026-09-30 | CAGR | Vol | Max fall | ES99 1d | GFC | COVID | 2022 | Turnover/yr |
+|---|---|---|---|---|---|---|---|---|
+| Normal: quarter-end + 5-pt drift | 6.47% | 6.98% | -19.1% | 1.73% | -6.5% | -11.2% | -10.3% | 0.15x |
+| Relative band +/-20% of each weight | 6.47% | 7.02% | -18.8% | 1.76% | -5.7% | -12.2% | -10.2% | 0.17x |
+| Band + capped dip ladder (+2.5/+5 pts at -30/-45% from 3-yr high) | 6.67% | 7.71% | -19.3% | 2.01% | -9.0% | -14.4% | -10.2% | 0.26x |
+| Buy-and-hold | 7.13% | 8.33% | -20.4% | 2.14% | -4.8% | -12.5% | -11.9% | 0 |
+| Dynamic EWMA risk parity, monthly | 6.43% | 6.43% | -18.5% | 1.64% | -4.9% | -9.3% | -10.3% | 0.96x |
+| Dynamic EWMA risk parity, weekly | 5.99% | 6.62% | -20.7% | 1.74% | -8.1% | -10.5% | -9.9% | 1.74x |
+| Dynamic EWMA risk parity, quarterly | 6.22% | 6.54% | -18.1% | 1.69% | -4.4% | -12.9% | -11.7% | 0.55x |
+
+Static rules use full-sample weights (hindsight); dynamic risk parity uses only data through each decision. 2020-2026: normal 7.29%, dynamic monthly 7.62% (max fall 13.5%, ES99 1.96%). The ladder bought too early in every crash (Oct 2008, 9-20 Mar 2020) and re-triggered XLE repeatedly in 2014-2021.
+
+**Why monthly re-estimation (defence text).** Volatility shocks fade with half-lives of about 34 (SPY), 49 (AGG), 68 (XLE) and 219 (GLD) trading days (GJR-GARCH, full-sample fit); after a month 65% of an SPY shock remains, after a quarter 28%. The EWMA lambda 0.97 estimator has a 23-day half-life and a 66-day effective sample; 47% of its information is new after a month (14% after a week, 85% after a quarter). CPI, payrolls and PMI are monthly and the FOMC meets eight times a year. Weekly re-estimation trades noise and breached the 20% limit in the GFC; quarterly held stale weights through COVID. Business cycles and stock-bond correlation regimes change over years, so gradual monthly target moves suit them; no calendar rule catches day-scale crashes.
+
+**Status of dynamic risk parity as the final portfolio (PORT-022).** Under mandate v4: C1 pass; C2 fail (30 Sep 2026 target ES99 2.60%, USD 250k vs USD 240k); C3 fail (realised real CAGR 2.4-2.7% vs 4%; 4.9% expected real under v3's measure); C4 pass via the GARCH-EVT challenger only; C5 pass (GFC drawdown 18.5%). Not the v4 selection rule's choice. Adoption needs owner decisions on C2 (monthly ES cap proposed) and C3, a mandate v5 tagged prereg-v5, and a full run before it can appear as the recommendation.
+
+### 19c. Exploratory findings for the final deliverables (30 October 2026; AGENTS.md PORT-010 to PORT-012 and PORT-023 to PORT-026)
+
+All retrospective (the weights and rules were chosen with the full 2005-2026 sample in view). These studies were run under mandate v3; mandate v4 (section 13f, realised real CAGR of at least 4% for C3) was adopted in a parallel session the same day. None changes the policy, W_rec (SPY 5.8 / AGG 88.0 / GLD 6.0 / XLE 0.2, hash bd13d897) or the verdict (evaluation incomplete under v3 and v4). Each study reruns offline from data/clean with the listed command.
 
 | Task | Question | Command and output | Key finding |
 |---|---|---|---|
 | PORT-010 | How do six weighting methods behave in every crisis found so far, and which ETFs win or lose? | `python scripts/crisis_methods_study.py`, results/crisis-methods-r1 | Bond-heavy methods (min CVaR, min variance, inverse variance) lose least in equity crashes but most in the 2020-22 bond bear (-11 to -16%). Inverse volatility and risk parity are the reverse. No method escaped the October 2008 and March 2020 liquidity weeks (-10 to -15%). XLE was the worst ETF in 5 crises and the best in 4; GLD protected in 2008 but fell in 2011-15 and 2026 |
 | PORT-011 | Does a volatility overlay fix risk parity's C4 failure? (pre-registered, section 13d) | `python -m quanedge.parity_overlay`, results/parity-overlay-r1 | No. C1-C3 and C5 pass; C4 fails and clustering gets worse (FHS conditional coverage p 0.0005). Breaches cluster at the onset of sudden shocks (2018, 2020, 2024, 2025), before a weekly rule can act |
 | PORT-012 | How does the rebalancing rule change the risk carried? | `python scripts/rebalancing_risk_study.py`, results/rebalancing-risk-r1 | Any rule trading at least yearly or on a 5-10 point band keeps risk at target; never rebalancing lets risk parity's equity drift from 23% to 43%, ES99 from USD 165k to 209k and the GFC fall to 21.4% (over the limit). Daily rebalancing is not safer. The current quarterly plus 5-point band rule is adequate |
-| PORT-013 | Real return on approved data and reward over the 3-month T-bill | `python scripts/real_return_riskfree_study.py`, results/real-return-rf-r1 | FRED CPI 2.59% a year, T-bill 1.80% (-0.77% real). Real CAGR / Sharpe: W_rec 1.29% / 0.43 (2017-26: -0.26% / 0.13); risk parity 3.77% / 0.68; SPY 25 / AGG 50 / GLD 25 4.53% / 0.72 |
-| PORT-014 | Are the correlations stable year by year? | `python scripts/yearly_correlation_study.py`, results/yearly-correlation-r1 | SPY-AGG negative in most years 2007-2019 (to -0.48), positive from 2020 (0.32 in 2022). SPY-XLE 0.84-0.92 in 2008-13. AGG-GLD rose from about 0 to 0.3-0.6. SPY-GLD stays near zero |
-| PORT-015 | Should risk parity use long or recent correlations? | `python scripts/risk_parity_window_study.py`, results/risk-parity-window-r1 | Shorter windows hold more equity and take more risk (ES99 1.72% all history to 2.04% one year, 2016-26); no window predicts next year's risk shares well (16-18 point average miss). Use all history for weights and report a recent 3-year covariance check |
-| PORT-016 | Can a 4% real return (to cover the 4% reserve) coexist with the 20% loss limit? | `python scripts/real_target_study.py`, results/real-target-r1 | Barely. Break-even is 4.17% real. Only min CVaR with a 4% real target on raw means (SPY 28 / AGG 42 / GLD 30) earned it historically (4.2% real) and its GFC fall is 19.9%. Under the shrunk estimator the same target picks SPY 12 / AGG 77 / GLD 11, which earned 1.2% real |
+| PORT-023 | Real return on approved data and reward over the 3-month T-bill | `python scripts/real_return_riskfree_study.py`, results/real-return-rf-r1 | FRED CPI 2.59% a year, T-bill 1.80% (-0.77% real). Real CAGR / Sharpe: W_rec 1.29% / 0.43 (2017-26: -0.26% / 0.13); risk parity 3.77% / 0.68; SPY 25 / AGG 50 / GLD 25 4.53% / 0.72 |
+| PORT-024 | Are the correlations stable year by year? | `python scripts/yearly_correlation_study.py`, results/yearly-correlation-r1 | SPY-AGG negative in most years 2007-2019 (to -0.48), positive from 2020 (0.32 in 2022). SPY-XLE 0.84-0.92 in 2008-13. AGG-GLD rose from about 0 to 0.3-0.6. SPY-GLD stays near zero |
+| PORT-025 | Should risk parity use long or recent correlations? | `python scripts/risk_parity_window_study.py`, results/risk-parity-window-r1 | Shorter windows hold more equity and take more risk (ES99 1.72% all history to 2.04% one year, 2016-26); no window predicts next year's risk shares well (16-18 point average miss). Use all history for weights and report a recent 3-year covariance check |
+| PORT-026 | Can a 4% real return (to cover the 4% reserve) coexist with the 20% loss limit? | `python scripts/real_target_study.py`, results/real-target-r1 | Barely. Break-even is 4.17% real. Only min CVaR with a 4% real target on raw means (SPY 28 / AGG 42 / GLD 30) earned it historically (4.2% real) and its GFC fall is 19.9%. Under the shrunk estimator the same target picks SPY 12 / AGG 77 / GLD 11, which earned 1.2% real. Relevant to v4's C3: SPY 28 / AGG 42 / GLD 30 is outside the v4 run and has no C4 evaluation |
 
 **Code issue found (not yet fixed):** `construct(kind="near_parity")` minimises squared gaps between risk shares and can stop at a corner (on 2007-only data, AGG 0% with three ETFs at one third of risk each). Every committed run used long windows and matches the convex ERC solution, so no recorded result is affected. Before any short-window or new risk-parity run, switch to the convex form (min 0.5 y'Sy - (1/k) sum log y) with a test. The v3 target selection also returns "infeasible" for a 4% real target when the ES budget is removed, because it assumes the geometric return rises with the arithmetic floor; it works at the frozen 2.5% budget.
 
 **Open owner decisions for the final deliverables:**
 1. Inflation basis: the 3.64% "world" figure has no approved-source record (World Bank WLD could not be fetched from this environment). FRED CPI (approved, 2.59% over the sample) is the natural deflator for a USD fund. Changing it is a logged mandate change.
-2. Return objective: keep 1% real on the shrunk estimator, require it on raw means as well, or adopt 4% real to cover spending (which forces SPY 28 / AGG 42 / GLD 30-type risk at the 20% limit).
+2. Return objective: mandate v4 now requires a realised real CAGR of at least 4% (section 13f), and no evaluated allocation passes it together with C5. Keeping it means accepting risk at the 20% limit (SPY 28 / AGG 42 / GLD 30 type); the alternatives are v3's expected real >= 1%, requiring it on raw means as well, or a lower floor, each a logged change.
 3. C4 gate: every candidate fails on clustered breaches. Options are a faster-reacting risk model or treating a clustering-only failure as "review"; either needs pre-registration before its run.
-4. Whether to replace W_rec: risk parity and SPY 25 / AGG 50 / GLD 25 were paid better for their risk on approved data, but adopting either needs a new logged mandate (v4) and its own C1-C5 run.
+4. Whether to replace W_rec: risk parity, dynamic EWMA risk parity (PORT-022, section 19b) and SPY 25 / AGG 50 / GLD 25 were paid better for their risk on approved data, but adopting any of them needs a new logged mandate (v5) and its own C1-C5 run.
 
 ## 20. External audit: accounting, validation and decision rules
 

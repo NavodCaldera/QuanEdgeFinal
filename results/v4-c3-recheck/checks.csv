@@ -1,0 +1,19 @@
+allocation,weights,weight_hash,realised_real_cagr_pct,C1,C2,C3,C4,C5
+selected,SPY 5.8 / AGG 88.0 / GLD 6.0 / XLE 0.2,bd13d8979ea90bd195fc97c16af6d8923a6a8537159887b9ffb110953163d87f,0.27,True,True,False,False,True
+min_cvar,SPY 5.8 / AGG 88.0 / GLD 6.0 / XLE 0.2,bd13d8979ea90bd195fc97c16af6d8923a6a8537159887b9ffb110953163d87f,0.27,True,True,False,False,True
+min_variance,SPY 6.4 / AGG 90.6 / GLD 2.1 / XLE 0.9,0f784b9b6d5af3161d8af0041584f37bacfe52477afba9a65367ca9d185119fc,0.07,True,True,False,False,True
+near_parity,SPY 14.0 / AGG 60.9 / GLD 16.3 / XLE 8.8,ece535c3eb7c2caab5cd5fa4c7e0cf9e107f51c1c01031eb724e104dc8005dc3,2.72,True,True,False,False,True
+max_sharpe,SPY 12.8 / AGG 78.6 / GLD 8.5,dcc71182a80ec7cda766f90e39ff1fde55eaefb47dece9327ca65edd4c38d8a1,1.06,True,True,False,False,True
+max_return,SPY 34.3 / AGG 28.7 / GLD 37.0,33c12802efc767001d25d80922988ded6d1a977b9e6d46a4def07fd7a9d8b7c8,5.34,True,True,True,False,False
+40_60,SPY 40.0 / AGG 60.0,8ed63ea389c1929db1295b31818e67583ade238d47f7639436d506658d7fc0e2,2.65,True,True,False,True,False
+60_40,SPY 60.0 / AGG 40.0,4c6d2ce676df92917d8df1ddedd24faddb94cfb1da861a0ebaa3eaae47ef6b00,4.21,True,False,True,True,False
+equal_weight,SPY 25.0 / AGG 25.0 / GLD 25.0 / XLE 25.0,eee780249fe898995e9c489f1376eaf1cd116cdf18e6ac6f01a6191a52a56d51,5.7,True,False,True,False,False
+permanent,SPY 25.0 / AGG 50.0 / GLD 25.0,ba0ae18ea8b89e6ecdc4084189e84fc534213f6c925d5f41209eda20a0b950b7,3.47,True,True,False,True,True
+balanced_35_50_15,SPY 35.0 / AGG 50.0 / GLD 15.0,8a0a00d9af7c68bd9189b598a066490817fa09f9c9f2acd4922fbe62077899cf,3.53,True,True,False,True,True
+unconstrained_parity,SPY 14.0 / AGG 60.9 / GLD 16.3 / XLE 8.8,d25f609ced94a4702ba9c91b336ffb8467a20d12b7d01dd2314b0d0c0728d4ab,2.72,True,True,False,False,True
+W_train,SPY 7.2 / AGG 86.3 / GLD 6.5,681ba54480d0b4402d789087a0608a9a3ab954cd0437df8fce550f1901019cce,0.4,True,True,False,False,True
+A1_min_cvar,SPY 5.8 / AGG 88.0 / GLD 6.0 / XLE 0.2,bd13d8979ea90bd195fc97c16af6d8923a6a8537159887b9ffb110953163d87f,0.27,True,True,False,False,True
+A1_min_variance,SPY 6.4 / AGG 90.6 / GLD 2.1 / XLE 0.9,0f784b9b6d5af3161d8af0041584f37bacfe52477afba9a65367ca9d185119fc,0.07,True,True,False,False,True
+A1_max_sharpe,SPY 12.8 / AGG 78.6 / GLD 8.5,dcc71182a80ec7cda766f90e39ff1fde55eaefb47dece9327ca65edd4c38d8a1,1.06,True,True,False,False,True
+A1_near_parity,SPY 14.0 / AGG 60.9 / GLD 16.3 / XLE 8.8,ece535c3eb7c2caab5cd5fa4c7e0cf9e107f51c1c01031eb724e104dc8005dc3,2.72,True,True,False,False,True
+A2,SPY 5.8 / AGG 88.0 / GLD 6.0 / XLE 0.2,bd13d8979ea90bd195fc97c16af6d8923a6a8537159887b9ffb110953163d87f,0.27,True,True,False,False,True

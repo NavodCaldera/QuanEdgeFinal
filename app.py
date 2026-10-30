@@ -10,7 +10,8 @@ from quanedge.portfolio import canonical_weights,weight_hash,replay,kpis,hurdle,
 from quanedge.results import artifact_key,result_state,digest
 from quanedge.backtest import assess
 from quanedge.risk import fit_models,risk_table,load_forecasts
-from quanedge.stress import stress_tests,hypothetical,attribution
+from quanedge.stress import stress_tests,hypothetical,attribution,SCENARIOS
+from quanedge import comparison
 
 st.set_page_config(page_title="Ghosted | Endowment committee",layout="wide")
 st.title("Serendib University Endowment")
@@ -57,7 +58,7 @@ mode=st.sidebar.radio("Mode",["Precomputed","Explore"])
 alpha=st.sidebar.selectbox("Confidence",[.90,.95,.99],index=2,format_func=lambda a:f"{a:.0%}")
 method=st.sidebar.selectbox("VaR methodology",["historical","normal","student_t","mc_normal","mc_t","evt","fhs","garch_evt"],index=6)
 dates=st.sidebar.date_input("Backtest dates",value=(pd.Timestamp(cfg["evaluation_start"]).date(),pd.Timestamp(cfg["snapshot_end"]).date()))
-page=st.sidebar.radio("Page",["Recommendation","Portfolio","ETF charts","Risk","Backtesting","Stress & contributions","Assumptions & Limitations","Provenance"])
+page=st.sidebar.radio("Page",["Recommendation","Portfolio","Portfolio comparison","ETF charts","Risk","Backtesting","Stress & contributions","Assumptions & Limitations","Provenance"])
 original=portfolios[name];weights=original["weights"].copy();valid=True
 if mode=="Explore":
     weights={t:st.sidebar.number_input(t,min_value=0.,max_value=100.,value=100*weights[t],step=.1)/100 for t in TICKERS}
@@ -166,6 +167,77 @@ elif page=="Portfolio":
         st.json(kpis(p["return"],macro.rf_daily_effective,returns.SPY,benchmark))
         st.caption("Computed in app, not part of frozen run.")
     st.caption(f"Retrospective portfolio evaluation; quarterly or 5-point drift rebalancing, {cfg['cost']*1e4:g} bp one-way costs. Chart excludes "+("cash-reserve withdrawals." if v2 else "spending."))
+elif page=="Portfolio comparison":
+    st.subheader("Portfolio comparison")
+    labels={"selected":"W_rec (selected)","near_parity":"Risk parity (near parity)","permanent":"Permanent 25/50/25",
+            "balanced_35_50_15":"Balanced 35/50/15","max_sharpe":"Max Sharpe","min_variance":"Min variance",
+            "60_40":"60/40 SPY/AGG","40_60":"40/60 SPY/AGG","equal_weight":"Equal weight","max_return":"Max return"}
+    options=[c for c in choices if not c.startswith(("A1_","A2","W_train","unconstrained"))]
+    picked=st.sidebar.multiselect("Portfolios to compare",options,
+        default=[c for c in ["selected","near_parity","permanent","balanced_35_50_15","max_sharpe","60_40"] if c in options],
+        format_func=lambda c:labels.get(c,c))
+    dynamic=st.sidebar.checkbox("Add dynamic EWMA risk parity, monthly (exploratory)",value=True)
+    weekly=st.sidebar.checkbox("Add dynamic EWMA risk parity, weekly (exploratory)",value=True)
+    common=st.sidebar.radio("Comparison start",["Full history (dynamic joins later)","Common start with dynamic"],
+                            disabled=not (dynamic or weekly),help="The dynamic strategies need 500 days of history before their first allocation.")=="Common start with dynamic"
+    show_table=st.sidebar.checkbox("Show comparison table",value=True)
+    universe=cfg.get("universe",TICKERS)
+
+    @st.cache_data
+    def dynamic_path(data_hash,universe,cost,freq):
+        return comparison.dynamic_parity_path(returns[list(universe)],freq,cost=cost)
+
+    def weight_text(w):
+        return " / ".join(f"{100*w[t]:.1f}".removesuffix(".0") for t in universe)
+    DYN={"M":"Dynamic EWMA risk parity (monthly)","W":"Dynamic EWMA risk parity (weekly)"}
+    if not picked and not dynamic and not weekly:
+        st.info("Select at least one portfolio in the sidebar.")
+    else:
+        paths={f:dynamic_path(meta["data_hash"],tuple(universe),cfg["cost"],f) for f,on in (("M",dynamic),("W",weekly)) if on}
+        if any(p.empty for p in paths.values()):st.info("Dynamic risk parity needs more than 500 days of history; it is not shown.")
+        paths={f:p for f,p in paths.items() if len(p)}
+        dyn_start=min((p.index[0] for p in paths.values()),default=None)
+        start=dyn_start if paths and common else returns.index[0]
+        names={labels.get(c,c):c for c in picked}
+        wealth=comparison.wealth_paths(returns.loc[start:],{n:portfolios[c]["weights"] for n,c in names.items()},cfg["cost"],cfg["drift"])
+        joined=None;initial={}
+        for f,p in paths.items():
+            base=1e7
+            if not common and "near_parity" in picked:            # join at static risk parity's value, as in the report chart
+                rp=wealth[labels["near_parity"]];base=rp.loc[:p.index[0]].iloc[-2];joined=labels["near_parity"]
+            wealth[DYN[f]]=base*p.wealth
+            initial[DYN[f]]=weight_text({t:p[f"target_{t}"].iloc[0] for t in universe})+(" (changes monthly)" if f=="M" else " (changes weekly)")
+        dyn=pd.Series(dtype=float) if not paths else next(iter(paths.values()))["return"]
+        for title,frame,unit in [("Portfolio value",wealth/1e6,"USD m"),("Drawdown from peak",100*(wealth/wealth.cummax()-1),"%")]:
+            fig=go.Figure([go.Scatter(x=frame.index,y=frame[c],name=c,mode="lines",line=dict(width=2.5 if c.startswith(("W_rec","Dynamic")) else 1.5),
+                                      hovertemplate="%{x|%d %b %Y}<br>%{y:,.2f} "+unit+"<extra>"+c+"</extra>") for c in frame])
+            for label,(a,b) in SCENARIOS.items():
+                fig.add_vrect(x0=a,x1=b,fillcolor="grey",opacity=.15,line_width=0,annotation_text=label,annotation_position="top left")
+            if unit=="%":fig.add_hline(y=-100*cfg.get("drawdown_limit",.2),line_dash="dash",line_color="red",annotation_text=f"{cfg.get('drawdown_limit',.2):.0%} drawdown limit")
+            else:fig.add_hline(y=10,line_dash="dot",line_color="grey")
+            fig.update_layout(colorway=["#2a78d6","#eb6834","#1baf7a","#eda100","#e87ba4","#008300","#6250d6","#e34948"],title=title,height=460 if unit!="%" else 320,yaxis_title=f"{title} ({unit})",hovermode="x unified",
+                              legend=dict(orientation="h",y=-.15),margin=dict(l=15,r=20,t=45,b=15))
+            st.plotly_chart(fig,use_container_width=True,config={"displaylogo":False})
+        if show_table:
+            st.subheader("Comparison table")
+            table=comparison.summary(wealth,cfg.get("inflation"))
+            weights_col=f"Weights ({'/'.join(universe)}, %)"
+            table.insert(1,weights_col,[weight_text(portfolios[names[n]]["weights"]) if n in names else initial.get(n,"") for n in table.Portfolio])
+            table=table.rename(columns={"End value (USD m)":f"Value {returns.index[-1]:%b %Y} (USD m)"})
+            money=[c for c in table if c.startswith("Value")];pct=[c for c in table if c.endswith("%")]
+            st.dataframe(table,hide_index=True,use_container_width=True,
+                         column_config={**{c:st.column_config.NumberColumn(format="$%.1fm") for c in money},
+                                        **{c:st.column_config.NumberColumn(format="%.1f%%") for c in pct}})
+            st.download_button("Download table (CSV)",table.to_csv(index=False).encode(),file_name=f"portfolio_comparison_{run}.csv",mime="text/csv")
+        st.caption(f"Computed in app, not part of frozen run. Retrospective portfolio evaluation of USD 10 million from {start.date()} to {returns.index[-1].date()}: "
+                   f"quarterly or {cfg['drift']*100:g}-point drift rebalancing, {cfg['cost']*1e4:g} bp one-way costs, no "+("cash-reserve withdrawals" if v2 else "spending")+". "
+                   "Fixed weights come from run "+run+" and were estimated on data that includes this period. "
+                   +(("Dynamic risk parity re-estimates an EWMA (lambda 0.97) covariance over "+", ".join(universe)+" at each month-end or week-end close from data up to that close; its weights column shows the first target. "
+                      f"It needs 500 days of history, so it starts on {dyn.index[0].date()}"
+                      +(", and every line starts there. " if common else (f" at the value of {joined} on that day; its CAGR, volatility and drawdown are measured from its own start. " if joined else
+                        " at USD 10 million; its value is not comparable with lines that started earlier. "))
+                      +"It has no frozen weights, no weight hash and no risk-model backtest, so checks C1-C5 and the verdict do not apply to it. ") if len(dyn) else "")
+                   +"Shaded: project stress windows. Real CAGR uses the mandate inflation assumption.")
 elif page=="ETF charts":
     st.subheader("ETF price comparison")
     from quanedge import context

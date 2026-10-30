@@ -1,0 +1,9 @@
+portfolio,start,cagr_pct,cpi_inflation_pct,real_cagr_cpi_pct,real_cagr_364_pct,tbill_cagr_pct,excess_over_tbill_pct,real_tbill_pct,sharpe
+W_rec (min CVaR),2005-01-04,3.916,2.589,1.293,0.266,1.797,2.081,-0.772,0.432
+Min variance,2005-01-04,3.712,2.589,1.095,0.070,1.797,1.881,-0.772,0.398
+Inverse variance (7/83/7/3),2005-01-04,4.406,2.589,1.771,0.739,1.797,2.562,-0.772,0.516
+Dynamic risk parity weekly (v4e),2006-12-28,5.721,2.580,3.062,2.008,1.575,4.082,-0.980,0.627
+Dynamic risk parity monthly (v4d),2006-12-28,6.160,2.580,3.490,2.432,1.575,4.514,-0.980,0.708
+Risk parity (static),2005-01-04,6.460,2.589,3.773,2.721,1.797,4.580,-0.772,0.680
+v4c risk parity + overlay,2005-01-04,6.438,2.589,3.752,2.700,1.797,4.559,-0.772,0.726
+Equal weight,2005-01-04,9.542,2.589,6.778,5.695,1.797,7.609,-0.772,0.641

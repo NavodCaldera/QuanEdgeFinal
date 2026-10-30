@@ -1,0 +1,32 @@
+{
+  "task": "PORT-015",
+  "prereg_tag": "prereg-v4de",
+  "label": "Pre-registered candidates v4d/v4e (prereg-v4de) under v3 criteria; designed after the data were seen, so not the v3 verdict and not an untouched test.",
+  "evaluation_label": "retrospective portfolio evaluation",
+  "created": "2026-10-30T20:31:49+00:00",
+  "data_hash": "76bac76cbc98b5ce62291bd6257600047cc20857943d363edd1f807f743d4d0d",
+  "config_hash": "40ea58f7aaf1a15e376c5c78ddb592624ea3c44c1c1f416f8d2014f7c0f50cbd",
+  "settings": {
+    "type": "dynamic_ewma_risk_parity",
+    "ewma_lambda": 0.97,
+    "window": 750,
+    "min_history": 500,
+    "risk_parity": "Spinu convex form, equal volatility contributions",
+    "universe": [
+      "SPY",
+      "AGG",
+      "GLD",
+      "XLE"
+    ]
+  },
+  "strategy_hashes": {
+    "v4d_monthly": "b7661d21e49b31370ebc5c1e3e8295a1f0157408518696d571b32040581dd37d",
+    "v4e_weekly": "9b287aab3d442b930823f19b64b8033bccdf4c961218043034af4b8a8fe6c248"
+  },
+  "departures_from_fixed_weight_evaluation": [
+    "risk forecasts use each strategy path's realised daily returns, not a fixed-weight replay",
+    "C2 requires both the path's realised ES99 and the latest target's estimation-sample ES99 within budget",
+    "C3 applies the frozen estimator to the latest target",
+    "C5 uses the strategy path from each scenario start close, not buy-and-hold"
+  ]
+}

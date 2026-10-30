@@ -1,4 +1,4 @@
-"""Exploratory study: risk parity estimated on long versus recent history (task PORT-015).
+"""Exploratory study: risk parity estimated on long versus recent history (task PORT-025).
 
 Equal-risk-contribution (ERC) weights for SPY, XLE, AGG and GLD from six covariance windows:
 all history (expanding), 10, 5, 3 and 1 year (Ledoit-Wolf, annualised) and an EWMA with a
@@ -89,7 +89,7 @@ def main():
     pd.DataFrame(today).T.to_csv(f"{OUT}/weights_today.csv", float_format="%.4f")
     pd.DataFrame(rows).to_csv(f"{OUT}/walk_forward_by_window.csv", index=False, float_format="%.4f")
     pd.DataFrame(common).to_csv(f"{OUT}/common_period_2016_2026.csv", index=False, float_format="%.4f")
-    json.dump({"task": "PORT-015", "source": SOURCE, "source_sha256": hashlib.sha256(open(SOURCE, "rb").read()).hexdigest(),
+    json.dump({"task": "PORT-025", "source": SOURCE, "source_sha256": hashlib.sha256(open(SOURCE, "rb").read()).hexdigest(),
                "windows": {k: str(v) for k, v in WINDOWS.items()}, "solver_check": solver,
                "label": "retrospective portfolio evaluation; walk-forward weights use only earlier data"},
               open(f"{OUT}/metadata.json", "w"), indent=2, default=float)

@@ -57,6 +57,20 @@ def test_explore_invalidates_and_restores(tmp_path,monkeypatch,cfg):
     by_label(app.sidebar.number_input,"AGG").set_value(50.).run()
     assert not app.exception
     assert any("MATCHED" in c.value for c in app.caption)
+    by_label(app.sidebar.radio,"Page").set_value("Portfolio comparison").run()
+    assert not app.exception
+    assert len(app.get("plotly_chart"))==2
+    assert any("needs more than 500 days" in x.value for x in app.info)
+    assert any("Computed in app, not part of frozen run" in c.value for c in app.caption)
+    table=app.dataframe[0].value
+    assert list(table.Portfolio)==["W_rec (selected)"] and table.iloc[0,1]=="35 / 50 / 15 / 0"
+    assert len(app.get("download_button"))==1
+    by_label(app.sidebar.checkbox,"Show comparison table").uncheck().run()
+    assert not app.dataframe
+    by_label(app.sidebar.multiselect,"Portfolios to compare").set_value([]).run()
+    app.sidebar.checkbox[0].uncheck()
+    app.sidebar.checkbox[1].uncheck().run()
+    assert any("Select at least one portfolio" in x.value for x in app.info)
     by_label(app.sidebar.radio,"Page").set_value("ETF charts").run()
     assert not app.exception
     assert len(app.get("plotly_chart"))==1

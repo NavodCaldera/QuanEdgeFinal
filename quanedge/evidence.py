@@ -48,7 +48,7 @@ def complete(run):
             arithmetic=float(v@mu-result["policy"].get("expected_annual_turnover",1)*cfg["cost"])
             result["expected_arithmetic"]=arithmetic
             result["expected_geometric"]=float(np.expm1(np.log1p(arithmetic)-variance/2))
-            result["checks"]["C3"]=return_check(result["expected_geometric"],result["policy"])
+            result["checks"]["C3"]=return_check(result["expected_geometric"],result["policy"],result.get("realised_real_cagr"))
         if "real_return_floor" in cfg:result["expected_real"]=real_return(result["expected_geometric"],cfg["inflation"])
         result["volatility"]=float(np.sqrt(variance))
         result["performance"]["distribution_yield"]=result["distribution_yield"]
