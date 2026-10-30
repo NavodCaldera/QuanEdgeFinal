@@ -1,0 +1,6 @@
+{
+  "task": "PORT-018",
+  "source_sha256": "76bac76cbc98b5ce62291bd6257600047cc20857943d363edd1f807f743d4d0d",
+  "rule": "PORT-017 base; tilt 10 points SPY -> GLD when 63-day corr(SPY, pair) < -0.25 at a quarter-end close",
+  "label": "retrospective portfolio evaluation; threshold chosen after seeing 2021-2022 values"
+}

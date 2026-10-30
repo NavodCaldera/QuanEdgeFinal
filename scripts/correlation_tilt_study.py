@@ -35,14 +35,19 @@ CRISES = {"GFC": ("2007-10-09", "2009-03-09"), "COVID": ("2020-02-19", "2020-03-
           "2022": ("2022-01-03", "2022-10-12")}
 
 
-def simulate(R, threshold=.3, corr_window=63, size=.10, two_sided=False, tilt=True):
-    """Daily path; returns (returns, events) where events lists each quarter-end decision."""
-    x = R.to_numpy(); dates = R.index; s, a, g = (FOUR.index(c) for c in ("SPY", "AGG", "GLD"))
+def simulate(R, threshold=.3, corr_window=63, size=.10, two_sided=False, tilt=True, pair="AGG", below=None):
+    """Daily path; returns (returns, events) where events lists each quarter-end decision.
+
+    below: if set, the only tilt is SPY -> GLD when corr(SPY, pair) < below (PORT-018)."""
+    x = R.to_numpy(); dates = R.index; s, a, g = (FOUR.index(c) for c in ("SPY", pair, "GLD"))
     q = dates.to_period("Q"); decide = np.r_[q[1:] != q[:-1], False]
     def target(i):
         w = risk_parity(np.cov(x[max(0, i+1-WINDOW):i+1].T)); rho = np.corrcoef(x[i+1-corr_window:i+1, [s, a]].T)[0, 1]
         move = 0.
-        if tilt and rho > threshold:
+        if below is not None:
+            if tilt and rho < below:
+                move = min(size, w[s]); w[s] -= move; w[g] += move
+        elif tilt and rho > threshold:
             move = min(size, w[s]); w[s] -= move; w[g] += move
         elif tilt and two_sided and rho < -threshold:
             move = -min(size, w[g]); w[g] += move; w[s] -= move
@@ -115,5 +120,36 @@ def main():
     print(f"\nTilt quarters: {len(fired)}, helped in {(fired.tilt_pnl_pct > 0).sum()}, total {fired.tilt_pnl_pct.sum():.2f} pt")
 
 
+def negative_trigger():
+    """PORT-018: owner's follow-up, tilt 10 points SPY -> GLD when the correlation is below -0.25.
+    The -0.25 level was proposed after the 2021-12-31 (-0.26) and 2022-03-31 (-0.38) values were
+    shown, so this is hindsight-exposed. Both signal pairs are reported; neither is selected."""
+    out = "results/correlation-tilt-r2"
+    prices = pd.read_csv("data/clean/prices_clean.csv", index_col=0, parse_dates=True)[FOUR]
+    R = prices.pct_change().dropna()
+    base_r = simulate(R, tilt=False)[0]; base = metrics(base_r)
+    rows, events, grid = [{"Strategy": "Risk parity, no tilt", **base}], [], []
+    for pair in ("AGG", "GLD"):
+        r, ev = simulate(R, pair=pair, below=-.25)
+        rows.append({"Strategy": f"Tilt SPY->GLD when corr(SPY,{pair}) < -0.25", **metrics(r)})
+        nxt = prices.loc[ev.index].pct_change().shift(-1)
+        ev = ev.assign(signal=f"corr(SPY,{pair})", next_q_SPY=nxt["SPY"], next_q_GLD=nxt["GLD"])
+        ev["tilt_pnl_pct"] = 100*ev["spy_to_gld"]*(ev["next_q_GLD"]-ev["next_q_SPY"])
+        events.append(ev.rename(columns={"rho_spy_agg": "rho"}))
+        for th in (-.2, -.25, -.3):
+            for cw in (63, 126):
+                m = metrics(simulate(R, corr_window=cw, pair=pair, below=th)[0])
+                grid.append({"pair": pair, "threshold": th, "corr_window": cw,
+                             **{f"d{k}": m[k]-base[k] for k in ("CAGR %", "Max fall %", "GFC %", "COVID %", "2022 %")}})
+    os.makedirs(out, exist_ok=True)
+    pd.DataFrame(rows).set_index("Strategy").to_csv(f"{out}/summary.csv")
+    pd.concat(events).to_csv(f"{out}/decisions.csv"); pd.DataFrame(grid).to_csv(f"{out}/sensitivity.csv", index=False)
+    json.dump({"task": "PORT-018", "source_sha256": hashlib.sha256(open("data/clean/prices_clean.csv", "rb").read()).hexdigest(),
+               "rule": "PORT-017 base; tilt 10 points SPY -> GLD when 63-day corr(SPY, pair) < -0.25 at a quarter-end close",
+               "label": "retrospective portfolio evaluation; threshold chosen after seeing 2021-2022 values"},
+              open(f"{out}/metadata.json", "w"), indent=2)
+    pd.set_option("display.width", 200); print(pd.DataFrame(rows).set_index("Strategy").round(2)); print(pd.DataFrame(grid).round(2))
+
+
 if __name__ == "__main__":
-    main()
+    negative_trigger() if "--negative" in sys.argv else main()
