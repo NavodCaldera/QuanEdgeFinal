@@ -612,3 +612,8 @@ AI assistance and actual human review:
 - Repository housekeeping in this conversation: branches claude/gracious-mendel-uemnkf and claude/funny-mendel-xbog3a were merged into main (b0937cd) so main is behind no branch; duplicate task IDs from parallel sessions were renumbered (this session's chart PORT-010 -> PORT-013; that branch's VAL-004 -> VAL-006 and PORT-009 -> PORT-014). Local tags prereg-v4c, prereg-v4de and prereg-v4 could not be pushed (remote refused); their commits are on GitHub.
 - Limits for the memo: everything above is hindsight on data used to build the portfolios; realised-return gates are path-dependent; the CPI series is revised data with an approximate publication lag; the 3.64% inflation source is still unverified. Conversation content from other chats is only recorded where those sessions committed AGENTS.md entries (PORT-010 to PORT-012, VAL-006, PORT-014 above).
 - Validation: scripts/session_findings.py reproduces the conversation figures (checked against the values shown). No unit tests for this evidence script. AI: Claude Code. Owner review pending.
+
+2026-10-30, PORT-017 (exploratory), correlation tables by period:
+- State: ready for review. These are the yearly, half-yearly and quarterly correlation tables reviewed with the owner in chat, now reproducible with `python scripts/correlation_periods.py` and saved in `results/correlation-periods-r1/` (CSVs plus metadata with the source hash). Summary in PLAN.md section 19a.
+- Descriptive and retrospective. 2026 is January-September only, and averages are simple means of period correlations. No change to any mandate, run or verdict.
+- AI: Claude Code. Owner review pending.

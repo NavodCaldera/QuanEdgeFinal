@@ -1,0 +1,13 @@
+{
+ "source": "data/clean/log_returns.csv",
+ "source_sha256": "512fcea2c0c7d74fe9bb4d90b81870660ea48059c2b982de906b4bc2e20067ca",
+ "first_date": "2005-01-04",
+ "last_date": "2026-09-30",
+ "measure": "Pearson correlation of daily log returns",
+ "notes": [
+  "2026 covers January-September only (2026Q3 and 2026H2 have 64 trading days)",
+  "averages are simple means of period correlations",
+  "about +/-0.18 (half-years) and +/-0.25 (quarters) is needed to differ from zero at 5%",
+  "descriptive and retrospective; not part of any frozen run"
+ ]
+}
