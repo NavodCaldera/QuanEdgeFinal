@@ -63,15 +63,16 @@ def make_candidates(x,cfg):
     if v2(cfg):kinds.append(("max_return","max_return"))      # the mandate v1 rule, for comparison only
     result={name:construct(x,cfg,kind) for name,kind in kinds}
     for name,w in {"40_60":{"SPY":.4,"AGG":.6},"60_40":{"SPY":.6,"AGG":.4},
-                   "equal_weight":{t:1/7 for t in TICKERS},"permanent":{"SPY":.25,"AGG":.5,"GLD":.25},
+                   "equal_weight":{t:1/len(cfg.get("universe",TICKERS)) for t in cfg.get("universe",TICKERS)},"permanent":{"SPY":.25,"AGG":.5,"GLD":.25},
                    ("balanced_35_50_15" if v2(cfg) else "in_policy"):{"SPY":.35,"AGG":.5,"GLD":.15}}.items():
         w=canonical_weights(w);result[name]={"status":"benchmark","weights":w,"weight_hash":weight_hash(w)}
     _,cov=estimates(x,cfg)
     from scipy.optimize import minimize
+    held=np.array([t in cfg.get("universe",TICKERS) for t in TICKERS])
     def rp(w):
         rc=w*(cov@w)/(w@cov@w)
-        return np.sum((rc-1/7)**2)
-    sol=minimize(rp,np.ones(7)/7,bounds=[(0,1)]*7,constraints={"type":"eq","fun":lambda w:w.sum()-1},
+        return np.sum((rc[held]-1/held.sum())**2)
+    sol=minimize(rp,held/held.sum(),bounds=[(0,1) if h else (0,0) for h in held],constraints={"type":"eq","fun":lambda w:w.sum()-1},
                  options={"ftol":1e-12,"maxiter":1000})
     if sol.success:
         w=canonical_weights(dict(zip(TICKERS,sol.x)));result["unconstrained_parity"]={"status":"benchmark","weights":w,"weight_hash":weight_hash(w)}

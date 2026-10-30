@@ -533,3 +533,8 @@ AI assistance and actual human review:
 - Operational: the pipeline's final rename of the staging folder hit a Windows access-denied lock; all stages, documents and the sealed manifest had completed, so the folder was renamed and results/latest.txt set by hand. python -m quanedge.verify results/final-v2-20261030: PASS (18 allocations, 139 files). AppTest on the real run: all eight pages, zero errors or exceptions. Memorandum 11 pages; tear sheet and committee memo one page each. The editable PPTX was not rebuilt for v2 (its builder needs the Codex runtime).
 - Claude Code ran and checked this work; owner review pending. No organiser contact.
 
+2026-10-30, MANDATE-003, mandate v3 four-ETF universe (owner rule change, frozen before its run):
+- Owner instruction: invest only in SPY, XLE, AGG and GLD because of their lower correlation with each other. Implemented as cfg universe (other ETFs bounded at zero in every construction, benchmarks' equal weight and risk parity over the four). PLAN.md section 13c.
+- Evidence recorded with the rule: EFA/EEM/XLK correlate 0.82-0.91 with SPY daily; XLE 0.70 (0.76 on SPY's worst 5% of days), so the low-correlation reason holds for AGG and GLD, not for SPY-XLE. Pre-tag check: v3 selects the same weights as v2.
+- Validation before the run: 175 tests passed, including a new test that no construction method holds an excluded ETF and that holding one is outside policy. Claude Code implemented; owner review pending.
+

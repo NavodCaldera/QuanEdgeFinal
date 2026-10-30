@@ -73,6 +73,8 @@ def estimates(returns, cfg):
 
 
 def bounds(cfg):
+    if "universe" in cfg:               # mandate v3: ETFs outside the chosen universe are held at zero
+        return [b if t in cfg["universe"] else (0.,0.) for t,b in zip(TICKERS,bounds({k:v for k,v in cfg.items() if k!="universe"}))]
     return [(cfg["agg_min"],cfg["agg_max"]) if t == "AGG" else
             (0, min(cfg["single_cap"],cfg["gold_cap"])) if t == "GLD" else
             (0,min(cfg["single_cap"],cfg["sector_cap"])) if t in ("XLE","XLK") else

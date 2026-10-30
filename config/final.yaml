@@ -1,6 +1,7 @@
-schema_version: 2
-mandate: v2
-prereg_tag: prereg-v2
+schema_version: 3
+mandate: v3
+prereg_tag: prereg-v3
+universe: [SPY, AGG, GLD, XLE]
 snapshot_end: '2026-09-30'
 training_end: '2016-12-31'
 evaluation_start: '2017-01-01'

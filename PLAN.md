@@ -268,6 +268,14 @@ The owner changed the mandate after reviewing the v1 run (`final-20261027`, verd
 
 **Disclosure before the tag:** full-sample results were seen before `prereg-v2`. An exploratory run without ETF limits (AGG 50 / GLD 22 / XLK 28 at a 2.0% ES budget, which failed C4 with 40 FHS breaches against 24.5 expected) was shown to the owner. While choosing the estimator, the owner was also shown that under v2 the frozen estimator selects about SPY 6 / AGG 88 / GLD 6 (about 3.5% real expected, but about 0.25% real on raw historical means). Raw means would select about AGG 65 / GLD 17 / XLK 18. The owner kept the frozen estimator. No v2 backtest (C4) was computed before the tag.
 
+### 13c. Mandate v3 (owner change, 30 October 2026, tagged `prereg-v3`; amends section 13b)
+
+**Universe:** the portfolio may hold only SPY, AGG, GLD and XLE; EFA, EEM and XLK are held at zero. Every other v2 rule is unchanged (no percentage limits, zero cost, 1 January cash reserve, 1-3% real objective, minimum-CVaR selection with a 3% real target, ES and stress limits, checks C1-C5, adjustments A1-A2, FHS and GARCH-EVT).
+
+**Owner's reason and the evidence:** lower correlation between the holdings. Daily return correlations, 2005-2026: SPY with EFA 0.88, EEM 0.82, XLK 0.91, so those three add little beyond SPY. XLE is the least SPY-correlated equity ETF but is not low-correlation with SPY: 0.70 daily, 0.60 monthly, 0.76 on SPY's worst 5% of days. AGG and GLD are the diversifiers: 0.00 and 0.07 with SPY daily, 0.21 with each other. Correlation is measured on the full sample and is not stable across regimes (the SPY-AGG sign changes, PLAN.md section 20 and PORT-007).
+
+**Disclosure before the tag:** the v2 run (final-v2-20261030) was already seen. The v2 selection already held only these four ETFs, and a pre-tag check confirmed that v3 selects the same weights (SPY 5.8 / AGG 88.0 / GLD 6.0 / XLE 0.2), so the same risk-model result is expected. The comparison candidates change (for example, maximum Sharpe becomes about SPY 13 / AGG 79 / GLD 8.5).
+
 ## 14. Work plan
 
 Fix phase timeboxes as shares of the time left once the deadline is known. Two milestones are hard: the **thin slice** at about 15% of the time and the **minimum viable submission** at about 60%.

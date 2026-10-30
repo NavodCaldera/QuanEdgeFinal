@@ -44,7 +44,11 @@ Risk values distinguish log loss, simple percentage points and USD. Dollar ES av
 
 ## Decision and governance
 
-### Current mandate (v2)
+### Current mandate (v3)
+
+Mandate v3 (tag `prereg-v3`, PLAN.md section 13c) keeps every v2 rule below and limits holdings to SPY, AGG, GLD and XLE. Its run will replace the v2 results described below once complete.
+
+### Mandate v2
 
 Mandate v2 (owner change, 30 October 2026, tag `prereg-v2`, PLAN.md section 13b) removes all ETF percentage limits, assumes zero trading cost, withdraws a cash reserve for the university every 1 January (USD 400,000 in year 1, then growing 3.64% a year: USD 414,560 in year 2), and targets a 1-3% real return after the owner's 3.64% inflation assumption. The optimiser picks the lowest-CVaR99 allocation whose expected return reaches 3% real, within the 2.5% ES99 budget and 20% stress limit; C3 requires at least 1% real.
 

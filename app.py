@@ -34,7 +34,7 @@ run=latest.read_text(encoding="utf-8").strip();folder=ROOT/"results"/run
 bundle,index=read_run(run);meta=bundle["metadata"];cfg=bundle["policy"];portfolios=bundle["portfolios"]
 v2="real_return_target" in cfg
 if v2:
-    st.caption(f"Mandate {cfg['mandate']}: no ETF percentage limits · zero trading cost · 1 January cash reserve USD {cfg['reserve_initial']:,.0f} "
+    st.caption(f"Mandate {cfg['mandate']}: "+(f"universe {', '.join(cfg['universe'])} only · " if "universe" in cfg else "")+f"no ETF percentage limits · zero trading cost · 1 January cash reserve USD {cfg['reserve_initial']:,.0f} "
                f"growing {cfg['reserve_growth']:.2%} a year · target 1-3% real after {cfg['inflation']:.2%} inflation")
 rec=portfolios["selected"]
 with st.expander("Frozen recommendation",expanded=True):
@@ -275,6 +275,9 @@ elif page=="Stress & contributions":
 elif page=="Assumptions & Limitations":
     st.write("The endowment is perpetual; strategic review is every five years. Policy limits and inflation/spending assumptions are chosen policy, not organiser rules.")
     if v2:
+        if "universe" in cfg:
+            st.write(f"Only {', '.join(cfg['universe'])} may be held. EFA, EEM and XLK are left out because they move almost in step with SPY (daily correlation 0.82-0.91). "
+                     "XLE is the least SPY-correlated equity ETF but still moves with it (0.70 daily, 0.76 on SPY's worst days); AGG and GLD are the diversifiers.")
         st.write(f"Mandate {cfg['mandate']} (owner change): no ETF percentage limits; trading cost assumed zero, so spreads and market impact are ignored; "
                  f"each 1 January USD {cfg['reserve_initial']:,.0f} growing {cfg['reserve_growth']:.2%} a year is withdrawn as cash for the university and earns nothing. "
                  f"The {cfg['inflation']:.2%} inflation figure is an owner assumption whose source has not been verified.")

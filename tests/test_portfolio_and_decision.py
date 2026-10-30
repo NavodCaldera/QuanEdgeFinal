@@ -160,3 +160,15 @@ def test_all_adjustment_branches_have_order():
     for winner in range(1,6):
         alternatives=[(f"A{j}",good if j==winner else bad) for j in range(1,6)]
         assert verdict(bad,alternatives)["alternative"]==f"A{winner}"
+
+
+def test_mandate_v3_universe_excludes_other_etfs(cfg):
+    assert set(cfg["universe"])=={"SPY","AGG","GLD","XLE"}
+    rng=np.random.default_rng(11)
+    x=pd.DataFrame(rng.normal([.0006,.0005,.0005,.0002,.0003,.0005,.0009],[.012,.012,.016,.003,.01,.016,.018],(1500,7)),columns=TICKERS)
+    for kind in ("selected","min_cvar","min_variance","max_sharpe","near_parity","max_return"):
+        r=construct(x,dict(cfg,mean_shrinkage=0.),kind)
+        assert r["status"]=="ok",kind
+        assert all(r["weights"][t]==0 for t in TICKERS if t not in cfg["universe"]),kind
+    assert not feasible(canonical_weights({"SPY":.5,"XLK":.5}),cfg)
+    assert feasible(canonical_weights({"SPY":.5,"XLE":.5}),cfg)
