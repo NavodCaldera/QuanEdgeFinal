@@ -26,7 +26,7 @@ python -m quanedge.pipeline --stage training --config config/final.yaml
 python -m quanedge.pipeline --config config/final.yaml
 ```
 
-The data pipeline rebuilds offline from frozen raw/cache snapshots. `--refresh` deliberately changes inputs; never use it just to edit documents. The final pipeline requires the policy config to match the local `prereg-v1` tag and refuses prices after or short of 2026-09-30. The training command uses only 2005-2016 returns. A new final run is staged before publication to a new local folder; failed runs do not replace completed evidence. Final analysis may take several minutes because every distinct allocation receives its own forecasts.
+The data pipeline rebuilds offline from frozen raw/cache snapshots. `--refresh` deliberately changes inputs; never use it just to edit documents. The final pipeline requires the policy config to match the tag named in it (`prereg_tag`, currently `prereg-v2`) and refuses prices after or short of 2026-09-30. The training command uses only 2005-2016 returns. A new final run is staged before publication to a new local folder; failed runs do not replace completed evidence. Final analysis may take several minutes because every distinct allocation receives its own forecasts.
 
 `requirements.txt` lists direct dependencies; `requirements.lock.txt` pins the tested clean-environment dependency set. Editable pitch contents and speaker notes are included with each delivered deck. Regenerating the PPTX uses `scripts/build_pitch.mjs` and the Codex bundled Artifact Tool runtime, configured with `QUANTEDGE_RUNTIME` and `QUANTEDGE_PRESENTATION_SKILL`; this is separate from the portable Python analytics/app workflow.
 
@@ -44,15 +44,36 @@ Risk values distinguish log loss, simple percentage points and USD. Dollar ES av
 
 ## Decision and governance
 
-The accepted policy assumes 4% annual spending, 2.5% inflation, a 6.77% geometric-return hurdle, USD 250,000 historical one-day ES99 budget and 20% stress/drawdown limit. FHS is primary; GARCH-EVT is the pre-named challenger. Earlier development results were seen and are disclosed in PLAN.md. The frozen C1-C5 and A1-A5 rules determine Accept, Adjust, Reject or evaluation incomplete. The owner's final investment judgement is separate.
+### Current mandate (v2)
 
-The completed local run `final-20261027` returns **Adjust** to the minimum-CVaR allocation: **15% SPY, 70% AGG, 15% GLD**. The original allocation fails the GFC drawdown gate. For the adjusted allocation, FHS fails coverage and the pre-named GARCH-EVT challenger passes the gate with a yellow final zone. The illustrative spending simulation shows substantial real-capital shortfall risk; this qualifies the owner's decision and must not be hidden by the mechanical verdict.
+Mandate v2 (owner change, 30 October 2026, tag `prereg-v2`, PLAN.md section 13b) removes all ETF percentage limits, assumes zero trading cost, withdraws a cash reserve for the university every 1 January (USD 400,000 in year 1, then growing 3.64% a year: USD 414,560 in year 2), and targets a 1-3% real return after the owner's 3.64% inflation assumption. The optimiser picks the lowest-CVaR99 allocation whose expected return reaches 3% real, within the 2.5% ES99 budget and 20% stress limit; C3 requires at least 1% real.
+
+Run `final-v2-20261030` returns **evaluation incomplete**. The selected allocation is **SPY 5.8%, AGG 88.0%, GLD 6.0%, XLE 0.2%** (the 3% target does not bind, so this is the minimum-CVaR portfolio). It passes feasibility, the ES budget (USD 124,433 against USD 240,000), the return check (3.54% real expected) and the stress check (GFC drawdown 13.1%). It fails the risk-model check: on its own 2017-2026 forecasts FHS had 41 breaches of 99% VaR against 24.5 expected (Kupiec p 0.002) and the GARCH-EVT challenger 36 (p 0.026). Under the frozen rule a risk-model failure blocks a verdict rather than producing Adjust or Reject. None of the A1-A2 alternatives passes all five checks either.
+
+Material qualifications, shown in the app and documents:
+- The return check depends on the 50% mean shrinkage, which lifts AGG's expected return. On raw historical means the allocation expects 3.90% nominal (0.25% real) on full history and 1.41% nominal over five years, below the 1% real floor. Over 2017-2026 it realised about -0.26% a year real.
+- The reserve (4% of the initial fund in real terms) exceeds the return objective. In the 25-year resampled-history simulation, 67.4% of paths pay every reserve in full, the median failing path runs out in year 24, and no path keeps USD 10 million in real terms.
+- Among the fixed benchmarks, SPY 35 / AGG 50 / GLD 15 and SPY 25 / AGG 50 / GLD 25 pass all five checks on their own forecasts. They are comparisons outside the frozen selection rule and adjustment set, so adopting one would be a further logged owner decision.
+
+Review the [v2 investment memorandum](results/final-v2-20261030/documents/investment_memorandum.pdf), [executive tear sheet](results/final-v2-20261030/documents/executive_tear_sheet.pdf), [committee memo](results/final-v2-20261030/documents/committee_memo.pdf) and [speaker/Q&A notes](results/final-v2-20261030/documents/speaker_qa_notes.md). The editable PPTX deck has not been rebuilt for v2.
+
+```powershell
+python -m quanedge.verify results/final-v2-20261030
+```
+
+### Mandate v1 (superseded, kept as recorded)
+
+The accepted policy assumed 4% annual spending, 2.5% inflation, a 6.77% geometric-return hurdle, USD 250,000 historical one-day ES99 budget and 20% stress/drawdown limit. FHS is primary; GARCH-EVT is the pre-named challenger. Earlier development results were seen and are disclosed in PLAN.md. The frozen C1-C5 and A1-A5 rules determine Accept, Adjust, Reject or evaluation incomplete. The owner's final investment judgement is separate.
+
+The local run `final-20261027` returned **Adjust** to the minimum-CVaR allocation: **15% SPY, 70% AGG, 15% GLD**. The original allocation fails the GFC drawdown gate. For the adjusted allocation, FHS fails coverage and the pre-named GARCH-EVT challenger passes the gate with a yellow final zone. The illustrative spending simulation shows substantial real-capital shortfall risk; this qualifies the owner's decision and must not be hidden by the mechanical verdict.
 
 Review the [investment memorandum](results/final-20261027/documents/investment_memorandum.pdf), [executive tear sheet](results/final-20261027/documents/executive_tear_sheet.pdf), [committee memo](results/final-20261027/documents/committee_memo.pdf), [editable pitch](results/final-20261027/documents/committee_pitch_v2.pptx) and [speaker/Q&A notes](results/final-20261027/documents/speaker_qa_notes.md).
 
 ```powershell
 python -m quanedge.verify results/final-20261027
 ```
+
+After the v2 code change this check also reports source-hash differences for the v1 run, because the code that produced it has since changed; its data, artifact and forecast checks are unaffected. Use tag `final-run-final-20261027-v2` to reproduce it exactly.
 
 This read-only check verifies artifact/input/source hashes, forecast timing, allocation identities, recomputed backtests, ES reconciliation and document page counts. Source hashes normalize line endings; data hashes preserve exact bytes. Post-snapshot descriptive monitoring, when present under `monitoring/`, is separate from the frozen selection and never changes its verdict.
 
