@@ -321,6 +321,8 @@ Candidates for a possible mandate v4, not a mandate change. The v3 policy, run a
 
 **Seen before this registration:** the monthly path's realised statistics (CAGR 6.2%, maximum drawdown 18.5%, GFC -4.9%, COVID -9.3%, 2022 -10.3%), its 30 September 2026 target (SPY 20.8 / AGG 51.7 / GLD 8.4 / XLE 19.1), and that target's full-sample fixed-weight ES99 of about 2.6% (USD 250k on USD 9.6m), which would fail the second part of C2. The C2 definition copies 13d unchanged. Static parity and v4c already failed C4 on breach clustering. No weekly result and no C4 result for either strategy had been computed.
 
+**Result (run results/dynamic-parity-r1, PORT-015):** neither candidate passes. v4d monthly passes C1, C3 (4.9% real on the latest target), C4 (FHS fails on clustering, conditional coverage p 0.011; the GARCH-EVT challenger passes: 26 breaches vs 24.5 expected, Kupiec p 0.76, conditional coverage p 0.091, green) and C5 (GFC drawdown 18.5%, COVID -9.5%, 2022 -10.0%), but fails C2: the path's ES99 is 1.69% (USD 162k) and the 30 September 2026 target's estimation-sample ES99 is 2.60% (USD 250k), above 2.5%. v4e weekly fails C2 (target ES99 2.56%), C4 (FHS conditional coverage p 0.011, GARCH-EVT 0.045) and C5 (GFC drawdown 20.7%). Per the outcome rule nothing is retuned. A first run used the 31 August target because the final-day month-end decision was skipped; it was corrected to the registered 30 September target before results were recorded (the correction changes only the last day's target, not any return or forecast).
+
 ## 14. Work plan
 
 Fix phase timeboxes as shares of the time left once the deadline is known. Two milestones are hard: the **thin slice** at about 15% of the time and the **minimum viable submission** at about 60%.

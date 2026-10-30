@@ -39,7 +39,9 @@ def dynamic_parity_path(returns, freq="M", lam=.97, window=750, min_history=500,
     x = returns.to_numpy(); dates = returns.index; cols = list(returns.columns)
     target = lambda i: risk_parity(ewma_cov(x[max(0, i+1-window):i+1], lam))
     period = dates.to_period(freq)
-    decision = np.r_[period[1:] != period[:-1], False]
+    # the last row decides too when it closes its period on the business-day calendar
+    last = (dates[-1] + pd.offsets.BDay(1)).to_period(freq) != period[-1]
+    decision = np.r_[period[1:] != period[:-1], last]
     tgt = target(min_history-1); pos = tgt.copy(); rows = []
     for i in range(min_history, len(x)):
         old = pos.sum(); pos = pos*(1 + x[i]); turnover = 0.
