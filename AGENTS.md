@@ -471,3 +471,10 @@ AI assistance and actual human review:
 - Retrospective and descriptive only. No change to policy, weights, the frozen run or the verdict at `prereg-v1`. No new results artifacts.
 - Validation: the script runs offline on data/clean. Its cost convention matches `portfolio.replay`. PLAN.md numbers were copied from its output. No unit tests were added for this exploratory script.
 - AI: Claude Code wrote the analysis and text. Owner review is pending.
+
+2026-10-30, PORT-004 (exploratory), four-ETF portfolio (SPY/AGG/GLD/XLE) and risk-mitigation overlays:
+- State: ready for review. `python scripts/four_etf_study.py` reuses `quanedge.portfolio.construct` with EFA/EEM/XLK fixed at zero and frozen policy limits, plus a 4-asset risk-parity solve. Weights for the 2017-2026 test come from 2005-2016 estimation only.
+- The frozen selection rule fails C5 again: the max-return candidate has a 23.4% GFC drawdown. Its A1 fallback, min CVaR, is SPY 15 / AGG 70 / GLD 15, identical to the current adjusted recommendation.
+- Four-asset risk parity (SPY 14 / AGG 64 / GLD 15 / XLE 8 on training estimates) passes C1-C3 and C5. Over 2017-2026 it had a higher CAGR and a smaller maximum drawdown than the current allocation. Its 2022 advantage came from the energy rally, after the correlation evidence had been seen, so this is hindsight-exposed. C4 has not been evaluated (it needs its own weight-hashed forecasts).
+- Trend and volatility overlays cannot act on SPY15/AGG70/GLD15, because AGG and GLD are already at their caps. On the max-return mix they cut drawdown and lowered CAGR, with higher turnover.
+- No change to policy, W_rec, the frozen run or the verdict. AI: Claude Code. Owner review pending.
