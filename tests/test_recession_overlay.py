@@ -69,3 +69,16 @@ def test_decision_uses_its_own_month_end_close():
     spread = pd.Series(-1.0, pd.date_range("2018-01-31", "2020-03-31", freq="ME"))
     f = ro.overlay_flags(pd.DatetimeIndex([pd.Timestamp("2020-01-31"), pd.Timestamp("2020-02-28")]), spy, spread)
     assert not f.loc["2020-01-31"] and f.loc["2020-02-28"]
+
+
+def test_saved_evidence_refuses_a_changed_strategy_hash(tmp_path):
+    import shutil, json as js
+    from quanedge import config
+    src = config.RESULTS_DIR/ro.OUT
+    for f in ("metadata.json", "summary.json", "path.csv", "forecasts.csv"):
+        shutil.copy(src/f, tmp_path/f)
+    assert ro.load_saved(tmp_path)["summary"]["outcome"]["outcome"] == "evaluation incomplete"
+    meta = js.loads((tmp_path/"metadata.json").read_text()); meta["strategy_hash"] = "0"*64
+    (tmp_path/"metadata.json").write_text(js.dumps(meta))
+    with pytest.raises(ro.OverlayEvidenceError):
+        ro.load_saved(tmp_path)

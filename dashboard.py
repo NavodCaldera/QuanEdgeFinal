@@ -9,6 +9,7 @@ import plotly.graph_objects as go
 import streamlit as st
 from quanedge import final_portfolio as F
 from quanedge import universe as U
+from quanedge import recession_overlay as RO
 from quanedge.risk.models import LABEL
 from quanedge.stress import SCENARIOS
 
@@ -90,6 +91,15 @@ def universe(data_hash):
 @st.cache_resource(show_spinner="Simulating 25 years of cash reserves")
 def reserve(data_hash):
     return F.reserve_test(PATH), F.reserve_history(PATH, CPI)
+
+
+@st.cache_resource(show_spinner="Loading the recession-overlay evidence")
+def overlay(data_hash):
+    try:
+        ev = RO.load_saved()
+    except (RO.OverlayEvidenceError, FileNotFoundError, KeyError) as err:
+        return {"error": str(err)}
+    return {"ev": ev, "core": RO.core_path(), "signals": RO.signals(CFG["snapshot_end"])}
 
 
 try:
@@ -824,6 +834,84 @@ def page_data():
     st.download_button("Download the risk forecasts (CSV)", FC.to_csv().encode(), "final_portfolio_forecasts.csv", "text/csv")
 
 
+def page_overlay():
+    st.title("Recession overlay (tested, not adopted)")
+    o = overlay(EV["data_hash"])
+    if "error" in o:
+        st.error(f"The saved overlay evidence cannot be used: {o['error']}")
+        st.code("python -m quanedge.recession_overlay")
+        return
+    ev, core, sig = o["ev"], o["core"], o["signals"]; path = ev["path"]; sm = ev["summary"]
+    st.markdown("**Rule.** At each month-end, if the 10-year Treasury yield was below the 3-month T-bill yield in any of "
+                "the last 24 months **and** SPY closes below its 12-month average, half of SPY and XLE is held as cash. "
+                "It returns at the first month-end with SPY back above that average. Everything else is the recommended "
+                "strategy unchanged.")
+    last = sig.iloc[-1]
+    inv = sig.index[sig.spread < 0]
+    c = st.columns(4)
+    c[0].metric("Overlay at 30 Sep 2026", "ON" if path.overlay_on.iloc[-1] else "OFF")
+    c[1].metric("Yield-curve warning", "ON" if last.warning else "OFF",
+                help=f"Last inverted month: {inv[-1]:%b %Y}" if len(inv) else None)
+    c[2].metric("SPY vs 12-month average", pct(last.spy/last.spy_12m_mean - 1), help="Below zero confirms the warning")
+    c[3].metric("Sahm rule (backup)", f"{last.sahm_gap:+.2f} pt", help="Signals a recession at +0.50 points; not part of the rule")
+    st.info("Status: the overlay reduced drawdowns but its risk forecasts failed the clustering test (below), so it is "
+            "reported as tested evidence. The recommendation is the strategy without the overlay.")
+
+    st.subheader("Strategy with and without the overlay (from 2006-12-28)")
+    g = (1 + path["return"]).cumprod()*VALUE; gc = (1 + core["return"]).cumprod()*VALUE
+    fig = go.Figure()
+    fig.add_scatter(x=gc.index, y=gc, name="Recommended strategy", line=dict(color=ALT))
+    fig.add_scatter(x=g.index, y=g, name="With recession overlay", line=dict(color=ACCENT))
+    on = path.overlay_on.astype(int).diff().fillna(path.overlay_on.iloc[0]).astype(int)
+    for a, b in zip(path.index[on == 1], list(path.index[on == -1]) + [path.index[-1]]):
+        fig.add_vrect(x0=a, x1=b, fillcolor="rgba(235,104,52,.15)", line_width=0)
+    st.plotly_chart(style(fig, 380, "USD"), use_container_width=True)
+    st.caption("Orange bands: months the overlay held cash. No costs; no reserve withdrawals; data to 30 Sep 2026.")
+
+    def row(name, r, p):
+        w = (1 + r).cumprod(); dd = w/w.cummax() - 1; yrs = (r.index[-1] - r.index[0]).days/365.25
+        out = {"Strategy": name, "CAGR": pct(w.iloc[-1]**(1/yrs) - 1, 2), "Volatility": pct(r.std()*np.sqrt(252)),
+               "Maximum decline": pct(-dd.min()), "Average cash": pct(p.cash.mean() if "cash" in p else 0)}
+        for n, (a, b) in SCENARIOS.items():
+            x = w.loc[a:b]; out[f"{n} (from peak)"] = pct((x/x.cummax() - 1).min())
+        return out
+    st.dataframe(pd.DataFrame([row("Recommended strategy", core["return"], core),
+                               row("With recession overlay", path["return"], path)]).set_index("Strategy"), use_container_width=True)
+
+    st.subheader("Risk-model backtest of the overlay path (99%, 2017-2026)")
+    rows = []
+    for v in sm["validation"]:
+        if v["alpha"] == .99 and v["method"] in ("fhs", "garch_evt"):
+            rows.append({"Model": LABEL[v["method"]], "Days": v["days"], "Breaches": v["breaches"],
+                         "Expected": round(v["expected_breaches"], 1), "Kupiec p": p_text(v["kupiec_p"]),
+                         "Independence p": p_text(v["independence_p"]), "Conditional coverage p": p_text(v["conditional_coverage_p"]),
+                         "Zone": v["zone"]})
+    st.dataframe(pd.DataFrame(rows).set_index("Model"), use_container_width=True)
+    st.caption("Breach counts are close to expected, but breaches cluster (independence p below 0.05), mostly when the "
+               "overlay switches. Forecast rows carry strategy hash " + ev["meta"]["strategy_hash"][:8] + ".")
+
+    st.subheader("Signals")
+    t1, t2, t3 = st.tabs(["Yield curve", "SPY trend", "Unemployment and credit (tested, not used)"])
+    with t1:
+        f = go.Figure(); f.add_scatter(x=sig.index, y=sig.spread, name="10y minus 3m", line=dict(color=ACCENT))
+        f.add_hline(y=0, line_color=MUTED, line_dash="dot")
+        st.plotly_chart(style(f, 300, "percentage points"), use_container_width=True)
+        st.caption("Monthly mean of DGS10 minus the bond-equivalent DTB3 yield (FRED). Below zero: inverted. "
+                   "Inversion preceded all 8 US recessions since 1969 (probit z = -3.7, 1962-2025).")
+    with t2:
+        f = go.Figure(); f.add_scatter(x=sig.index, y=sig.spy, name="SPY month-end", line=dict(color=COLOR["SPY"]))
+        f.add_scatter(x=sig.index, y=sig.spy_12m_mean, name="12-month average", line=dict(color=MUTED, dash="dot"))
+        st.plotly_chart(style(f, 300, "price"), use_container_width=True)
+    with t3:
+        f = go.Figure(); f.add_scatter(x=sig.index, y=sig.unemployment, name="Unemployment rate", line=dict(color=COLOR["AGG"]))
+        f.add_scatter(x=sig.index, y=sig.credit_spread, name="Baa minus 10y", line=dict(color=COLOR["GLD"]))
+        st.plotly_chart(style(f, 300, "percent"), use_container_width=True)
+        st.caption("Sahm rule confirmed 6 of 8 recessions 2-9 months after they began and added nothing in 2005-2026. "
+                   "Unemployment levelling off came after the stock bottom (or falsely, in 2008), so it is not used to re-enter. "
+                   "The credit spread above its 12-month average was on in 143 non-recession months. "
+                   "Files supplied by the owner from FRED (context/fred, hashed).")
+
+
 SETTINGS = None
 pages = [st.Page(page_decision, title="Decision", default=True, url_path="decision"),
          st.Page(page_portfolio, title="Portfolio", url_path="portfolio"),
@@ -832,6 +920,7 @@ pages = [st.Page(page_decision, title="Decision", default=True, url_path="decisi
          st.Page(page_backtest, title="Backtesting", url_path="backtest"),
          st.Page(page_stress, title="Stress tests", url_path="stress"),
          st.Page(page_contributions, title="Risk contributions", url_path="contributions"),
+         st.Page(page_overlay, title="Recession overlay", url_path="overlay"),
          st.Page(page_limits, title="Assumptions & Limitations", url_path="limitations"),
          st.Page(page_data, title="Data & provenance", url_path="data")]
 nav = st.navigation(pages)

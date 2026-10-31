@@ -215,3 +215,51 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+# ---------------------------------------------------------------- read-only access for the dashboard
+class OverlayEvidenceError(RuntimeError):
+    pass
+
+
+def load_saved(directory=None):
+    """Saved v6 evidence, refused if the price file or any forecast row's strategy hash has changed."""
+    from .risk import load_forecasts
+    d = directory or config.RESULTS_DIR/OUT
+    meta = json.loads((d/"metadata.json").read_text()); summary = json.loads((d/"summary.json").read_text())
+    data_hash = hashlib.sha256((config.ROOT/"data/clean/prices_clean.csv").read_bytes()).hexdigest()
+    if meta["data_hash"] != data_hash:
+        raise OverlayEvidenceError("price file differs from the one used for results/recession-overlay-r1")
+    fc = load_forecasts(d/"forecasts.csv")
+    if (fc["weight_hash"] != meta["strategy_hash"]).any():
+        raise OverlayEvidenceError("a forecast row carries a different strategy hash")
+    path = pd.read_csv(d/"path.csv", index_col=0, parse_dates=True)
+    return {"meta": meta, "summary": summary, "path": path, "forecasts": fc}
+
+
+def core_path(cfg=None):
+    """v5 core path on the same dates (overlay off), recomputed from the frozen prices."""
+    from .data import load_clean_prices
+    cfg = cfg or config.frozen_policy(TAG)
+    prices = load_clean_prices().loc[:cfg["snapshot_end"], TICKERS]
+    returns = prices.pct_change().dropna()
+    return overlay_path(returns, prices, term_spread(cfg["snapshot_end"]), cfg, use_overlay=False)[0]
+
+
+def signals(end="2026-09-30"):
+    """Monthly signal table to `end`: term spread, warning, SPY vs its 12-month mean, Sahm rule (backup, 1-month lag)."""
+    from .data import load_clean_prices
+    spread = term_spread(end)
+    spy = load_clean_prices().loc[:end, "SPY"].resample("ME").last()
+    out = pd.DataFrame({"spread": spread}).loc["2005":]
+    out["warning"] = (spread < 0).astype(int).rolling(OVERLAY["warning_months"], min_periods=1).max().astype(bool).reindex(out.index)
+    out["spy"] = spy; out["spy_12m_mean"] = spy.rolling(OVERLAY["trend_months"]).mean()
+    out["below_trend"] = out.spy < out.spy_12m_mean
+    u = pd.read_csv(config.ROOT/"context/fred/UNRATE.csv", index_col=0, parse_dates=True).iloc[:, 0]
+    u.index = u.index + pd.offsets.MonthEnd(0); u = u.ffill()
+    u3 = u.rolling(3).mean(); gap = u3 - pd.concat([u3.shift(k) for k in range(13)], axis=1).min(axis=1)
+    out["unemployment"] = u.reindex(out.index); out["sahm_gap"] = gap.shift(1).reindex(out.index)
+    out["sahm"] = out.sahm_gap >= .5
+    c = pd.to_numeric(pd.read_csv(config.ROOT/"context/fred/BAA10Y.csv", index_col=0, parse_dates=True).iloc[:, 0], errors="coerce")
+    out["credit_spread"] = c.loc[:end].resample("ME").last().reindex(out.index)
+    return out
