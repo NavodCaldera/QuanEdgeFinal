@@ -150,7 +150,7 @@ def page_decision():
     c[1].metric("1-day 99% VaR", money(row("historical").var_usd), help=f"Historical simulation: {usd(row('historical').var_usd)}. Loss exceeded on about 1 day in 100.")
     c[2].metric("1-day 99% ES", money(row("historical").es_usd), help=f"Historical simulation: {usd(row('historical').es_usd)}. Average loss on the worst 1% of days.")
     c[3].metric("Worst crisis loss", money(worst["loss_usd"]), help=f"{usd(worst['loss_usd'])}: largest loss across GFC, COVID and 2022, as run.")
-    c[4].metric("Maximum fall since 2006", pct(-perf["maximum_drawdown"]), help=f"Policy limit {pct(CFG['drawdown_limit'], 0)}.")
+    c[4].metric("Maximum fall since 2006", pct(-perf["maximum_drawdown"]), help="Largest fall from a previous high, strategy as run.")
 
     left, right = st.columns([1, 1])
     with left:
@@ -189,24 +189,22 @@ def page_decision():
     latest = F.latest_forecast(FC, CFG["challenger"], .99, VALUE)
     st.subheader("Recommendation to the committee")
     st.markdown(
-        "**Accept the mandate with this portfolio**, monitored as follows. This is the team's proposal for the owner's and "
-        "committee's review.\n\n"
+        "**Hold this portfolio**, monitored as follows. This is the team's proposal for the owner's and committee's review.\n\n"
         f"1. **Hold** the current target and reset it at every month-end close by the rule on the Portfolio page.\n"
-        f"2. **Daily limit:** measure 99% one-day risk with GARCH-EVT refitted as in its backtest (latest forecast, for "
-        f"{latest['date']}: VaR {usd(latest['var_usd'])}); it passed the backtest. FHS stays as a second view because its breaches "
-        "cluster.\n"
+        f"2. **Daily risk:** measure 99% one-day risk with GARCH-EVT refitted as in its backtest (latest forecast, for "
+        f"{latest['date']}: VaR {usd(latest['var_usd'])}); its breaches matched the 99% level in testing. FHS stays as a second "
+        "view because its breaches cluster.\n"
         f"3. **Review triggers:** an extra committee review if the fall from the previous high passes 15% (the largest so far "
-        f"was {pct(-perf['maximum_drawdown'])}), if 99% VaR breaches exceed 9 in any 250 days (Basel red zone), or if a month-end "
-        f"target's historical ES exceeds {usd(CFG['es_budget']*VALUE)} ({CFG['es_budget']:.0%} of NAV).\n"
+        f"was {pct(-perf['maximum_drawdown'])}) or if 99% VaR breaches exceed 9 in any 250 days (Basel red zone).\n"
         f"4. **Expectation setting:** the real return has been about {pct(perf['real_cagr'], 1)} a year after US CPI inflation. "
         "That is history, chosen after the fact; plan spending on a lower figure.")
 
     over = [(s["scenario"], -s["today_buy_hold"]["drawdown"]) for s in stress
-            if s.get("today_buy_hold") and -s["today_buy_hold"]["drawdown"] > CFG["drawdown_limit"]]
+            if s.get("today_buy_hold") and -s["today_buy_hold"]["drawdown"] > -perf["maximum_drawdown"]]
     if over:
         st.caption("**Main risk accepted:** a crash that arrives before the next month-end meets today's weights. Bought at the start of "
-                   + " and ".join(f"{n} ({pct(x)})" for n, x in over) + f" and left to drift, they would have fallen beyond the "
-                   f"{CFG['drawdown_limit']:.0%} limit; the strategy as run stayed inside it. See the technical report, section 7.")
+                   + " and ".join(f"{n} ({pct(x)})" for n, x in over) + " and left to drift, they would have fallen further than "
+                   f"the strategy ever did as run ({pct(-perf['maximum_drawdown'])}). See the technical report, section 7.")
 
     st.subheader("The committee's three questions")
     q = st.columns(3)
@@ -320,21 +318,24 @@ def why_four(es_share):
                     f"{sp.loc['EEM', 'alpha_t']:.1f}). XLK's extra {pct(sp.loc['XLK', 'alpha_annual'])} a year is not "
                     f"statistically clear (t {sp.loc['XLK', 'alpha_t']:.1f}).")
     with tabs[3]:
-        o = opt[["run", "allocation", *U.TICKERS, "excluded_weight"]].copy()
+        o = opt.loc[opt.allocation != "selected", ["run", "allocation", *U.TICKERS, "excluded_weight"]].copy()
+        o["allocation"] = o.allocation.map({"min_cvar": "Minimum CVaR", "min_variance": "Minimum variance",
+                                            "max_sharpe": "Maximum Sharpe"})
+        o["run"] = o.run.str.split(" ").str[0].map({"v1": "Seven-ETF run 1", "v2": "Seven-ETF run 2"})
         for t in [*U.TICKERS, "excluded_weight"]:
             o[t] = o[t].map(lambda x: "·" if abs(x) < 5e-4 else pct(x))
-        st.markdown("**Before the four-ETF rule existed**, the optimisers were free to use all seven ETFs:")
+        st.markdown("**In earlier runs the optimisers could use all seven ETFs.** What they chose:")
         st.dataframe(o.rename(columns={"excluded_weight": "EFA+EEM+XLK"}), hide_index=True, width="stretch")
-        st.markdown("No risk-minimising optimiser in either run bought EFA or EEM; XLK appeared only in the return-seeking ones. "
-                    "The v2 selected portfolio already held only these four.")
+        st.markdown("Neither risk-minimising optimiser bought EFA or EEM in either run; XLK appeared only in the "
+                    "return-seeking one.")
         st.markdown("**The final rule (monthly EWMA risk parity) run on four versus seven ETFs**, same settings and dates:")
         st.dataframe(pd.DataFrame({
             "Universe": dyn.index, "CAGR": dyn.cagr.map(lambda x: pct(x, 2)), "Volatility": dyn.volatility.map(pct),
             "Largest fall": dyn.max_fall.map(pct), "Daily ES99": dyn.es99_daily.map(lambda x: pct(x, 2)),
             "GFC": dyn["GFC return"].map(pct), "COVID": dyn["COVID return"].map(pct), "2022": dyn["Rates 2022 return"].map(pct),
             "Average equity weight": dyn.average_equity_target.map(pct)}), hide_index=True, width="stretch")
-        st.markdown(f"Seven ETFs earned {pct(d7.cagr - d4.cagr, 2)} a year more but fell {pct(d7.max_fall)} at worst, beyond the "
-                    f"{CFG['drawdown_limit']:.0%} limit, against {pct(d4.max_fall)}; in the GFC it lost {pct(-d7['GFC return'])} "
+        st.markdown(f"Seven ETFs earned {pct(d7.cagr - d4.cagr, 2)} a year more but fell {pct(d7.max_fall)} at worst, "
+                    f"against {pct(d4.max_fall)}; in the GFC it lost {pct(-d7['GFC return'])} "
                     f"against {pct(-d4['GFC return'])}. For a fund whose first aim is avoiding large losses, the four-ETF version "
                     "is the better trade.")
         st.caption(f"Paths from {d4.start} (500-day warm-up), lambda 0.97, 750-day window, zero cost, no reserve withdrawals.")
@@ -396,8 +397,6 @@ def page_portfolio():
     dd = F.drawdown(wealth)
     fig = go.Figure([go.Scatter(x=dd.index, y=dd, name="Final portfolio", fill="tozeroy", line=dict(color=ACCENT, width=1.5)),
                      go.Scatter(x=dd.index, y=F.drawdown(bw), name="40/60 benchmark", line=dict(color=ALT, width=1, dash="dot"))])
-    fig.add_hline(y=-CFG["drawdown_limit"], line_dash="dash", line_color="#e34948",
-                  annotation_text=f"−{CFG['drawdown_limit']:.0%} decline limit", annotation_position="bottom left")
     shade_crises(fig, dd.index[0], dd.index[-1])
     st.plotly_chart(style(fig, 300, "Drawdown").update_yaxes(tickformat=".0%"), width="stretch")
 
@@ -655,14 +654,15 @@ def page_stress():
                       "As run: largest fall": pct(-p["max_fall"]) if p else "n/a",
                       "Worst day": f"{p['worst_day']} ({pct(p['worst_day_return'])})" if p else "n/a",
                       "Today's target, held": pct(h["return"]) if h and h.get("status") == "ok" else "n/a",
-                      "Held: largest fall": pct(-h["drawdown"]) if h and h.get("status") == "ok" else "n/a",
-                      f"Within {CFG['drawdown_limit']:.0%} limit": tick(p["max_fall"] <= CFG["drawdown_limit"]) if p else "n/a"})
+                      "Held: largest fall": pct(-h["drawdown"]) if h and h.get("status") == "ok" else "n/a"})
     st.dataframe(pd.DataFrame(table), hide_index=True, width="stretch")
-    over = [s["scenario"] for s in rows if s["today_buy_hold"] and -s["today_buy_hold"]["drawdown"] > CFG["drawdown_limit"]]
+    over = [s for s in rows if s.get("path") and s["today_buy_hold"] and s["today_buy_hold"].get("status") == "ok"
+            and -s["today_buy_hold"]["drawdown"] > s["path"]["max_fall"]]
     if over:
-        st.warning(f"Bought at the start of {' and '.join(over)} and left to drift, today's target would have fallen more than the "
-                   f"{CFG['drawdown_limit']:.0%} limit. The monthly rule stayed inside it by cutting risk as volatility rose; a crash "
-                   "that arrives before the next month-end meets today's weights.")
+        st.warning("Bought at the start of " + " and ".join(f"{s['scenario']} ({pct(-s['today_buy_hold']['drawdown'])} fall)" for s in over)
+                   + " and left to drift, today's target would have fallen further than the strategy did as run ("
+                   + ", ".join(pct(s["path"]["max_fall"]) for s in over) + "). The monthly rule cut risk as volatility rose; "
+                   "a crash that arrives before the next month-end meets today's weights.")
 
     st.subheader("Which ETFs did the damage (as run, USD)")
     fig = go.Figure()
