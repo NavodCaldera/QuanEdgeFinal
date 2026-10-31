@@ -61,7 +61,7 @@ def overlay_flags(decisions, spy_close, spread, warning_months=24, trend_months=
     state, flags = False, {}
     for d in decisions:
         m = d + pd.offsets.MonthEnd(0)
-        past = monthly.loc[:d]
+        past = monthly.loc[:m]          # month label m is the calendar month-end; its value is the close at d
         if len(past) < trend_months:
             flags[d] = False; continue
         below = bool(past.iloc[-1] < past.iloc[-trend_months:].mean())

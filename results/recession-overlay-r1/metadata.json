@@ -1,0 +1,36 @@
+{
+  "task": "PORT-029",
+  "prereg_tag": "prereg-v6",
+  "label": "Mandate v6 (prereg-v6): v5 strategy plus a pre-registered recession overlay; designed in a session that had seen the 2005-2026 data, so a retrospective portfolio evaluation, not an untouched test.",
+  "evaluation_label": "retrospective portfolio evaluation",
+  "created": "2026-10-31T15:52:59+00:00",
+  "data_hash": "76bac76cbc98b5ce62291bd6257600047cc20857943d363edd1f807f743d4d0d",
+  "macro_hashes": {
+    "DGS10": "832561da159329caf7585adcefbff51f8c655106d4768fe58fe93388c2ef827a",
+    "DTB3": "8bad8db7dea9be5eb32ff07dd8b69c268571c649ed4d80808fcae5288cd1d143"
+  },
+  "config_hash": "280c9f068b661c6834d6f0cd2d975bb3d0e96db7f83f1f747aee2bc38e7c6157",
+  "strategy": {
+    "type": "dynamic_ewma_risk_parity",
+    "rebalance": "M",
+    "ewma_lambda": 0.97,
+    "window": 750,
+    "min_history": 500
+  },
+  "overlay": {
+    "warning": "10y minus 3m T-bill (bond-equivalent) monthly mean < 0 in any of the last 24 months",
+    "confirmation": "SPY month-end close < mean of last 12 month-end closes",
+    "action": "SPY and XLE halved, freed weight held as cash at 0%",
+    "exit": "first month-end with SPY month-end close > its 12-month mean",
+    "warning_months": 24,
+    "trend_months": 12,
+    "cut": 0.5,
+    "cash_rate": 0.0
+  },
+  "strategy_hash": "e3acccc6767abf1704e3718fe5c2299aac27b996ceaa02040eaeda1c9872696b",
+  "departures_from_v5_evaluation": [
+    "cash is held while the overlay is ON (C1 allows ETF weights summing below 1, the rest cash at 0%)",
+    "C2 and C3 use the latest effective target including any cash",
+    "forecasts and C4 use the v6 path's own daily returns, with the v6 strategy hash on every row"
+  ]
+}

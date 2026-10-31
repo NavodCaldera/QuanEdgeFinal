@@ -60,3 +60,12 @@ def test_flags_use_only_data_through_each_decision():
     s2 = spread.copy(); s2.loc[s2.index > cut] = 5.0
     f2 = ro.overlay_flags(decisions, p2["SPY"], s2)
     pd.testing.assert_series_equal(f1.loc[:cut], f2.loc[:cut])
+
+
+def test_decision_uses_its_own_month_end_close():
+    # the last trading day (28 Feb 2020) precedes the calendar label (29 Feb); the February close must be used
+    idx = pd.bdate_range("2019-01-01", "2020-03-31")
+    spy = pd.Series(100.0, idx); spy.loc["2020-02-28"] = 50.0          # only the Feb close is below its mean
+    spread = pd.Series(-1.0, pd.date_range("2018-01-31", "2020-03-31", freq="ME"))
+    f = ro.overlay_flags(pd.DatetimeIndex([pd.Timestamp("2020-01-31"), pd.Timestamp("2020-02-28")]), spy, spread)
+    assert not f.loc["2020-01-31"] and f.loc["2020-02-28"]
