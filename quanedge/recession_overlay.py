@@ -263,3 +263,46 @@ def signals(end="2026-09-30"):
     c = pd.to_numeric(pd.read_csv(config.ROOT/"context/fred/BAA10Y.csv", index_col=0, parse_dates=True).iloc[:, 0], errors="coerce")
     out["credit_spread"] = c.loc[:end].resample("ME").last().reindex(out.index)
     return out
+
+
+def episodes(path, core):
+    """One row per overlay episode: first and last month-end decision ON, the decision that
+    switched it off, and the v6 and v5-core returns from the entry close to the exit close."""
+    on = path.overlay_on.astype(bool); dec = path.index[path.rebalanced.astype(bool)]
+    flags = on.loc[dec]; rows = []; start = None
+    for d, f in flags.items():
+        if f and start is None:
+            start = d
+        elif not f and start is not None:
+            rows.append((start, d)); start = None
+    if start is not None:
+        rows.append((start, path.index[-1]))
+    out = []
+    for a, b in rows:
+        r6 = float((1 + path["return"].loc[a:b].iloc[1:]).prod() - 1)
+        r5 = float((1 + core["return"].loc[a:b].iloc[1:]).prod() - 1)
+        out.append({"on": a.date(), "off": b.date(), "months": int(((dec > a) & (dec <= b)).sum()),
+                    "v6_return": r6, "core_return": r5, "difference": r6 - r5})
+    return pd.DataFrame(out)
+
+
+def safeguard_backtest(fc, path, strategy_hash, alpha=.99):
+    """Disclosed safeguard: in calendar months the overlay switches, the daily limit is the higher
+    of the GARCH-EVT and FHS forecasts; other months use GARCH-EVT. Recomputed from saved forecasts."""
+    from .backtest import assess
+    on = path.overlay_on.astype(bool)
+    switch_months = set(path.index[on != on.shift(1, fill_value=on.iloc[0])].to_period("M"))
+    level = f"{alpha*100:g}"
+    frame = fc.copy()
+    in_switch = frame.index.to_period("M").isin(list(switch_months))
+    frame[f"var_safeguard_{level}"] = np.where(in_switch, np.fmax(frame[f"var_garch_evt_{level}"], frame[f"var_fhs_{level}"]),
+                                               frame[f"var_garch_evt_{level}"])
+    res = assess(frame, strategy_hash, "safeguard", alpha)
+    res["switch_days"] = int(in_switch.sum())
+    return res
+
+
+def warning_expiry(sig):
+    """Month-end after which the yield-curve warning lapses (last inverted month + 24 months), or None."""
+    inv = sig.index[sig.spread < 0]
+    return None if not len(inv) else (inv[-1] + pd.offsets.MonthEnd(OVERLAY["warning_months"])).date()

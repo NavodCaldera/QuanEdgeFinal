@@ -1474,7 +1474,7 @@ def page_data():
 - **Settings:** EWMA λ = {ST['ewma_lambda']}, window {ST['window']} days, first target after
   {ST['min_history']} days, month-end decisions, universe SPY, AGG, GLD, XLE.{OV}
 - **Settings read from** `config/final.yaml`: NAV, seed, Monte Carlo size, rolling window and refit interval.
-- **Model shown:** {F.MODELS[MODEL]}. {"The v5 core is the same strategy without the overlay and is kept for comparison." if V6 else "v5 is the earlier recommendation; the final model is v6."}
+- **Model shown:** v6, monthly dynamic EWMA risk parity with the recession overlay (final). The v5 core is the same strategy without the overlay.
 - **Technical report (v5 wording, not yet regenerated for v6):** `results/final-report-r1/technical_report.pdf`, built by `python -m quanedge.final_report` from the same
   evidence and calculations as this dashboard.
 """)
