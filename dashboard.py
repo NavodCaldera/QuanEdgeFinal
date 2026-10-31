@@ -8,6 +8,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 from quanedge import final_portfolio as F
+from quanedge import universe as U
 from quanedge.risk.models import LABEL
 from quanedge.stress import SCENARIOS
 
@@ -79,6 +80,11 @@ def risk(data_hash, start, end, weights_key):
 @st.cache_resource(show_spinner="Bootstrapping the risk estimates")
 def intervals(data_hash, weights_key):
     return F.bootstrap(RETURNS, dict(weights_key), VALUE)
+
+
+@st.cache_resource(show_spinner="Measuring what each ETF adds")
+def universe(data_hash):
+    return U.load_saved(data_hash) or U.evidence(*U.load())
 
 
 @st.cache_resource(show_spinner="Simulating 25 years of cash reserves")
@@ -178,6 +184,8 @@ def page_decision():
         st.markdown("\n".join(f"- **{k}:** {v}" for k, v in ev))
         st.caption("Backtests 2017-01-03 to 2026-09-30 on the strategy's own forecasts; returns are a retrospective evaluation.")
 
+    why_four(contrib.es_share)
+
     latest = F.latest_forecast(FC, CFG["challenger"], .99, VALUE)
     st.subheader("Recommendation to the committee")
     st.markdown(
@@ -223,6 +231,125 @@ def page_decision():
                     f"2017-2026 ({ge['zone']}). FHS: {fhs['breaches']}, clustered.\n- EVT tail shape ξ = {xi['xi']:.2f} "
                     f"± {1.96*xi['xi_se']:.2f}: a fat tail, estimated from {xi['n_exceed']} days.\n- All of this is history the "
                     "strategy was chosen after seeing; there is no untouched test period.")
+
+
+def why_four(es_share):
+    """Decision page section: why SPY, AGG, GLD and XLE, and not EFA, EEM or XLK."""
+    u = universe(EV["data_hash"])
+    corr, cr = u["correlation"], u["crises"].set_index("etf")
+    rg = u["regimes"].set_index("regime"); bets = u["bets"].set_index("set")
+    sp = u["spanning"].set_index("etf"); dyn = u["parity_dynamic"].set_index("universe")
+    st_ = u["parity_static"].set_index("universe"); opt = u["optimisers"]
+    shock, stress = rg.loc["Rate shock (10y yield +0.25 pt)"], rg.loc["Equity stress (VIX > 30 or SPY < -5%)"]
+    hi = rg.loc["High inflation (CPI y/y >= 3%)"]
+    four, seven = bets.loc["Four (SPY, AGG, GLD, XLE)"], bets.loc["All seven"]
+    d4, d7 = dyn.loc["Four ETFs"], dyn.loc["All seven ETFs"]
+
+    st.subheader("Why these four ETFs")
+    st.markdown(
+        f"Each of the four responds to a different economic condition, so together they cover the four conditions an endowment "
+        f"must live through: growth, recession, inflation and a loss of confidence. EFA, EEM and XLK are a second, third and "
+        f"fourth copy of the same equity risk as SPY. Adding all three raises the number of independent bets only from "
+        f"**{four.effective_bets:.2f} to {seven.effective_bets:.2f}**, and in risk parity it would move the equity share "
+        f"of risk from {pct(st_.loc['Four ETFs', 'equity_risk_share'], 0)} to {pct(st_.loc['All seven ETFs', 'equity_risk_share'], 0)}.")
+    cards = {
+        "SPY": ("Growth", f"Return engine: {pct(cr.loc['SPY', 'annual return 2005-2026'])} a year since 2005."),
+        "AGG": ("Recession", f"Gained {pct(cr.loc['AGG', 'GFC return'])} in the GFC; {pct(stress['AGG'], 1)} a month in equity-stress "
+                             f"months, when every equity ETF lost about {pct(-stress['SPY'], 0)}."),
+        "GLD": ("Loss of confidence", f"Gained {pct(cr.loc['GLD', 'GFC return'])} in the GFC and {pct(stress['GLD'], 1)} a month in "
+                                      "equity-stress months; correlation with SPY "
+                                      f"{corr.loc['GLD', 'SPY']:.2f}."),
+        "XLE": ("Inflation", f"The only ETF that gained in 2022 ({pct(cr.loc['XLE', 'Rates 2022 return'])}); "
+                             f"{pct(shock['XLE'], 1)} a month when the 10-year yield jumped, AGG {pct(shock['AGG'], 1)}."),
+    }
+    for col, t in zip(st.columns(4), F.UNIVERSE):
+        title, text = cards[t]
+        with col.container(border=True):
+            st.markdown(f"**{t}** · {title}")
+            st.caption(text)
+
+    tabs = st.tabs(["Economic roles", "Fundamentals", "Overlap (technical)", "Seven-ETF test", "What this does not prove"])
+    with tabs[0]:
+        st.markdown("Average **monthly** return of each ETF in four macro conditions, 2005-2026. Held ETFs first.")
+        order = F.UNIVERSE + U.DROP
+        show = rg[order].map(lambda x: f"{100*x:+.2f}%")
+        show.insert(0, "Months", rg.months)
+        st.dataframe(show, width="stretch")
+        st.markdown(
+            f"- **Rate shocks** ({int(shock.months)} months): bonds and gold lost ({pct(shock['AGG'], 1)}, {pct(shock['GLD'], 1)}); "
+            f"XLE gained {pct(shock['XLE'], 1)}. It is the only eligible ETF whose profits rise with energy prices, a main "
+            "driver of inflation shocks such as 2022.\n"
+            f"- **Equity stress** ({int(stress.months)} months): all five equity ETFs lost {pct(-stress[U.EQUITY].max(), 1)} to "
+            f"{pct(-stress[U.EQUITY].min(), 1)}; AGG and GLD were the only positive holdings. International and technology "
+            "equity offered no shelter.\n"
+            f"- **High inflation** ({int(hi.months)} months, CPI above 3%): SPY earned {pct(hi['SPY'], 1)} a month against "
+            f"{pct(rg.loc['Low inflation (CPI y/y < 3%)', 'SPY'], 1)} in low inflation; XLE ({pct(hi['XLE'], 1)}) and GLD "
+            f"({pct(hi['GLD'], 1)}) held up best of the four. XLK also did well ({pct(hi['XLK'], 1)}), so this row alone "
+            "does not rule it out; the overlap tab does.")
+        st.caption("Month-end classification with US CPI as published (revised data), FRED DGS10 and VIXCLS. Descriptive: the "
+                   "regimes are identified after the fact and are not trading signals.")
+    with tabs[1]:
+        st.markdown("\n".join(f"- **{t} ({U.ROLE[t][0]}):** {U.ROLE[t][1]}" for t in F.UNIVERSE + U.DROP))
+        st.markdown(
+            "XLK and XLE are both sectors of the S&P 500, so both already sit inside SPY. The difference is behaviour: XLK moves with "
+            f"SPY (correlation {corr.loc['XLK', 'SPY']:.2f}, beta {sp.loc['XLK', 'beta_spy']:.2f}), a leveraged bet on the same "
+            f"growth stocks; XLE is the least SPY-like equity ETF ({corr.loc['XLE', 'SPY']:.2f}) because its profits follow "
+            "commodity prices. EFA and EEM add currency exposure that a US-dollar fund paying US-dollar reserves does not need.")
+    with tabs[2]:
+        which = st.radio("Correlation of daily log returns", ["All days", f"SPY's worst 5% of days ({u['stress_days']} days)"],
+                         horizontal=True, key="why_corr")
+        m = corr if which == "All days" else u["stress_correlation"]
+        order = F.UNIVERSE + U.DROP; m = m.loc[order, order]
+        fig = go.Figure(go.Heatmap(z=m.values, x=order, y=order, zmin=-1, zmax=1, colorscale="RdBu_r",
+                                   text=m.round(2).values, texttemplate="%{text}", hovertemplate="%{y}-%{x}: %{z:.2f}<extra></extra>"))
+        st.plotly_chart(style(fig, 380, legend=False).update_yaxes(autorange="reversed"), width="stretch")
+        b = u["bets"].copy()
+        st.dataframe(pd.DataFrame({"ETF set": b.set, "ETFs": b.etfs, "Independent bets": b.effective_bets.round(2),
+                                   "Bets per ETF": b.bets_per_etf.round(2), "First factor": b.first_factor_share.map(pct)}),
+                     hide_index=True, width="stretch")
+        st.caption("Independent bets: exp(entropy) of the correlation matrix's eigenvalue shares; 1 means one common factor, N means "
+                   "N unrelated assets.")
+        st.markdown("**What each excluded ETF adds once the four are held** (daily regression on SPY, AGG, GLD, XLE, HAC errors)")
+        st.dataframe(pd.DataFrame({"ETF": sp.index, "Share explained by SPY": sp.r2_on_spy.map(pct),
+                                   "Share explained by the four": sp.r2_on_four.map(pct),
+                                   "Own volatility": sp.volatility.map(pct), "Volatility left over": sp.residual_volatility.map(pct),
+                                   "Unexplained return a year": sp.alpha_annual.map(lambda x: f"{100*x:+.1f}%"),
+                                   "t-statistic": sp.alpha_t.round(1)}), hide_index=True, width="stretch")
+        st.markdown(f"EFA and EEM added risk and earned **less** than the mix of the four that tracks them best "
+                    f"(t {sp.loc['EFA', 'alpha_t']:.1f} and "
+                    f"{sp.loc['EEM', 'alpha_t']:.1f}). XLK's extra {pct(sp.loc['XLK', 'alpha_annual'])} a year is not "
+                    f"statistically clear (t {sp.loc['XLK', 'alpha_t']:.1f}).")
+    with tabs[3]:
+        o = opt[["run", "allocation", *U.TICKERS, "excluded_weight"]].copy()
+        for t in [*U.TICKERS, "excluded_weight"]:
+            o[t] = o[t].map(lambda x: "·" if abs(x) < 5e-4 else pct(x))
+        st.markdown("**Before the four-ETF rule existed**, the optimisers were free to use all seven ETFs:")
+        st.dataframe(o.rename(columns={"excluded_weight": "EFA+EEM+XLK"}), hide_index=True, width="stretch")
+        st.markdown("No risk-minimising optimiser in either run bought EFA or EEM; XLK appeared only in the return-seeking ones. "
+                    "The v2 selected portfolio already held only these four.")
+        st.markdown("**The final rule (monthly EWMA risk parity) run on four versus seven ETFs**, same settings and dates:")
+        st.dataframe(pd.DataFrame({
+            "Universe": dyn.index, "CAGR": dyn.cagr.map(lambda x: pct(x, 2)), "Volatility": dyn.volatility.map(pct),
+            "Largest fall": dyn.max_fall.map(pct), "Daily ES99": dyn.es99_daily.map(lambda x: pct(x, 2)),
+            "GFC": dyn["GFC return"].map(pct), "COVID": dyn["COVID return"].map(pct), "2022": dyn["Rates 2022 return"].map(pct),
+            "Average equity weight": dyn.average_equity_target.map(pct)}), hide_index=True, width="stretch")
+        st.markdown(f"Seven ETFs earned {pct(d7.cagr - d4.cagr, 2)} a year more but fell {pct(d7.max_fall)} at worst, beyond the "
+                    f"{CFG['drawdown_limit']:.0%} limit, against {pct(d4.max_fall)}; in the GFC it lost {pct(-d7['GFC return'])} "
+                    f"against {pct(-d4['GFC return'])}. For a fund whose first aim is avoiding large losses, the four-ETF version "
+                    "is the better trade.")
+        st.caption(f"Paths from {d4.start} (500-day warm-up), lambda 0.97, 750-day window, zero cost, no reserve withdrawals.")
+    with tabs[4]:
+        st.markdown(
+            f"- **Chosen after seeing the data.** The four-ETF rule was written on 30 October 2026 with 2005-2026 correlations in "
+            "view (PLAN.md 13c). Everything above is retrospective.\n"
+            f"- **XLE is not a low-correlation asset.** Its correlation with SPY is {corr.loc['XLE', 'SPY']:.2f}, "
+            f"{u['stress_correlation'].loc['XLE', 'SPY']:.2f} on SPY's worst days; it fell {pct(-cr.loc['XLE', 'COVID return'])} in "
+            f"COVID and carries {pct(es_share['XLE'])} of today's 99% ES with {pct(W['XLE'])} of the money. It is held for "
+            "inflation protection; risk parity sizes it by volatility, not by tail loss.\n"
+            f"- **Excluding XLK gave up return.** XLK earned {pct(cr.loc['XLK', 'annual return 2005-2026'])} a year, the most of the "
+            "seven; the seven-ETF rule had the higher CAGR. The case for leaving it out is concentration and drawdown, not return.\n"
+            "- **Correlations move.** SPY-AGG was negative 2007-2019 and positive from 2020; bonds did not protect in 2022.\n"
+            "- **Policy, not a brief rule.** The brief allows any combination of the seven ETFs; holding four is our choice.")
 
 
 def page_portfolio():
@@ -690,7 +817,9 @@ def page_data():
              "constant over time; volatility clearly changes.")
     st.subheader("Reproduce")
     st.code("python -m pip install -r requirements.lock.txt\npython -m quanedge.data.run --check-only\n"
-            "python -m quanedge.dynamic_parity_eval   # rebuilds results/dynamic-parity-r1\npython -m streamlit run dashboard.py")
+            "python -m quanedge.dynamic_parity_eval   # rebuilds results/dynamic-parity-r1\n"
+            "python -m quanedge.universe              # rebuilds results/universe-r1 (why these four ETFs)\n"
+            "python -m streamlit run dashboard.py")
     st.download_button("Download the daily strategy path (CSV)", PATH.to_csv().encode(), "final_portfolio_path.csv", "text/csv")
     st.download_button("Download the risk forecasts (CSV)", FC.to_csv().encode(), "final_portfolio_forecasts.csv", "text/csv")
 

@@ -94,3 +94,4 @@ def test_dashboard_runs_without_errors():
     app = AppTest.from_file(str(ROOT/"dashboard.py")).run(timeout=180)
     assert not app.exception and not app.error
     assert any(m.label == "1-day 99% ES" for m in app.metric)
+    assert "Why these four ETFs" in [s.value for s in app.subheader] and len(app.tabs) == 5
