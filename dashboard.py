@@ -1,4 +1,4 @@
-"""Investment committee dashboard for the final portfolio: monthly dynamic EWMA risk parity.
+"""Investment committee dashboard for the final portfolio (v6): monthly dynamic EWMA risk parity with a recession overlay.
 
 Start: python -m streamlit run dashboard.py
 Calculations live in quanedge/final_portfolio.py; this file only arranges and labels them.
@@ -66,8 +66,8 @@ def shade_crises(fig, start=None, end=None):
 
 # ---------------------------------------------------------------- data (cached)
 @st.cache_data(show_spinner="Loading the frozen evidence and prices")
-def load():
-    ev = F.load_evidence()
+def load(model):
+    ev = F.load_evidence(model=model)
     prices, returns, rf, cpi = F.load_market()
     return ev, prices, returns, rf, cpi
 
@@ -89,7 +89,7 @@ def universe(data_hash):
 
 
 @st.cache_resource(show_spinner="Simulating 25 years of cash reserves")
-def reserve(data_hash):
+def reserve(strategy_hash):
     return F.reserve_test(PATH), F.reserve_history(PATH, CPI)
 
 
@@ -102,13 +102,16 @@ def overlay(data_hash):
     return {"ev": ev, "core": RO.core_path(), "signals": RO.signals(CFG["snapshot_end"])}
 
 
+MODEL = st.sidebar.radio("Model", list(F.MODELS), format_func=F.MODELS.get,
+                         help="v6 is the final model (owner decision, 31 Oct 2026). v5 is the same strategy without the overlay, for comparison.")
+V6 = MODEL == "v6"
 try:
-    EV, PRICES, RETURNS, RF, CPI = load()
+    EV, PRICES, RETURNS, RF, CPI = load(MODEL)
 except (F.EvidenceError, FileNotFoundError, KeyError) as err:
     st.title("Endowment risk dashboard")
     st.error(f"The saved evidence cannot be used: {err}")
     st.write("Rebuild it from the repository root, then reload:")
-    st.code("python -m quanedge.data.run --check-only\npython -m quanedge.dynamic_parity_eval")
+    st.code("python -m quanedge.data.run --check-only\npython -m quanedge.dynamic_parity_eval\npython -m quanedge.recession_overlay")
     st.stop()
 
 CFG = F.policy()
@@ -135,7 +138,7 @@ def sidebar():
         dates = (pd.Timestamp(CFG["evaluation_start"]).date(), LAST_FC)
     st.sidebar.caption(f"Invested NAV {usd(VALUE)} (USD 10m fund less the USD 400,000 cash reserve). "
                        f"Risk horizon one trading day. Data to {CFG['snapshot_end']}.")
-    st.sidebar.caption(f"Strategy hash {SH[:8]} · run {F.RUN}")
+    st.sidebar.caption(f"Strategy hash {SH[:8]} · run {EV['run']}")
     return alpha, method, pd.Timestamp(dates[0]), pd.Timestamp(dates[1])
 
 
@@ -149,7 +152,7 @@ def headline(alpha):
 # ---------------------------------------------------------------- pages
 def page_decision():
     alpha, method, start, end = SETTINGS
-    st.title("Final portfolio: monthly dynamic risk parity")
+    st.title("Final portfolio: monthly dynamic risk parity" + (" with recession overlay" if V6 else " (v5 core, comparison)"))
     st.caption("Serendib University Endowment Fund · four ETFs (SPY, AGG, GLD, XLE) · retrospective portfolio evaluation")
     models, table, row = headline(.99)
     perf = F.performance(PATH, RETURNS, RF, CPI)
@@ -171,6 +174,9 @@ def page_decision():
                               "Vol. share": [pct(contrib.vol_contribution[t]) for t in F.UNIVERSE],
                               "ES share": [pct(contrib.es_share[t]) for t in F.UNIVERSE]})
         st.dataframe(frame, hide_index=True, width="stretch")
+        if V6:
+            st.caption("Recession overlay at the last close: " + ("**ON**: half of SPY and XLE held as cash." if PATH.overlay_on.iloc[-1]
+                       else "**off** (yield-curve warning on, but SPY is above its 12-month average). See the Recession overlay page."))
         st.caption(f"Target set at the {PATH.index[-1].date()} close from data up to that close; next review at the "
                    "next month-end close. Each ETF carries a quarter of the expected volatility, but XLE and SPY carry most "
                    "of the tail loss.")
@@ -188,7 +194,7 @@ def page_decision():
               ("99% VaR backtest, FHS", f"{fhs['breaches']} breaches vs {fhs['expected_breaches']:.1f}, cond. coverage p "
                f"{fhs['conditional_coverage_p']:.3f}: breaches cluster"),
               ("Hypothetical equity-bond shock", f"{usd(hyp['loss_usd'])} ({pct(-hyp['return'])})")]
-        test, _ = reserve(EV["data_hash"]); r25 = test["results"][-1]
+        test, _ = reserve(SH); r25 = test["results"][-1]
         ev.append((f"{r25['year']}-year cash-reserve test", f"every reserve paid in {pct(r25['all_payments_funded'])} of resampled paths; "
                    f"USD 10m kept in real terms in {pct(r25['real_capital_preserved'])}"))
         st.markdown("\n".join(f"- **{k}:** {v}" for k, v in ev))
@@ -200,10 +206,14 @@ def page_decision():
     st.subheader("Recommendation to the committee")
     st.markdown(
         "**Hold this portfolio**, monitored as follows. This is the team's proposal for the owner's and committee's review.\n\n"
-        f"1. **Hold** the current target and reset it at every month-end close by the rule on the Portfolio page.\n"
+        f"1. **Hold** the current target and reset it at every month-end close by the rule on the Portfolio page"
+        + (" and the recession overlay (half of SPY and XLE to cash while the yield curve has been inverted in the last 24 months "
+           "and SPY is below its 12-month average).\n" if V6 else ".\n") +
         f"2. **Daily risk:** measure 99% one-day risk with GARCH-EVT refitted as in its backtest (latest forecast, for "
-        f"{latest['date']}: VaR {usd(latest['var_usd'])}); its breaches matched the 99% level in testing. FHS stays as a second "
-        "view because its breaches cluster.\n"
+        f"{latest['date']}: VaR {usd(latest['var_usd'])}); "
+        + ("its breach count matched the 99% level, but breaches clustered, mostly around overlay switches, so use the higher of "
+           "the GARCH-EVT and FHS forecasts in any month the overlay switches.\n" if V6 else
+           "its breaches matched the 99% level in testing. FHS stays as a second view because its breaches cluster.\n") +
         f"3. **Review triggers:** an extra committee review if the fall from the previous high passes 15% (the largest so far "
         f"was {pct(-perf['maximum_drawdown'])}) or if 99% VaR breaches exceed 9 in any 250 days (Basel red zone).\n"
         f"4. **Expectation setting:** the real return has been about {pct(perf['real_cagr'], 1)} a year after US CPI inflation. "
@@ -367,7 +377,9 @@ def page_portfolio():
     alpha, method, start, end = SETTINGS
     st.title("Portfolio")
     st.caption("Monthly dynamic EWMA risk parity · each month-end, weights are reset so each ETF contributes an equal share "
-               "of expected volatility · zero trading cost · no cash-reserve withdrawals in the replay")
+               "of expected volatility · zero trading cost · no cash-reserve withdrawals in the replay"
+               + (" · recession overlay: half of SPY and XLE in cash in months it is on (target charts show the risk-parity "
+                  "targets before the overlay; holdings and returns include it)" if V6 else ""))
     period = st.radio("Period", ["Full history (from 2006-12-28)", "Backtest date range from the sidebar"], horizontal=True)
     a, b = (None, None) if period.startswith("Full") else (start, end)
     path = PATH.loc[a:b]
@@ -757,11 +769,27 @@ def page_contributions():
 def page_limits():
     st.title("Assumptions & Limitations")
     st.caption("What this analysis does not capture, in plain language.")
-    test, _ = reserve(EV["data_hash"]); r25 = test["results"][-1]
+    test, _ = reserve(SH); r25 = test["results"][-1]
     reserve_line = (f"In a {r25['year']}-year test that resamples the strategy's own monthly returns, every cash reserve was paid in "
                     f"{pct(r25['all_payments_funded'])} of paths, but the USD 10m was kept in real terms in only "
                     f"{pct(r25['real_capital_preserved'])}: the reserve grows {pct(CFG['reserve_growth'], 2)} a year, faster than US CPI. "
                     "These are illustrations from one history, not forecasts.")
+    backtest_line = ("- The breach counts of both risk models matched the 99% level, but the breaches came in clusters (independence "
+                     "tests failed), mostly around the months the overlay switches. Under the team's own pre-registered rule this "
+                     "is recorded as evaluation incomplete; the owner adopted v6 knowing it (31 October 2026, PLAN.md 13h)."
+                     if V6 else
+                     "- The backtest passed with GARCH-EVT, the backup model. The first-choice model (FHS) had breaches that came in "
+                     "clusters, which means risk rose faster than the model expected at the start of sudden shocks.")
+    overlay_block = ("""
+**About the recession overlay**
+- It uses the yield curve (inverted at some point in the last 24 months) confirmed by SPY below its 12-month average. The curve
+  preceded every US recession since 1969 but also gave false alarms (1966, 2022); the price check filters most of them.
+- Only two recessions (2008 and 2020) fall inside the 2005-2026 data, so the overlay's benefit rests mostly on economic reasoning
+  and the 60-year signal record, not on many tested episodes.
+- It holds cash (0%) while on. Cash is outside the brief's seven-ETF list; this is a disclosed policy choice.
+- It does not help in an inflation shock without a recession, such as 2022.
+- The rules were written in a session that had seen these crises; every number has a stated economic or published reason.
+""" if V6 else "")
     st.markdown("""
 **About the choice of portfolio**
 - This strategy was chosen after many alternatives had been tried on the same 2005-2026 data. Every number here is hindsight:
@@ -776,9 +804,9 @@ def page_limits():
   somewhat different answer (see the EVT page).
 - The risk numbers assume today's weights are held for a day. Over weeks, losses compound and monthly rebalancing changes the
   weights; multi-day risk is not the one-day figure times a square root.
-- The backtest passed with GARCH-EVT, the backup model. The first-choice model (FHS) had breaches that came in clusters, which
-  means risk rose faster than the model expected at the start of sudden shocks.
+BACKTEST_LINE
 
+OVERLAY_BLOCK
 **About the portfolio**
 - Risk parity balances everyday volatility. It does not balance crash losses: energy and US stocks carry most of the tail risk.
 - Bonds did not protect in 2022, when stocks and bonds fell together. Gold helped in 2008 but not in March 2020.
@@ -801,21 +829,24 @@ def page_limits():
 **About human review**
 - AI tools (Claude Code, Codex, Antigravity) helped write the code and documents. Independent human review of the calculations and the
   investment judgement is still pending, and solo entry eligibility has not been confirmed by the organisers.
-""".replace("RESERVE_LINE", reserve_line))
+""".replace("RESERVE_LINE", reserve_line).replace("BACKTEST_LINE", backtest_line).replace("OVERLAY_BLOCK", overlay_block))
 
 
 def page_data():
     st.title("Data & provenance")
-    meta = EV["meta"]
+    meta = EV["meta"]; ST = meta.get("settings") or meta["strategy"]
+    OV = ("\n- **Recession overlay (v6):** 10-year minus 3-month T-bill spread from FRED DGS10 and DTB3 (in the frozen raw data); "
+          "SPY 12-month average from the frozen prices. Unemployment (UNRATE) and the Baa credit spread (BAA10Y) were supplied by "
+          "the owner from FRED and are kept with SHA-256 hashes in `context/fred/` (tested, not used by the rule)." if V6 else "")
     st.markdown(f"""
 - **Prices:** Yahoo Finance adjusted closes via yfinance, frozen snapshot to {CFG['snapshot_end']} (`data/clean/prices_clean.csv`,
   SHA-256 `{EV['data_hash'][:16]}…`). Trading calendars aligned; anomalies flagged, not deleted.
 - **Risk-free rate:** FRED DTB3, converted from a discount basis to a bond-equivalent daily rate.
 - **Inflation:** FRED CPIAUCSL (US CPI, all urban consumers), index ratios as available on each date; never the level as a rate.
-- **Strategy evidence:** `results/{F.RUN}/` (pre-registered at tag `{meta['prereg_tag']}`, created {meta['created']}).
+- **Strategy evidence:** `results/{EV['run']}/` (pre-registered at tag `{meta['prereg_tag']}`, created {meta['created']}).
   Strategy hash `{SH}` on every forecast row; the dashboard refuses forecasts with another hash or a changed price file.
-- **Settings:** EWMA λ = {meta['settings']['ewma_lambda']}, window {meta['settings']['window']} days, first target after
-  {meta['settings']['min_history']} days, month-end decisions, universe {', '.join(meta['settings']['universe'])}.
+- **Settings:** EWMA λ = {ST['ewma_lambda']}, window {ST['window']} days, first target after
+  {ST['min_history']} days, month-end decisions, universe SPY, AGG, GLD, XLE.{OV}
 - **Settings read from** `config/final.yaml`: NAV, seed, Monte Carlo size, rolling window and refit interval.
 - **Technical report:** `results/final-report-r1/technical_report.pdf`, built by `python -m quanedge.final_report` from the same
   evidence and calculations as this dashboard.
@@ -827,7 +858,8 @@ def page_data():
              "constant over time; volatility clearly changes.")
     st.subheader("Reproduce")
     st.code("python -m pip install -r requirements.lock.txt\npython -m quanedge.data.run --check-only\n"
-            "python -m quanedge.dynamic_parity_eval   # rebuilds results/dynamic-parity-r1\n"
+            "python -m quanedge.dynamic_parity_eval   # rebuilds results/dynamic-parity-r1 (v5 core)\n"
+            "python -m quanedge.recession_overlay     # rebuilds results/recession-overlay-r1 (v6 final)\n"
             "python -m quanedge.universe              # rebuilds results/universe-r1 (why these four ETFs)\n"
             "python -m streamlit run dashboard.py")
     st.download_button("Download the daily strategy path (CSV)", PATH.to_csv().encode(), "final_portfolio_path.csv", "text/csv")
@@ -835,7 +867,7 @@ def page_data():
 
 
 def page_overlay():
-    st.title("Recession overlay (tested, not adopted)")
+    st.title("Recession overlay (part of the final model, v6)")
     o = overlay(EV["data_hash"])
     if "error" in o:
         st.error(f"The saved overlay evidence cannot be used: {o['error']}")
@@ -844,8 +876,8 @@ def page_overlay():
     ev, core, sig = o["ev"], o["core"], o["signals"]; path = ev["path"]; sm = ev["summary"]
     st.markdown("**Rule.** At each month-end, if the 10-year Treasury yield was below the 3-month T-bill yield in any of "
                 "the last 24 months **and** SPY closes below its 12-month average, half of SPY and XLE is held as cash. "
-                "It returns at the first month-end with SPY back above that average. Everything else is the recommended "
-                "strategy unchanged.")
+                "It returns at the first month-end with SPY back above that average. Everything else is the monthly "
+                "risk-parity strategy unchanged.")
     last = sig.iloc[-1]
     inv = sig.index[sig.spread < 0]
     c = st.columns(4)
@@ -854,13 +886,13 @@ def page_overlay():
                 help=f"Last inverted month: {inv[-1]:%b %Y}" if len(inv) else None)
     c[2].metric("SPY vs 12-month average", pct(last.spy/last.spy_12m_mean - 1), help="Below zero confirms the warning")
     c[3].metric("Sahm rule (backup)", f"{last.sahm_gap:+.2f} pt", help="Signals a recession at +0.50 points; not part of the rule")
-    st.info("Status: the overlay reduced drawdowns but its risk forecasts failed the clustering test (below), so it is "
-            "reported as tested evidence. The recommendation is the strategy without the overlay.")
+    st.info("Status: adopted by the owner as part of the final model (v6, 31 October 2026). It reduced drawdowns; its risk "
+            "forecasts matched the 99% breach count but the breaches clustered (below), which is disclosed.")
 
     st.subheader("Strategy with and without the overlay (from 2006-12-28)")
     g = (1 + path["return"]).cumprod()*VALUE; gc = (1 + core["return"]).cumprod()*VALUE
     fig = go.Figure()
-    fig.add_scatter(x=gc.index, y=gc, name="Recommended strategy", line=dict(color=ALT))
+    fig.add_scatter(x=gc.index, y=gc, name="Without overlay (v5 core)", line=dict(color=ALT))
     fig.add_scatter(x=g.index, y=g, name="With recession overlay", line=dict(color=ACCENT))
     on = path.overlay_on.astype(int).diff().fillna(path.overlay_on.iloc[0]).astype(int)
     for a, b in zip(path.index[on == 1], list(path.index[on == -1]) + [path.index[-1]]):
@@ -875,8 +907,8 @@ def page_overlay():
         for n, (a, b) in SCENARIOS.items():
             x = w.loc[a:b]; out[f"{n} (from peak)"] = pct((x/x.cummax() - 1).min())
         return out
-    st.dataframe(pd.DataFrame([row("Recommended strategy", core["return"], core),
-                               row("With recession overlay", path["return"], path)]).set_index("Strategy"), use_container_width=True)
+    st.dataframe(pd.DataFrame([row("Without overlay (v5 core)", core["return"], core),
+                               row("With recession overlay (v6, final)", path["return"], path)]).set_index("Strategy"), use_container_width=True)
 
     st.subheader("Risk-model backtest of the overlay path (99%, 2017-2026)")
     rows = []

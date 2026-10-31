@@ -21,7 +21,9 @@ from .portfolio import canonical_weights, replay, kpis
 from .stress import SCENARIOS, attribution, hypothetical, reverse_stress, stress_tests
 
 NAME = "v4d_monthly"
-RUN = "dynamic-parity-r1"
+RUN = "dynamic-parity-r1"           # v5 core (without the recession overlay)
+RUN_V6 = "recession-overlay-r1"     # v6 final model (owner decision 31 Oct 2026, PLAN.md 13h)
+MODELS = {"v6": "With recession overlay (v6, final)", "v5": "Without overlay (v5 core)"}
 UNIVERSE = ["SPY", "AGG", "GLD", "XLE"]
 BACKTEST_METHODS = ["historical", "normal", "evt", "fhs", "garch_evt"]
 
@@ -38,10 +40,21 @@ def policy():
     return yaml.safe_load((config.ROOT/"config/final.yaml").read_text(encoding="utf-8"))
 
 
-def load_evidence(root=None):
-    """Summary, metadata, daily path and forecasts of the final strategy, after identity checks."""
+def load_evidence(root=None, model="v5"):
+    """Summary, metadata, daily path and forecasts of a strategy, after identity checks.
+
+    model "v6" reads the final model (v5 core plus the recession overlay) from results/recession-overlay-r1."""
     from .risk import load_forecasts
     root = root or config.ROOT
+    if model == "v6":
+        from . import recession_overlay as ro
+        try:
+            e = ro.load_saved(root/"results"/RUN_V6)
+        except ro.OverlayEvidenceError as err:
+            raise EvidenceError(str(err)) from err
+        return {"summary": e["summary"], "meta": e["meta"], "strategy_hash": e["meta"]["strategy_hash"],
+                "data_hash": e["meta"]["data_hash"], "path": e["path"], "forecasts": e["forecasts"],
+                "folder": root/"results"/RUN_V6, "run": RUN_V6, "model": "v6"}
     folder = root/"results"/RUN
     summary = json.loads((folder/"summary.json").read_text(encoding="utf-8"))[NAME]
     meta = json.loads((folder/"metadata.json").read_text(encoding="utf-8"))
@@ -56,7 +69,7 @@ def load_evidence(root=None):
     if not (forecasts["weight_hash"] == sh).all():
         raise EvidenceError("forecast rows carry a different strategy hash")
     return {"summary": summary, "meta": meta, "strategy_hash": sh, "data_hash": data_hash,
-            "path": path, "forecasts": forecasts, "folder": folder}
+            "path": path, "forecasts": forecasts, "folder": folder, "run": RUN, "model": "v5"}
 
 
 def load_market(root=None):
@@ -85,7 +98,10 @@ def cpi_real(r, cpi):
 def current_target(path):
     """Target weights in force after the last decision close (the allocation to hold now)."""
     w = canonical_weights({t: float(path[f"target_{t}"].iloc[-1]) for t in UNIVERSE})
-    return {t: w[t] for t in UNIVERSE}
+    w = {t: w[t] for t in UNIVERSE}
+    if "overlay_on" in path and bool(path["overlay_on"].iloc[-1]):     # v6: half of SPY and XLE held as cash
+        w["SPY"] *= .5; w["XLE"] *= .5
+    return w
 
 
 def current_holdings(path):
