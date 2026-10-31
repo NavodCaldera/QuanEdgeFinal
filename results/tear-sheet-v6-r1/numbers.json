@@ -75,8 +75,9 @@
       "max_underwater_days": 349,
       "recovered_at_end": false,
       "observations": 4969,
-      "cpi_inflation": 0.02580085352362338,
-      "real_cagr": 0.036243540945549935,
+      "path_cpi_inflation": 0.02580085352362338,
+      "cpi_inflation": 0.0259,
+      "real_cagr": 0.03614339483408413,
       "rebalances": 238,
       "turnover_per_year": 1.0730886339724182
     },
@@ -95,8 +96,9 @@
       "max_underwater_days": 346,
       "recovered_at_end": false,
       "observations": 4969,
-      "cpi_inflation": 0.02580085352362338,
-      "real_cagr": 0.034902125261558004,
+      "path_cpi_inflation": 0.02580085352362338,
+      "cpi_inflation": 0.0259,
+      "real_cagr": 0.034802108789080854,
       "rebalances": 238,
       "turnover_per_year": 0.9529429718195725
     },
@@ -115,7 +117,7 @@
       "max_underwater_days": 564,
       "recovered_at_end": false,
       "observations": 4969,
-      "real_cagr": 0.03720772371871672
+      "real_cagr": 0.037107484425337844
     }
   },
   "models_99": {
@@ -323,5 +325,5 @@
   "prereg_tag": "prereg-v6",
   "evidence_run": "recession-overlay-r1",
   "evidence_run_v5": "dynamic-parity-r1",
-  "code_rev": "84d474ff6d17"
+  "code_rev": "a294a8b4ce0e"
 }
