@@ -779,3 +779,10 @@ AI assistance and actual human review:
 
 2026-10-31, DOC-011 refresh, tear sheet regenerated at 14d1dbb:
 - Rebuilt results/tear-sheet-v6-r1 from a clean checkout of 14d1dbb (uncommitted dashboard work in the main tree left untouched). Only change: real returns now deflate at 2.59% CPI (v6 3.62% -> 3.61%, v5 core 3.49% -> 3.48%) and the code id. All other figures identical. One page; tests/test_tear_sheet.py passes. Technical report final-report-r1 still describes v5. AI: Claude Code. Owner review pending.
+
+2026-10-31, DOC-012, technical report for the final model v6 (ready for review):
+- `python -m quanedge.final_report` now builds the v6 report by default into results/final-report-v6-r1/ (14-15 pages, enforced 7-15); `--model v5` still builds the v5 report (final-report-r1 left unchanged). Same evidence and functions as the dashboard (final_portfolio.py, model "v6").
+- v6 additions: recession-overlay recommendation and disclosure (pre-registered rule gives evaluation incomplete: GARCH-EVT and FHS breaches cluster, cond. coverage p 0.011 and 0.009; owner adopted v6; v5 core passes, p 0.091), policy row, new section 3.4 (rule, sources, v6 against v5 core: largest fall 13.9% vs 18.5%, GFC +1.8% vs -5.0%, 28 of 237 months in cash), v6 wording in 5.6 (count of breaches in or after switch months), limitations, recommendation table and monitoring (higher-of-two safeguard), Estrella-Mishkin and Faber references, wealth chart with the v5 core line and overlay months. The weekly/quarterly frequency table now compares like with like (core rule only).
+- Real returns: benchmark real CAGR now uses the same flat policy CPI basis as final_portfolio.performance (main changed it); the tear sheet was rebuilt for the same reason (v6 real 3.61%, not 3.62%).
+- Validation: tests/test_final_report.py (11, incl. 2 new v6 tests) and tests/test_tear_sheet.py (3) pass. Full suite: 256 passed, 2 failed, both pre-existing and unrelated (local tags prereg-v4 and prereg-v6 absent from this checkout). PDF pages rendered and inspected.
+- AI: Claude Code. Owner review pending.

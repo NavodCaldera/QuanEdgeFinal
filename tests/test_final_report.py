@@ -11,9 +11,38 @@ from quanedge.final_report import Doc, build, data_facts, num, to_markdown
 @pytest.fixture(scope="module")
 def report(tmp_path_factory):
     out = tmp_path_factory.mktemp("report")
-    folder, pages = build(out)
+    folder, pages = build(out, model="v5")
     text = "\n".join(p.extract_text() for p in PdfReader(folder/"technical_report.pdf").pages)
     return folder, pages, text, json.loads((folder/"numbers.json").read_text(encoding="utf-8"))
+
+
+@pytest.fixture(scope="module")
+def report_v6(tmp_path_factory):
+    out = tmp_path_factory.mktemp("report_v6")
+    folder, pages = build(out, model="v6")
+    text = "\n".join(p.extract_text() for p in PdfReader(folder/"technical_report.pdf").pages)
+    return folder, pages, text, json.loads((folder/"numbers.json").read_text(encoding="utf-8"))
+
+
+def test_v6_report_length_sections_and_disclosure(report_v6):
+    folder, pages, text, numbers = report_v6
+    assert 7 <= pages <= 15 and numbers["model"] == "v6"
+    for heading in ("3.4 The recession overlay", "Assumptions and limitations", "Recommendation and monitoring",
+                    "evaluation incomplete", "higher of"):
+        assert heading in text
+    assert json.loads((folder/"manifest.json").read_text(encoding="utf-8"))["model"] == "v6"
+
+
+def test_v6_report_quotes_the_v6_evidence(report_v6):
+    _, _, text, numbers = report_v6
+    ev = F.load_evidence(model="v6"); s = ev["summary"]; _, returns, rf, cpi = F.load_market()
+    assert numbers["strategy_hash"] == ev["strategy_hash"] and numbers["weights"] == F.current_target(ev["path"])
+    perf = F.performance(ev["path"], returns, rf, cpi)
+    assert numbers["performance"]["cagr"] == pytest.approx(s["realised"]["cagr"], abs=1e-9)
+    assert f"{100*perf['cagr']:.2f}%" in text and f"{-100*perf['maximum_drawdown']:.1f}%" in text
+    ge = next(v for v in s["validation"] if v["method"] == "garch_evt" and v["alpha"] == .99)
+    assert numbers["backtest_challenger_99"]["breaches"] == ge["breaches"] and f"GARCH-EVT {ge['breaches']} breaches" in text
+    assert numbers["overlay"]["months_on"] == len(s["overlay_months_on"])
 
 
 def test_report_length_and_required_sections(report):

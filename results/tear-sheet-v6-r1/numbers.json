@@ -117,7 +117,7 @@
       "max_underwater_days": 564,
       "recovered_at_end": false,
       "observations": 4969,
-      "real_cagr": 0.03720772371871672
+      "real_cagr": 0.037107484425337844
     }
   },
   "models_99": {
@@ -325,5 +325,5 @@
   "prereg_tag": "prereg-v6",
   "evidence_run": "recession-overlay-r1",
   "evidence_run_v5": "dynamic-parity-r1",
-  "code_rev": "14d1dbb4451f"
+  "code_rev": "a294a8b4ce0e"
 }
