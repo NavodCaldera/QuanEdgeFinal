@@ -187,6 +187,8 @@ def overlay_evidence(ev, ev5, returns, rf, cpi, V, cfg):
     return {"months_on": len(months), "months": int(len(month_on))-1, "periods": [[str(a), str(b)] for a, b in runs],
             "on_now": bool(on.iloc[-1]), "average_cash": float(s6["average_cash"]), "switch_months": [str(m) for m in switches],
             "breaches": int(len(br)), "breaches_near_switch": int(sum(d.to_period("M") in near for d in br)),
+            "days_near_switch_share": float(np.mean([d.to_period("M") in near for d in frame.index])),
+            "breaches_near_switch_2020": int(sum(d.to_period("M") in near and pd.Timestamp("2020-02-01") <= d < pd.Timestamp("2020-04-01") for d in br)),
             "v5_performance": F.performance(p5, returns, rf, cpi), "v5_stress": stress5, "v5_wealth": w5,
             "v5_validation": {(v["method"], v["alpha"]): v for v in s5["validation"]},
             "v5_strategy_hash": ev5["strategy_hash"], "es99_path": s6["es99"]["path"], "es99_path_v5": s5.get("es99", {}).get("path"),
@@ -825,8 +827,8 @@ def compose(N, D, figs):
          "The client's first priority: avoid large losses"],
         ["Daily risk budget", f"Historical one-day 99% ES of the current weights at most {pct(cfg['es_budget'], 0)} of NAV ({usd(budget)})",
          "ES measures how large tail losses are, not only how often they occur"],
-        *([["Recession overlay", upper_first(overlay_rule)+".", "Inversion has preceded every US recession since 1969 (Estrella and "
-             "Mishkin 1996); the 12-month trend confirms it and screens false alarms (section 3.4)"]] if V6 else []),
+        *([["Recession overlay", upper_first(overlay_rule)+".", "The curve's slope predicts recessions (Estrella and Mishkin 1996); "
+             "the 12-month trend confirms the warning and screens false alarms (section 3.4)"]] if V6 else []),
         ["Universe and concentration", "SPY, AGG, GLD, XLE; long-only, fully invested"
          +(", except cash at 0% while the overlay is on" if V6 else "")+"; no per-ETF caps. Equal risk contributions "
          f"spread volatility, not tail loss (XLE carries {pct(c.es_share['XLE'])} of ES)", f"EFA, EEM and XLK move with SPY (daily "
@@ -904,12 +906,14 @@ def compose(N, D, figs):
         doc.p("The core rule reacts to volatility, so it cuts risk only after markets have become turbulent. The overlay adds a slower, "
               "economic signal aimed at long downturns such as 2008. At each month-end close: (1) <b>warning</b>: the 10-year Treasury "
               "yield minus the 3-month bill yield (FRED DGS10 and DTB3, bond-equivalent, monthly mean) was negative in any of the last "
-              "24 months; an inverted curve has preceded every US recession since 1969 (Estrella and Mishkin 1996), and 24 months is the "
-              "upper end of its published 6-24 month lead. (2) <b>Confirmation</b>: SPY's month-end close is below the mean of its last 12 "
-              "month-end closes, a one-year trend filter (Faber 2007) that screens the curve's false alarms. (3) <b>Action</b>: while both "
+              "24 months; the curve's slope predicts US recessions (Estrella and Mishkin 1996), the team's 1962-2025 check found an "
+              "inversion before each of the eight recessions since 1969, and 24 months is the upper end of the published 6-24 month lead. (2) <b>Confirmation</b>: SPY's month-end close is below the mean of its last 12 "
+              "month-end closes, a trend filter of the kind Faber (2007) tests (he uses 10 months; 12 matches annual earnings), which "
+              "screens the curve's false alarms. (3) <b>Action</b>: while both "
               "hold, half of the SPY and XLE targets are held as cash at 0%; XLE is cut because energy demand and earnings fall in "
               "recessions, and cash rather than AGG because AGG also fell in the October 2008 liquidity crunch. (4) <b>Exit</b>: the first "
-              "month-end with SPY above its 12-month mean. Sahm-rule and credit-spread signals were tested and added nothing.")
+              "month-end with SPY above its 12-month mean. Sahm-rule and credit-spread signals were tested and left out: in 2005-2026 the "
+              "first was late and the second often on outside recessions (PLAN.md 13h).")
         rows = [["CAGR", pct(perf["cagr"], 2), pct(v5p["cagr"], 2)], ["Real CAGR (US CPI)", pct(perf["real_cagr"], 2), pct(v5p["real_cagr"], 2)],
                 ["Volatility", pct(perf["annual_volatility"]), pct(v5p["annual_volatility"])],
                 ["Largest fall from a high", pct(-perf["maximum_drawdown"]), pct(-v5p["maximum_drawdown"])],
@@ -928,7 +932,8 @@ def compose(N, D, figs):
               f"each spell lasted at most {max(pd.Period(b, 'M').ordinal-pd.Period(a, 'M').ordinal+1 for a, b in ov['periods'][1:])} "
               "months. Today's target is unaffected while the overlay is off. "
               f"<b>Disclosure:</b> the overlay was designed in the session that had seen the 2005-2026 data and a scratch backtest of it, "
-              f"and registered at tag {N['prereg_tag']} before its risk forecasts were computed; a disclosed post-tag timing fix was rerun.")
+              f"including an 18-month warning window seen to miss part of 2008 before 24 months was chosen; it was registered at tag "
+              f"{N['prereg_tag']} before its risk forecasts were computed, and a disclosed post-tag timing fix was rerun.")
 
     # ---------------------------------------------------------------- 4 risk methods
     doc.h1("4. Risk measurement and validation methods")
@@ -1177,13 +1182,15 @@ def compose(N, D, figs):
               f"{pval(fh99['independence_p'])}; conditional coverage p {pval(ge99['conditional_coverage_p'])} and "
               f"{pval(fh99['conditional_coverage_p'])}), so neither model passes the pre-registered gate and the formal outcome is "
               f"<b>evaluation incomplete</b>. {ov['breaches_near_switch']} of GARCH-EVT's {ov['breaches']} breaches fell in a month the "
-              "overlay switched or the month after: a switch changes the portfolio's risk at once, while the GARCH filter learns it only "
-              "from the following days' returns. The same rule without the overlay (v5 core) passes with GARCH-EVT "
+              f"overlay switched or the month after, which make up {pct(ov['days_near_switch_share'], 0)} of the days; "
+              f"{ov['breaches_near_switch_2020']} of them are the February-March 2020 crash, when the overlay switched because markets were falling, so "
+              "the test cannot separate the overlay's effect from the crash itself. The same rule without the overlay (v5 core) passes with GARCH-EVT "
               f"({ge5['breaches']} breaches, conditional coverage p {pval(ge5['conditional_coverage_p'])}). GARCH-EVT breaches were most "
               "frequent in "+", ".join(f"{y} ({int(n)})" for y, n in D["by_year"]["sum"].sort_values(ascending=False).head(3).items())+". "
               f"Historical simulation and unconditional EVT ({hs99['breaches']} and {ev99['breaches']} breaches) cluster more strongly, and "
-              f"the normal model has too many ({nm99['breaches']}). At 95%, FHS and GARCH-EVT had {ge95['breaches']} and "
-              f"{fh95['breaches']} breaches against {ge95['expected_breaches']:.1f} expected (independence p {pval(ge95['independence_p'])}).")
+              f"the normal model has too many ({nm99['breaches']}). At 95%, GARCH-EVT and FHS had {ge95['breaches']} and "
+              f"{fh95['breaches']} breaches against {ge95['expected_breaches']:.1f} expected (independence p {pval(ge95['independence_p'])} "
+              f"and {pval(fh95['independence_p'])}).")
         doc.p("The owner adopted v6 despite this result, for its smaller falls; the decision and its reason are logged in PLAN.md 13h. As "
               "a safeguard, daily risk limits use the higher of the GARCH-EVT and FHS forecasts in any month the overlay switches. The "
               f"validated specification is the rolling one in this table (750-day window, refit every 21 days, on the strategy's own "
@@ -1231,12 +1238,13 @@ def compose(N, D, figs):
           f"{'within' if stress[worst_fall]['path']['max_fall'] <= limit else 'beyond'} the 20% limit. "
           +(f"With the overlay holding cash, the strategy gained {pct(gfc['path']['return'])} over the GFC scenario (v5 core "
             f"{pct(v5s['GFC']['return'])}). " if V6 else "")+
-          f"Bonds and gold offset most of the GFC equity loss (AGG {usd(gfc['path']['pnl_usd']['AGG'])}, GLD {usd(gfc['path']['pnl_usd']['GLD'])}); in COVID every ETF lost "
+          f"Bonds and gold {'more than offset' if gfc['path']['return'] > 0 else 'offset most of'} the GFC equity loss (AGG {usd(gfc['path']['pnl_usd']['AGG'])}, GLD {usd(gfc['path']['pnl_usd']['GLD'])}); in COVID every ETF lost "
           f"money; in 2022 AGG lost most ({usd(-rates['path']['pnl_usd']['AGG'])}) and only XLE gained "
           f"({usd(rates['path']['pnl_usd']['XLE'])}). Bonds and gold diversify some crises, not all. Bought at the start close and left "
           f"to drift, today's target would have fallen {pct(-held['GFC']['drawdown'])} in the GFC and {pct(-held['COVID']['drawdown'])} in COVID"
           +(f" ({' and '.join(breaching)} beyond the limit)" if breaching else "")+
-          ": the monthly rule"+(" and the overlay" if V6 else "")+" did better by cutting equity and energy as their volatility rose, so a crash that arrives before the next "
+          ": the monthly rule did better by cutting equity and energy as their volatility rose"
+          +(", and the overlay by moving half of them to cash" if V6 else "")+", so a crash that arrives before the next "
           "month-end meets today's weights"+(", which hold more energy than at any earlier month-end." if N["xle_at_maximum"] else "."))
     doc.table(["", *U, "Portfolio"],
               [["Shock", *(pct(hyp["shocks"][t]) for t in U), pct(hyp["return"])],
@@ -1373,7 +1381,7 @@ def compose(N, D, figs):
          f"GARCH-EVT {'clusters' if V6 else 'passes'} (Kupiec p {pval(ge99['kupiec_p'])}, conditional coverage p "
          f"{pval(ge99['conditional_coverage_p'])}); FHS fails (p {pval(fh99['conditional_coverage_p'])})",
          "No: evaluation incomplete; owner's decision" if V6 else "Yes, through the challenger"],
-        ["Universe and positions", "SPY, AGG, GLD, XLE only; long-only; fully invested"+("; cash at 0% while the overlay is on" if V6 else ""),
+        ["Universe and positions", "SPY, AGG, GLD, XLE only; long-only; fully invested"+(", except cash at 0% while the overlay is on" if V6 else ""),
          f"All {N['targets']} month-end targets"+(f"; cash in {ov['months_on']} months" if V6 else ""), "Yes"]],
         [.15, .27, .42, .16], align=["l", "l", "l", "l"], label="limits",
         caption=f"Policy limits (mandate {'v6' if V6 else 'v5'}) against the evidence for the recommended strategy. The fixed mixes' results against the "
@@ -1384,10 +1392,10 @@ def compose(N, D, figs):
         +(f"; apply the recession overlay (section 3.4) at the same close." if V6 else "."),
         f"<b>Daily limit:</b> measure one-day 99% risk with GARCH-EVT refitted as in its backtest (latest forecast, for "
         f"{date(lf['date'])}: VaR {usd(lf['var_usd'])}); "
-        +("use the higher of GARCH-EVT and FHS in any month the overlay switches, because breaches cluster around switches." if V6 else
+        +("as a precaution, use the higher of GARCH-EVT and FHS in any month the overlay switches, because v6's breaches cluster." if V6 else
           "FHS stays as a second view because its breaches cluster."),
         f"<b>Review triggers:</b> an extra committee review if the fall from the previous high passes 15% (the largest so far was "
-        f"{pct(-perf['maximum_drawdown'])}), if 99% VaR breaches exceed 9 in any 250 days (Basel red zone)"
+        f"{pct(-perf['maximum_drawdown'])})"+(" or" if V6 else ",")+" if 99% VaR breaches exceed 9 in any 250 days (Basel red zone)"
         +("." if V6 else f", or if a month-end target's historical ES exceeds the {usd(budget)} budget."),
         f"<b>Expectation setting:</b> plan spending on a real return below the {pct(perf['real_cagr'])} earned historically, and treat "
         "the reserve schedule as a slow draw on real capital (section 5.9)."])

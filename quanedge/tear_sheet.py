@@ -286,8 +286,8 @@ def compose(Q, figure, path, footer):
                          [.27*half, .19*half, .13*half, .13*half, .15*half, .13*half], "lrrrrl", highlight=0),
                     Spacer(1, 2.5),
                     Paragraph(f"{ge['days']:,} sequential forecasts, each from data to the day before, on each path's own returns (v6 hash "
-                              f"{Q['strategy_hash'][:8]}). v6 breach counts are right but "
-                              f'<font color="{CRITICAL}">cluster</font> around overlay switches, hence the higher-of-two rule. '
+                              f"{Q['strategy_hash'][:8]}). v6 breach counts are right but they "
+                              f'<font color="{CRITICAL}">cluster</font>, hence the higher-of-two precaution. '
                               "Basel zone: green 0-4, yellow 5-9, red 10+ breaches in 250 days.", small))
     story += [two(risk, valid), Spacer(1, 5)]
 

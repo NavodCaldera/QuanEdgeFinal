@@ -1222,10 +1222,10 @@ def page_limits():
     test, _ = reserve(EV["data_hash"], json.dumps(CFG, sort_keys=True)); r25 = test["results"][-1]
     reserve_line = (f"In a {r25['year']}-year test that resamples the strategy's own monthly returns, every cash reserve was paid in "
                     f"{pct(r25['all_payments_funded'])} of paths, but the USD 10m was kept in real terms in only "
-                    f"{pct(r25['real_capital_preserved'])}: the reserve grows {pct(CFG['reserve_growth'], 2)} a year, matching the fixed CPI assumption used for this simulation. "
+                    f"{pct(r25['real_capital_preserved'])}: the reserve grows {pct(CFG['reserve_growth'], 2)} a year, faster than the {pct(CFG['inflation'], 2)} CPI assumption used for real values. "
                     "These are illustrations from one history, not forecasts.")
     ge, fhs = (next(v for v in SUMMARY["validation"] if v["method"] == m and v["alpha"] == .99) for m in ("garch_evt", "fhs"))
-    backtest_line = (monitoring_note(ge, fhs) + " Breaches cluster mostly around the months the overlay switches. Under the "
+    backtest_line = (monitoring_note(ge, fhs) + " Breaches cluster; several fall in the February-March 2020 crash, when the overlay also switched. Under the "
                      "team's own pre-registered rule this is recorded as evaluation incomplete; the owner adopted v6 knowing it "
                      "(31 October 2026).")
     inflation_line = (f"{pct(CFG['inflation'], 2)} a year: the average US CPI inflation (FRED CPIAUCSL index ratio) from "
