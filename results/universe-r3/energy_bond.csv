@@ -1,0 +1,40 @@
+measure,value
+"Daily correlation, full sample",-0.052633652631537506
+"Monthly correlation, full sample",-0.03208280394971695
+Years with negative correlation,16.0
+Years,22.0
+Months with negative correlation,191.0
+Months,261.0
+Months below -0.3,97.0
+Months below -0.5,36.0
+Share of rolling 1-year windows negative,0.7635109237255654
+Most negative rolling 1-year correlation,-0.5385823836597199
+AGG worst 5% days,274.0
+Mean daily return on AGG worst 5% days: SPY,-0.0024509046822011383
+Mean daily return on AGG worst 5% days: AGG,-0.0072569625937843685
+Mean daily return on AGG worst 5% days: GLD,-0.005017741368462811
+Mean daily return on AGG worst 5% days: XLE,0.0007227287252034801
+Rate-shock months (10y yield +0.25 pt),35.0
+Mean monthly return in rate-shock months: SPY,0.0073515863211260435
+Mean monthly return in rate-shock months: AGG,-0.01633122192406947
+Mean monthly return in rate-shock months: GLD,-0.014576563132222433
+Mean monthly return in rate-shock months: XLE,0.04645552936325287
+Daily correlation with AGG: SPY,0.0021764287134190844
+Negative years with AGG: SPY,11.0
+Negative years with AGG since 2020: SPY,0.0
+Years since 2020,7.0
+Daily correlation with AGG: EFA,0.03972767206734039
+Negative years with AGG: EFA,13.0
+Negative years with AGG since 2020: EFA,1.0
+Daily correlation with AGG: EEM,-0.00815084114315434
+Negative years with AGG: EEM,11.0
+Negative years with AGG since 2020: EEM,0.0
+Daily correlation with AGG: GLD,0.20885939031204365
+Negative years with AGG: GLD,1.0
+Negative years with AGG since 2020: GLD,0.0
+Daily correlation with AGG: XLE,-0.052633652631537506
+Negative years with AGG: XLE,16.0
+Negative years with AGG since 2020: XLE,4.0
+Daily correlation with AGG: XLK,-0.0019004625830683036
+Negative years with AGG: XLK,13.0
+Negative years with AGG since 2020: XLK,0.0

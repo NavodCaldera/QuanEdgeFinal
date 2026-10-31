@@ -3,6 +3,7 @@
 Start: python -m streamlit run dashboard.py
 Calculations live in quanedge/final_portfolio.py; this file only arranges and labels them.
 """
+import json
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
@@ -44,10 +45,6 @@ def p_text(p):
     return "n/a" if p is None else f"{p:.3f}"
 
 
-def tick(ok):
-    return "✅ pass" if ok else "❌ fail"
-
-
 def style(fig, height=360, y=None, legend=True):
     fig.update_layout(height=height, margin=dict(l=10, r=10, t=30, b=10), hovermode="x unified",
                       plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)", font=dict(color=INK),
@@ -66,21 +63,21 @@ def shade_crises(fig, start=None, end=None):
 
 # ---------------------------------------------------------------- data (cached)
 @st.cache_data(show_spinner="Loading the frozen evidence and prices")
-def load(model):
-    ev = F.load_evidence(model=model)
+def load():
+    ev = F.load_evidence()
     prices, returns, rf, cpi = F.load_market()
     return ev, prices, returns, rf, cpi
 
 
 @st.cache_resource(show_spinner="Fitting the risk models")
-def risk(data_hash, start, end, weights_key):
+def risk(data_hash, start, end, weights_key, settings_key):
     weights = dict(weights_key)
-    return F.risk_now(RETURNS, weights, VALUE, start, end)
+    return F.risk_now(RETURNS, weights, json.loads(settings_key)["value"], start, end)
 
 
 @st.cache_resource(show_spinner="Bootstrapping the risk estimates")
-def intervals(data_hash, weights_key):
-    return F.bootstrap(RETURNS, dict(weights_key), VALUE)
+def intervals(data_hash, weights_key, settings_key):
+    return F.bootstrap(RETURNS, dict(weights_key), json.loads(settings_key)["value"], cfg=json.loads(settings_key))
 
 
 @st.cache_resource(show_spinner="Measuring what each ETF adds")
@@ -88,9 +85,36 @@ def universe(data_hash):
     return U.load_saved(data_hash) or U.evidence(*U.load())
 
 
+@st.cache_resource(show_spinner="Building the benchmarks")
+def benchmark_set(data_hash, strategy_hash, policy_key):
+    return F.benchmarks(PATH, RETURNS, json.loads(policy_key))
+
+
 @st.cache_resource(show_spinner="Simulating 25 years of cash reserves")
-def reserve(strategy_hash):
-    return F.reserve_test(PATH), F.reserve_history(PATH, CPI)
+def reserve(data_hash, policy_key):
+    cfg = json.loads(policy_key)
+    return F.reserve_test(PATH, cfg), F.reserve_history(PATH, CPI, cfg)
+
+
+def target_losses(weights_key):
+    from quanedge.risk.portfolio import portfolio_log_returns
+    return -portfolio_log_returns(np.log1p(RETURNS[F.UNIVERSE]), dict(weights_key)).to_numpy()
+
+
+@st.cache_resource(show_spinner="Scanning EVT thresholds")
+def evt_scan(data_hash, weights_key, settings_key, alpha):
+    return F.evt_scan(target_losses(weights_key), json.loads(settings_key)["value"], alpha)
+
+
+@st.cache_resource(show_spinner="Building the refitted QQ envelope")
+def evt_qq(data_hash, weights_key, settings_key):
+    models, _ = risk(data_hash, None, None, weights_key, settings_key)
+    return F.gpd_qq(models["evt"].fit, target_losses(weights_key), reps=200, seed=json.loads(settings_key)["seed"])
+
+
+@st.cache_resource(show_spinner="Fitting EVT to the strategy path")
+def evt_strategy(data_hash, strategy_hash):
+    return F.strategy_evt(PATH)
 
 
 @st.cache_resource(show_spinner="Loading the recession-overlay evidence")
@@ -102,11 +126,8 @@ def overlay(data_hash):
     return {"ev": ev, "core": RO.core_path(), "signals": RO.signals(CFG["snapshot_end"])}
 
 
-MODEL = st.sidebar.radio("Model", list(F.MODELS), format_func=F.MODELS.get,
-                         help="v6 is the final model (owner decision, 31 Oct 2026). v5 is the same strategy without the overlay, for comparison.")
-V6 = MODEL == "v6"
 try:
-    EV, PRICES, RETURNS, RF, CPI = load(MODEL)
+    EV, PRICES, RETURNS, RF, CPI = load()
 except (F.EvidenceError, FileNotFoundError, KeyError) as err:
     st.title("Endowment risk dashboard")
     st.error(f"The saved evidence cannot be used: {err}")
@@ -118,9 +139,12 @@ CFG = F.policy()
 VALUE = float(CFG["value"])                  # invested NAV after the 1 January cash reserve
 PATH = EV["path"]; FC = EV["forecasts"]; SUMMARY = EV["summary"]; SH = EV["strategy_hash"]
 W = F.current_target(PATH)
+DATA_START = PRICES.index[0]
+DATA_SPAN = f"{DATA_START:%B %Y} to {pd.Timestamp(CFG['snapshot_end']):%B %Y}"
 WKEY = tuple(sorted(W.items()))
+RISK_KEY = json.dumps({k: CFG[k] for k in ("value", "n_sim", "seed", "bootstrap_reps", "bootstrap_block", "snapshot_end")}, sort_keys=True)
 FIRST_FC, LAST_FC = FC.index[0].date(), FC.index[-1].date()
-ESTIMATION = {"Full sample, 2005-01-04 to 2026-09-30": (None, None),
+ESTIMATION = {f"Full sample, {RETURNS.index[0].date()} to {CFG['snapshot_end']}": (None, None),
               "Last 750 trading days (about 3 years)": (str(RETURNS.index[-750].date()), None),
               "2017-01-03 to 2026-09-30 (evaluation period)": ("2017-01-01", None)}
 
@@ -143,8 +167,21 @@ def sidebar():
 
 
 # ---------------------------------------------------------------- shared numbers
+def clustering(v):
+    p = v.get("conditional_coverage_p")
+    return "" if p is None else ", breaches cluster" if p <= .05 else ""
+
+
+def monitoring_note(ge, fhs):
+    """The two conditional models' 99% backtest statistics, 2017-2026, from the saved results."""
+    def one(name, v):
+        return (f"{name} {v['breaches']} breaches, Kupiec p {v['kupiec_p']:.2f}, conditional coverage p "
+                f"{v['conditional_coverage_p']:.3f}, {v['zone']} zone{clustering(v)}")
+    return f"2017-2026 backtests at 99%: {one('GARCH-EVT', ge)}; {one('FHS', fhs)}."
+
+
 def headline(alpha):
-    models, table = risk(EV["data_hash"], None, None, WKEY)
+    models, table = risk(EV["data_hash"], None, None, WKEY, RISK_KEY)
     row = lambda m: table[(table.method == m) & np.isclose(table.alpha, alpha)].iloc[0]
     return models, table, row
 
@@ -152,7 +189,7 @@ def headline(alpha):
 # ---------------------------------------------------------------- pages
 def page_decision():
     alpha, method, start, end = SETTINGS
-    st.title("Final portfolio: monthly dynamic risk parity" + (" with recession overlay" if V6 else " (v5 core, comparison)"))
+    st.title("Final portfolio: monthly dynamic risk parity with recession overlay")
     st.caption("Serendib University Endowment Fund · four ETFs (SPY, AGG, GLD, XLE) · retrospective portfolio evaluation")
     models, table, row = headline(.99)
     perf = F.performance(PATH, RETURNS, RF, CPI)
@@ -163,7 +200,7 @@ def page_decision():
     c[1].metric("1-day 99% VaR", money(row("historical").var_usd), help=f"Historical simulation: {usd(row('historical').var_usd)}. Loss exceeded on about 1 day in 100.")
     c[2].metric("1-day 99% ES", money(row("historical").es_usd), help=f"Historical simulation: {usd(row('historical').es_usd)}. Average loss on the worst 1% of days.")
     c[3].metric("Worst crisis loss", money(worst["loss_usd"]), help=f"{usd(worst['loss_usd'])}: largest loss across GFC, COVID and 2022, as run.")
-    c[4].metric("Maximum fall since 2006", pct(-perf["maximum_drawdown"]), help="Largest fall from a previous high, strategy as run.")
+    c[4].metric(f"Maximum fall since {PATH.index[0].year}", pct(-perf["maximum_drawdown"]), help="Largest fall from a previous high, strategy as run.")
 
     left, right = st.columns([1, 1])
     with left:
@@ -174,9 +211,8 @@ def page_decision():
                               "Vol. share": [pct(contrib.vol_contribution[t]) for t in F.UNIVERSE],
                               "ES share": [pct(contrib.es_share[t]) for t in F.UNIVERSE]})
         st.dataframe(frame, hide_index=True, width="stretch")
-        if V6:
-            st.caption("Recession overlay at the last close: " + ("**ON**: half of SPY and XLE held as cash." if PATH.overlay_on.iloc[-1]
-                       else "**off** (yield-curve warning on, but SPY is above its 12-month average). See the Recession overlay page."))
+        st.caption("Recession overlay at the last close: " + ("**ON**: half of SPY and XLE held as cash." if PATH.overlay_on.iloc[-1]
+                   else "**off** (no yield-curve warning confirmed by SPY below its 12-month average). See the Recession overlay page."))
         st.caption(f"Target set at the {PATH.index[-1].date()} close from data up to that close; next review at the "
                    "next month-end close. Each ETF carries a quarter of the expected volatility, but XLE and SPY carry most "
                    "of the tail loss.")
@@ -184,39 +220,41 @@ def page_decision():
         st.subheader("Key evidence")
         ge = next(v for v in SUMMARY["validation"] if v["method"] == "garch_evt" and v["alpha"] == .99)
         fhs = next(v for v in SUMMARY["validation"] if v["method"] == "fhs" and v["alpha"] == .99)
-        bench = F.kpis(F.benchmark_returns(RETURNS).loc[PATH.index[0]:], RF, RETURNS.SPY, F.benchmark_returns(RETURNS))
-        ev = [("Return since " + SUMMARY["start"], f"{pct(perf['cagr'], 2)} a year; 40/60 SPY/AGG {pct(bench['cagr'], 2)}"),
-              ("Real return (US CPI)", f"{pct(perf['real_cagr'], 2)} a year after {pct(perf['cpi_inflation'], 2)} CPI inflation"),
-              ("Volatility", f"{pct(perf['annual_volatility'], 1)} a year; 40/60 {pct(bench['annual_volatility'], 1)}"),
-              ("Largest fall", f"{pct(-perf['maximum_drawdown'])}; 40/60 {pct(-bench['maximum_drawdown'])}"),
-              ("99% VaR backtest, GARCH-EVT", f"{ge['breaches']} breaches vs {ge['expected_breaches']:.1f} expected, "
-               f"Kupiec p {ge['kupiec_p']:.2f}, cond. coverage p {ge['conditional_coverage_p']:.3f}, {ge['zone']}"),
-              ("99% VaR backtest, FHS", f"{fhs['breaches']} breaches vs {fhs['expected_breaches']:.1f}, cond. coverage p "
-               f"{fhs['conditional_coverage_p']:.3f}: breaches cluster"),
+        ev = [("Return since " + SUMMARY["start"], f"{pct(perf['cagr'], 2)} a year"),
+              ("Real return (US CPI)", f"{pct(perf['real_cagr'], 2)} a year after {pct(perf['cpi_inflation'], 2)} average CPI inflation "
+               f"({DATA_START:%d %b %Y} to {CFG['snapshot_end']})"),
+              ("Volatility", f"{pct(perf['annual_volatility'], 1)} a year"),
+              ("Largest fall", f"{pct(-perf['maximum_drawdown'])}"),
+              ("99% VaR backtest, GARCH-EVT", f"{ge['breaches']} breaches, "
+               f"Kupiec p {ge['kupiec_p']:.2f}, cond. coverage p {ge['conditional_coverage_p']:.3f}, {ge['zone']}{clustering(ge)}"),
+              ("99% VaR backtest, FHS", f"{fhs['breaches']} breaches, Kupiec p {fhs['kupiec_p']:.2f}, cond. coverage p "
+               f"{fhs['conditional_coverage_p']:.3f}, {fhs['zone']}{clustering(fhs)}"),
               ("Hypothetical equity-bond shock", f"{usd(hyp['loss_usd'])} ({pct(-hyp['return'])})")]
-        test, _ = reserve(SH); r25 = test["results"][-1]
+        test, _ = reserve(EV["data_hash"], json.dumps(CFG, sort_keys=True)); r25 = test["results"][-1]
         ev.append((f"{r25['year']}-year cash-reserve test", f"every reserve paid in {pct(r25['all_payments_funded'])} of resampled paths; "
                    f"USD 10m kept in real terms in {pct(r25['real_capital_preserved'])}"))
         st.markdown("\n".join(f"- **{k}:** {v}" for k, v in ev))
         st.caption("Backtests 2017-01-03 to 2026-09-30 on the strategy's own forecasts; returns are a retrospective evaluation.")
+        st.caption(f"Reserve test: USD {CFG['reserve_initial']:,.0f} paid at the beginning of year 1; "
+                   f"payments and simulation inflation both grow at {pct(CFG['inflation'], 2)} a year, the average US CPI "
+                   f"inflation from {DATA_START:%d %B %Y} to {CFG['snapshot_end']} (FRED CPIAUCSL). Over the strategy's own dates "
+                   f"({PATH.index[0].date()} on) CPI rose {pct(perf['path_cpi_inflation'], 2)} a year.")
 
     why_four(contrib.es_share)
 
-    latest = F.latest_forecast(FC, CFG["challenger"], .99, VALUE)
+    latest = F.latest_forecast(FC, "garch_evt", .99, VALUE)
     st.subheader("Recommendation to the committee")
     st.markdown(
         "**Hold this portfolio**, monitored as follows. This is the team's proposal for the owner's and committee's review.\n\n"
-        f"1. **Hold** the current target and reset it at every month-end close by the rule on the Portfolio page"
-        + (" and the recession overlay (half of SPY and XLE to cash while the yield curve has been inverted in the last 24 months "
-           "and SPY is below its 12-month average).\n" if V6 else ".\n") +
+        f"1. **Hold** the current target and reset it at every month-end close by the rule on the Portfolio page "
+        "and the recession overlay (half of SPY and XLE to cash while the yield curve has been inverted in the last 24 months "
+        "and SPY is below its 12-month average).\n"
         f"2. **Daily risk:** measure 99% one-day risk with GARCH-EVT refitted as in its backtest (latest forecast, for "
-        f"{latest['date']}: VaR {usd(latest['var_usd'])}); "
-        + ("its breach count matched the 99% level, but breaches clustered, mostly around overlay switches, so use the higher of "
-           "the GARCH-EVT and FHS forecasts in any month the overlay switches.\n" if V6 else
-           "its breaches matched the 99% level in testing. FHS stays as a second view because its breaches cluster.\n") +
-        f"3. **Review triggers:** an extra committee review if the fall from the previous high passes 15% (the largest so far "
+        f"{latest['date']}: VaR {usd(latest['var_usd'])}). {monitoring_note(ge, fhs)}\n"
+        f"3. **Review triggers:** an extra committee review if the fall from the previous high exceeds 15% (the largest so far "
         f"was {pct(-perf['maximum_drawdown'])}) or if 99% VaR breaches exceed 9 in any 250 days (Basel red zone).\n"
-        f"4. **Expectation setting:** the real return has been about {pct(perf['real_cagr'], 1)} a year after US CPI inflation. "
+        f"4. **Expectation setting:** the real return has been about {pct(perf['real_cagr'], 1)} a year after "
+        f"{pct(CFG['inflation'], 2)} average US CPI inflation. "
         "That is history, chosen after the fact; plan spending on a lower figure.")
 
     over = [(s["scenario"], -s["today_buy_hold"]["drawdown"]) for s in stress
@@ -245,10 +283,86 @@ def page_decision():
     with q[2]:
         st.markdown("**How confident are we?**")
         xi = models["evt"].params
-        st.markdown(f"- GARCH-EVT 99% forecasts: {ge['breaches']} breaches vs {ge['expected_breaches']:.1f} expected, "
-                    f"2017-2026 ({ge['zone']}). FHS: {fhs['breaches']}, clustered.\n- EVT tail shape ξ = {xi['xi']:.2f} "
+        st.markdown(f"- GARCH-EVT 99% forecasts: {ge['breaches']} breaches, "
+                    f"2017-2026 ({ge['zone']}{clustering(ge)}). FHS: {fhs['breaches']}{clustering(fhs)}.\n- EVT tail shape ξ = {xi['xi']:.2f} "
                     f"± {1.96*xi['xi_se']:.2f}: a fat tail, estimated from {xi['n_exceed']} days.\n- All of this is history the "
                     "strategy was chosen after seeing; there is no untouched test period.")
+
+
+def energy_bond():
+    """Fundamentals tab: XLE moves against AGG, one of the main reasons XLE is held."""
+    u = universe(EV["data_hash"])
+    s = u["energy_bond"].set_index("measure")["value"]; y = u["energy_bond_years"].set_index("year")
+    recent = y.loc[2020:]
+    st.markdown("#### Energy and bonds: why XLE sits beside AGG")
+    st.markdown(
+        "Bonds lose when interest rates and inflation rise. Energy companies earn more in exactly those conditions, because "
+        "oil and gas prices are a main driver of inflation and higher prices raise their profits. So XLE tends to move against "
+        f"AGG: its daily correlation with AGG is {s['Daily correlation with AGG: XLE']:+.2f}, the most negative of the six "
+        f"eligible ETFs other than AGG, and it was negative in {int(s['Negative years with AGG since 2020: XLE'])} of the "
+        f"{int(s['Years since 2020'])} years since 2020, against at most "
+        f"{max(int(s[f'Negative years with AGG since 2020: {t}']) for t in ('SPY', 'EFA', 'EEM', 'XLK', 'GLD'))} for any other. "
+        "That is one of the main reasons the portfolio holds it: AGG is about half of the money, and XLE is the holding most "
+        "likely to gain when AGG falls.")
+    c = st.columns(5)
+    c[4].metric("Months below -0.5", f"{int(s['Months below -0.5'])}", help="Within-month correlation of daily log returns.")
+    c[0].metric("Years XLE-AGG negative", f"{int(s['Years with negative correlation'])} of {int(s['Years'])}",
+                help="Correlation of daily log returns within each calendar year.")
+    c[1].metric("Months negative", f"{int(s['Months with negative correlation'])} of {int(s['Months'])}",
+                help="Correlation of daily log returns within each calendar month.")
+    c[2].metric("XLE, rate-shock months", pct(s["Mean monthly return in rate-shock months: XLE"], 1),
+                f"AGG {pct(s['Mean monthly return in rate-shock months: AGG'], 1)}", delta_color="off",
+                help=f"Average monthly return in the {int(s['Rate-shock months (10y yield +0.25 pt)'])} months when the 10-year "
+                     "Treasury yield rose more than 0.25 points.")
+    c[3].metric("XLE in 2022", pct(y.loc[2022, "XLE return"], 0), f"AGG {pct(y.loc[2022, 'AGG return'], 0)}", delta_color="off",
+                help="Calendar-year buy-and-hold returns, adjusted closes.")
+    fig = go.Figure([go.Bar(x=y.index, y=y["XLE-AGG"], name="XLE-AGG", marker=dict(color=COLOR["XLE"], cornerradius=3)),
+                     go.Scatter(x=y.index, y=y["SPY-AGG"], name="SPY-AGG", mode="lines+markers",
+                                line=dict(color=COLOR["SPY"], width=2), marker=dict(size=6))])
+    fig.add_hline(y=0, line_color=MUTED, line_width=1)
+    st.plotly_chart(style(fig, 280, "Correlation with AGG").update_layout(hovermode="x unified")
+                    .update_yaxes(tickformat=".1f"), width="stretch")
+
+    mo = u["energy_bond_months"]; strong = mo[mo["XLE-AGG"] < -.5]
+    opposite = int(((strong["XLE return"]*strong["AGG return"]) < 0).sum())
+    st.markdown(
+        f"**Months of strongly negative correlation.** In {int(s['Months below -0.5'])} months the within-month correlation "
+        f"was below -0.5, and in {int(s['Months below -0.3'])} below -0.3. The strongest:")
+    top = mo.head(10).assign(**{"XLE-AGG": lambda d: d["XLE-AGG"].map(lambda x: f"{x:.2f}"),
+                                "XLE return": lambda d: d["XLE return"].map(lambda x: f"{100*x:+.1f}%"),
+                                "AGG return": lambda d: d["AGG return"].map(lambda x: f"{100*x:+.1f}%")})
+    st.dataframe(top.rename(columns={"month": "Month", "XLE-AGG": "Correlation"}), hide_index=True, width="stretch")
+    def example(mask):
+        x = strong[mask].head(2)
+        return " and ".join(f"{pd.Period(m).strftime('%B %Y')} (XLE {100*a:+.1f}%, AGG {100*b:+.1f}%)"
+                            for m, a, b in zip(x["month"], x["XLE return"], x["AGG return"]))
+    st.caption(f"In those {len(strong)} months XLE and AGG ended the month with opposite signs {opposite} times. A negative "
+               "correlation means their daily moves offset each other, either way round: XLE up while AGG fell, as in "
+               f"{example((strong['XLE return'] > 0) & (strong['AGG return'] < 0))}, or XLE down while AGG rose, as in "
+               f"{example((strong['XLE return'] < 0) & (strong['AGG return'] > 0))}. Both help a portfolio that holds the two. "
+               "It does not mean XLE gains whenever bonds lose.")
+    with st.expander(f"All {len(strong)} months below -0.5"):
+        st.dataframe(strong.assign(**{"XLE-AGG": lambda d: d["XLE-AGG"].round(2),
+                                      "XLE return": lambda d: (100*d["XLE return"]).round(1),
+                                      "AGG return": lambda d: (100*d["AGG return"]).round(1)})
+                     .rename(columns={"month": "Month", "XLE-AGG": "Correlation", "XLE return": "XLE return %",
+                                      "AGG return": "AGG return %"}), hide_index=True, width="stretch")
+    st.markdown(
+        f"- **When bonds had their worst days** (AGG's worst 5%, {int(s['AGG worst 5% days'])} days): XLE averaged "
+        f"{pct(s['Mean daily return on AGG worst 5% days: XLE'], 2)} a day, while GLD lost "
+        f"{pct(-s['Mean daily return on AGG worst 5% days: GLD'], 2)} and SPY {pct(-s['Mean daily return on AGG worst 5% days: SPY'], 2)}.\n"
+        f"- **Since 2020 SPY no longer does this job.** The stock-bond correlation turned positive (SPY-AGG "
+        f"{recent['SPY-AGG'].mean():+.2f} on average over 2020-2026, {y.loc[y.index.max(), 'SPY-AGG']:+.2f} in {y.index.max()}), "
+        f"while XLE-AGG stayed mostly negative ({recent['XLE-AGG'].mean():+.2f} on average, "
+        f"{y.loc[y.index.max(), 'XLE-AGG']:+.2f} in {y.index.max()}). In 2022, the year stocks and bonds fell together, XLE was "
+        "the only one of the four that gained.\n"
+        f"- **The relationship is real but modest.** Over the full period the daily correlation is only "
+        f"{s['Daily correlation, full sample']:+.2f}, and it was positive in some years (2020, 2022). XLE is an energy-equity "
+        f"fund, not a bond hedge in a crash: it fell {pct(-u['crises'].set_index('etf').loc['XLE', 'GFC return'], 0)} in the GFC "
+        f"and {pct(-u['crises'].set_index('etf').loc['XLE', 'COVID return'], 0)} in COVID, when AGG held up.")
+    st.caption(f"Daily log returns, adjusted closes, {u['start']} to {u['end']}; {y.index.min()} has {int(y.loc[y.index.min(), 'days'])} days and "
+               f"{y.index.max()} runs to {u['end']}. Rate shocks use FRED DGS10 month-end changes. Descriptive and retrospective: "
+               "correlations change over time and are not a forecast.")
 
 
 def why_four(es_share):
@@ -262,6 +376,7 @@ def why_four(es_share):
     hi = rg.loc["High inflation (CPI y/y >= 3%)"]
     four, seven = bets.loc["Four (SPY, AGG, GLD, XLE)"], bets.loc["All seven"]
     d4, d7 = dyn.loc["Four ETFs"], dyn.loc["All seven ETFs"]
+    eb = u["energy_bond"].set_index("measure")["value"]
 
     st.subheader("Why these four ETFs")
     st.markdown(
@@ -271,14 +386,16 @@ def why_four(es_share):
         f"**{four.effective_bets:.2f} to {seven.effective_bets:.2f}**, and in risk parity it would move the equity share "
         f"of risk from {pct(st_.loc['Four ETFs', 'equity_risk_share'], 0)} to {pct(st_.loc['All seven ETFs', 'equity_risk_share'], 0)}.")
     cards = {
-        "SPY": ("Growth", f"Return engine: {pct(cr.loc['SPY', 'annual return 2005-2026'])} a year since 2005."),
+        "SPY": ("Growth", f"Return engine: {pct(cr.loc['SPY', 'annual return, full period'])} a year since {DATA_START:%B %Y}."),
         "AGG": ("Recession", f"Gained {pct(cr.loc['AGG', 'GFC return'])} in the GFC; {pct(stress['AGG'], 1)} a month in equity-stress "
                              f"months, when every equity ETF lost about {pct(-stress['SPY'], 0)}."),
         "GLD": ("Loss of confidence", f"Gained {pct(cr.loc['GLD', 'GFC return'])} in the GFC and {pct(stress['GLD'], 1)} a month in "
                                       "equity-stress months; correlation with SPY "
                                       f"{corr.loc['GLD', 'SPY']:.2f}."),
-        "XLE": ("Inflation", f"The only ETF that gained in 2022 ({pct(cr.loc['XLE', 'Rates 2022 return'])}); "
-                             f"{pct(shock['XLE'], 1)} a month when the 10-year yield jumped, AGG {pct(shock['AGG'], 1)}."),
+        "XLE": ("Inflation, against bonds", f"The only ETF that gained in 2022 ({pct(cr.loc['XLE', 'Rates 2022 return'])}); "
+                                            f"{pct(shock['XLE'], 1)} a month when the 10-year yield jumped, AGG {pct(shock['AGG'], 1)}; "
+                                            f"moved against AGG in {int(eb['Years with negative correlation'])} of "
+                                            f"{int(eb['Years'])} years."),
     }
     for col, t in zip(st.columns(4), F.UNIVERSE):
         title, text = cards[t]
@@ -288,7 +405,7 @@ def why_four(es_share):
 
     tabs = st.tabs(["Economic roles", "Fundamentals", "Overlap (technical)", "Seven-ETF test", "What this does not prove"])
     with tabs[0]:
-        st.markdown("Average **monthly** return of each ETF in four macro conditions, 2005-2026. Held ETFs first.")
+        st.markdown(f"Average **monthly** return of each ETF in four macro conditions, {DATA_SPAN}. Held ETFs first.")
         order = F.UNIVERSE + U.DROP
         show = rg[order].map(lambda x: f"{100*x:+.2f}%")
         show.insert(0, "Months", rg.months)
@@ -313,6 +430,7 @@ def why_four(es_share):
             f"SPY (correlation {corr.loc['XLK', 'SPY']:.2f}, beta {sp.loc['XLK', 'beta_spy']:.2f}), a leveraged bet on the same "
             f"growth stocks; XLE is the least SPY-like equity ETF ({corr.loc['XLE', 'SPY']:.2f}) because its profits follow "
             "commodity prices. EFA and EEM add currency exposure that a US-dollar fund paying US-dollar reserves does not need.")
+        energy_bond()
     with tabs[2]:
         which = st.radio("Correlation of daily log returns", ["All days", f"SPY's worst 5% of days ({u['stress_days']} days)"],
                          horizontal=True, key="why_corr")
@@ -361,99 +479,244 @@ def why_four(es_share):
         st.caption(f"Paths from {d4.start} (500-day warm-up), lambda 0.97, 750-day window, zero cost, no reserve withdrawals.")
     with tabs[4]:
         st.markdown(
-            f"- **Chosen after seeing the data.** The four-ETF rule was written on 30 October 2026 with 2005-2026 correlations in "
+            f"- **Chosen after seeing the data.** The four-ETF rule was written on 30 October 2026 with {DATA_START.year}-2026 correlations in "
             "view (PLAN.md 13c). Everything above is retrospective.\n"
             f"- **XLE is not a low-correlation asset.** Its correlation with SPY is {corr.loc['XLE', 'SPY']:.2f}, "
             f"{u['stress_correlation'].loc['XLE', 'SPY']:.2f} on SPY's worst days; it fell {pct(-cr.loc['XLE', 'COVID return'])} in "
             f"COVID and carries {pct(es_share['XLE'])} of today's 99% ES with {pct(W['XLE'])} of the money. It is held for "
             "inflation protection; risk parity sizes it by volatility, not by tail loss.\n"
-            f"- **Excluding XLK gave up return.** XLK earned {pct(cr.loc['XLK', 'annual return 2005-2026'])} a year, the most of the "
+            f"- **Excluding XLK gave up return.** XLK earned {pct(cr.loc['XLK', 'annual return, full period'])} a year, the most of the "
             "seven; the seven-ETF rule had the higher CAGR. The case for leaving it out is concentration and drawdown, not return.\n"
             "- **Correlations move.** SPY-AGG was negative 2007-2019 and positive from 2020; bonds did not protect in 2022.\n"
             "- **Policy, not a brief rule.** The brief allows any combination of the seven ETFs; holding four is our choice.")
 
 
 def page_portfolio():
-    alpha, method, start, end = SETTINGS
+    _, _, start, end = SETTINGS
     st.title("Portfolio")
-    st.caption("Monthly dynamic EWMA risk parity · each month-end, weights are reset so each ETF contributes an equal share "
-               "of expected volatility · zero trading cost · no cash-reserve withdrawals in the replay"
-               + (" · recession overlay: half of SPY and XLE in cash in months it is on (target charts show the risk-parity "
-                  "targets before the overlay; holdings and returns include it)" if V6 else ""))
-    period = st.radio("Period", ["Full history (from 2006-12-28)", "Backtest date range from the sidebar"], horizontal=True)
+    st.caption("Monthly dynamic EWMA risk parity; month-end targets, holdings drift between resets. "
+               "Recession overlay: half of SPY and XLE in cash in months it is on (target charts show the risk-parity targets "
+               "before the overlay; holdings and returns include it). "
+               "Investment performance is before university payments and uses zero trading cost unless stated.")
+    period = st.radio("Period", [f"Full history (from {PATH.index[0].date()})", "Backtest date range from the sidebar"], horizontal=True)
     a, b = (None, None) if period.startswith("Full") else (start, end)
     path = PATH.loc[a:b]
     if len(path) < 2:
         st.warning("The chosen date range has fewer than two days of history."); return
+    r = path["return"]
+    annual_ok = len(r) >= 63
+    ratio = lambda v: "n/a" if v is None or not np.isfinite(v) else f"{round(v, 2)+0.:.2f}"
+    annual = lambda v, fmt=pct: fmt(v) if annual_ok else "n/a (under 3 months)"
+    catalog = benchmark_set(EV["data_hash"], SH, json.dumps(CFG, sort_keys=True))
+    available = {n: item for n, item in catalog.items() if item[0] is not None}
+    for n, (w, why) in catalog.items():
+        if w is None:
+            st.warning(f"{n}: {why}")
+    chosen = st.multiselect("Benchmarks to compare", list(available), default=list(available))
+    # All comparisons continue their original full-history holdings and trade dates.
+    full_frames = {n: F.benchmark_frame(w, RETURNS, PATH.index[0], PATH.index[-1])
+                   for n, (w, _) in available.items()}
+    frames = {n: F.benchmark_window(full_frames[n], a, b) for n in chosen}
+    bench = {n: f["return"] for n, f in frames.items()}
+    k = F.page_kpis(r, RF, RETURNS.SPY, CPI, CFG)
+    if k.get("status"):
+        st.warning(k["status"]); return
+    years = (r.index[-1]-r.index[0]).days/365.25
+    k["rebalances"] = int(path.rebalanced.astype(bool).sum())
+    k["turnover_per_year"] = float(path.turnover.sum()/years)
+    kb = {n: F.page_kpis(x, RF, RETURNS.SPY, CPI, CFG) for n, x in bench.items()}
+    rel = {n: F.relative(r, x) for n, x in bench.items()}
+    cols = st.columns(4)
+    cols[0].metric("Annualised return (CAGR)", annual(k["cagr"], lambda x: pct(x, 2)))
+    cols[1].metric("Annualised volatility", pct(k["annual_volatility"], 2))
+    cols[2].metric("Maximum drawdown", pct(-k["maximum_drawdown"]))
+    cols[3].metric("Longest time under water", f"{k['max_underwater_days']:,} trading days")
+    if len(r) < 252:
+        st.caption(f"Only {len(r)} trading observations are shown. Annualised figures are unstable over short periods; "
+                   "return ratios and annualised returns are hidden below 63 observations (approximately three months).")
+    if chosen:
+        if annual_ok:
+            reference = chosen[0]
+            highest = max(chosen, key=lambda n: kb[n]["cagr"])
+            st.info(f"**Observed comparison, {r.index[0].date()} to {r.index[-1].date()}.** "
+                    f"Against {reference}: CAGR {100*rel[reference]['cagr_diff']:+.2f} pp, volatility "
+                    f"{100*(k['annual_volatility']-kb[reference]['annual_volatility']):+.2f} pp; maximum drawdown "
+                    f"{pct(-k['maximum_drawdown'])} vs {pct(-kb[reference]['maximum_drawdown'])}. "
+                    f"Highest CAGR among the displayed benchmarks: {highest} ({pct(kb[highest]['cagr'], 2)}); "
+                    f"final portfolio {pct(k['cagr'], 2)}.")
+        else:
+            st.info(f"**Observed comparison, {r.index[0].date()} to {r.index[-1].date()}.** "
+                    f"Portfolio cumulative return {pct(k['cumulative_return'])}; maximum drawdown "
+                    f"{pct(-k['maximum_drawdown'])}. Annualised return comparisons are hidden for this short period.")
+    else:
+        st.info("Only the final portfolio is shown. Select benchmarks above to compare their results.")
+    st.caption("These are descriptive historical comparisons. Small measured gaps do not establish superiority; "
+               "no statistical-significance claim is made. Full-sample fitted comparisons benefited from hindsight.")
 
+    colors = dict(zip(catalog, ("#8a8984", "#1baf7a", "#eb6834", "#9b59b6")))
+    dashes = dict(zip(catalog, ("solid", "dash", "dot", "dashdot")))
     c1, c2 = st.columns([1, 2])
     with c1:
-        st.subheader("Target weights now")
+        st.subheader(f"Latest target, set {PATH.index[-1].date()} close")
         fig = go.Figure(go.Bar(x=[W[t] for t in F.UNIVERSE], y=[NAME[t] for t in F.UNIVERSE], orientation="h",
                                marker=dict(color=[COLOR[t] for t in F.UNIVERSE], cornerradius=4),
                                text=[pct(W[t]) for t in F.UNIVERSE], textposition="outside",
                                customdata=[W[t]*VALUE for t in F.UNIVERSE],
                                hovertemplate="%{y}: %{x:.1%} · %{customdata:$,.0f}<extra></extra>"))
-        style(fig, 300, legend=False).update_xaxes(tickformat=".0%", range=[0, .8]); fig.update_layout(hovermode="closest")
+        style(fig, 300, legend=False).update_xaxes(tickformat=".0%", range=[0, min(1., max(W.values())*1.25)])
+        fig.update_layout(hovermode="closest")
         st.plotly_chart(fig, width="stretch")
+        st.caption("This latest target is independent of the historical date filter. Positions are held between resets, "
+                   "so their weights drift with prices.")
+        if a is not None:
+            pos = PATH.index.get_loc(path.index[0])
+            opening = (PATH.iloc[pos-1][F.UNIVERSE].to_dict() if pos > 0 else SUMMARY["initial_target"])
+            st.caption(f"Opening holdings before the {path.index[0].date()} return: "
+                       + ", ".join(f"{t} {pct(opening[t])}" for t in F.UNIVERSE) + ".")
     with c2:
-        st.subheader("How the targets changed")
-        hist = F.target_history(path) if len(path) else F.target_history(PATH)
+        st.subheader("Allocation history")
+        allocation_view = st.radio("Allocation series", ["Target weights", "Actual holdings after each close"], horizontal=True)
+        if allocation_view == "Target weights":
+            hist = F.target_history(path)
+            if hist.index[-1] != path.index[-1]:
+                hist.loc[path.index[-1]] = [path[f"target_{t}"].iloc[-1] for t in F.UNIVERSE]
+            hist = hist.sort_index(); shape = "hv"
+        else:
+            hist = path[F.UNIVERSE]; shape = "linear"
         fig = go.Figure()
         for t in F.UNIVERSE:
-            fig.add_trace(go.Scatter(x=hist.index, y=hist[t], name=t, stackgroup="w", line=dict(width=.5, color=COLOR[t]),
+            fig.add_trace(go.Scatter(x=hist.index, y=hist[t], name=t, stackgroup="w",
+                                     line=dict(width=.5, color=COLOR[t], shape=shape),
                                      hovertemplate=f"{t} %{{y:.1%}}<extra></extra>"))
-        st.plotly_chart(style(fig, 300, "Target weight").update_yaxes(tickformat=".0%", range=[0, 1]), width="stretch")
+        st.plotly_chart(style(fig, 300, "Allocation weight").update_yaxes(tickformat=".0%", range=[0, 1]), width="stretch")
+        st.caption("Targets step at decision closes. Actual end-of-day holdings also reflect price moves between resets; "
+                   "targets decided at a close apply to subsequent returns.")
 
-    r = path["return"]
+    st.subheader(f"Investment growth of {usd(VALUE)} before university withdrawals")
     wealth = F.wealth_usd(r, VALUE)
-    bench = F.benchmark_returns(RETURNS).reindex(r.index)
-    bw = F.wealth_usd(bench, VALUE)
-    st.subheader(f"Growth of {usd(VALUE)}")
-    fig = go.Figure([go.Scatter(x=wealth.index, y=wealth, name="Final portfolio", line=dict(color=ACCENT, width=2)),
-                     go.Scatter(x=bw.index, y=bw, name="40/60 SPY/AGG benchmark", line=dict(color=ALT, width=1.5, dash="dot"))])
+    fig = go.Figure([go.Scatter(x=wealth.index, y=wealth, name="Final portfolio", line=dict(color=ACCENT, width=2.5))])
+    for n in chosen:
+        bw = F.wealth_usd(bench[n], VALUE)
+        fig.add_trace(go.Scatter(x=bw.index, y=bw, name=n, line=dict(color=colors[n], width=1.5, dash=dashes[n])))
     shade_crises(fig, wealth.index[0], wealth.index[-1])
-    st.plotly_chart(style(fig, 360, "USD").update_yaxes(tickformat=",.0f"), width="stretch")
+    st.plotly_chart(style(fig, 380, "USD before withdrawals").update_yaxes(tickformat=",.0f"), width="stretch")
+    st.caption("Both portfolio and benchmarks continue their full-history allocations; only their displayed investment "
+               "growth is rebased to the same starting amount. Date filtering creates no new benchmark trades.")
 
-    st.subheader("Drawdown from the previous high")
+    st.subheader("Fund balance after university payments")
+    all_ledgers = {"Final portfolio": F.reserve_ledger(PATH["return"], CFG),
+                   **{n: F.reserve_ledger(full_frames[n]["return"], CFG) for n in chosen}}
+    views = {n: F.reserve_window(ledger, r.index[0], r.index[-1]) for n, ledger in all_ledgers.items()}
+    payment_dates = all_ledgers["Final portfolio"].index[all_ledgers["Final portfolio"].required_payment > 0]
+    if views["Final portfolio"].empty or not len(payment_dates) or r.index[-1] < payment_dates[0]:
+        st.info("The spending replay begins in the strategy's first full calendar year. This selected period ends before it starts.")
+    else:
+        fig = go.Figure()
+        for n, view in views.items():
+            if not view.empty:
+                fig.add_trace(go.Scatter(x=view.index, y=view.balance, name=n,
+                    line=dict(color=ACCENT if n == "Final portfolio" else colors[n],
+                              width=2.5 if n == "Final portfolio" else 1.5,
+                              dash="solid" if n == "Final portfolio" else dashes[n])))
+        st.plotly_chart(style(fig, 380, "USD remaining after payments").update_yaxes(tickformat=",.0f"), width="stretch")
+        ledger = all_ledgers["Final portfolio"].loc[:r.index[-1]]
+        inception = ledger.index[ledger.required_payment > 0][0]
+        st.caption(f"The fund starts with {usd(CFG['fund_value'])} in the first full calendar year ({inception.date()}). "
+                   f"The first {usd(CFG['reserve_initial'])} payment is deducted before that day's return; later payments "
+                   f"grow {pct(CFG['reserve_growth'], 2)} each year and are paid before the first trading day's return. "
+                   "Date filtering zooms this existing fund history: balances and payment years do not restart or rebase. "
+                   "Payments are cash leaving the fund, not investment losses.")
+        st.caption(f"After paying the reserves, final portfolio balance at {r.index[-1].date()}: "
+                   f"{usd(views['Final portfolio'].balance.iloc[-1])}. Investment drawdown and KPIs below exclude withdrawals.")
+        problems = []
+        for n, ledger in all_ledgers.items():
+            for date, row in ledger.loc[:r.index[-1]].query("shortfall > 0.000001").iterrows():
+                problems.append({"Portfolio": n, "Payment date": date.date(), "Required USD": row.required_payment,
+                                 "Paid USD": row.paid_payment, "Shortfall USD": row.shortfall})
+        if problems:
+            st.warning("At least one scheduled university payment could not be funded in full. Depleted balances remain zero.")
+            st.dataframe(pd.DataFrame(problems), hide_index=True, width="stretch")
+
+    st.subheader("Investment drawdown from the previous high")
     dd = F.drawdown(wealth)
-    fig = go.Figure([go.Scatter(x=dd.index, y=dd, name="Final portfolio", fill="tozeroy", line=dict(color=ACCENT, width=1.5)),
-                     go.Scatter(x=dd.index, y=F.drawdown(bw), name="40/60 benchmark", line=dict(color=ALT, width=1, dash="dot"))])
+    fig = go.Figure([go.Scatter(x=dd.index, y=dd, name="Final portfolio", fill="tozeroy", line=dict(color=ACCENT, width=1.5))])
+    for n in chosen:
+        fig.add_trace(go.Scatter(x=dd.index, y=F.drawdown(F.wealth_usd(bench[n], VALUE)).reindex(dd.index), name=n,
+                                 line=dict(color=colors[n], width=1, dash=dashes[n])))
     shade_crises(fig, dd.index[0], dd.index[-1])
-    st.plotly_chart(style(fig, 300, "Drawdown").update_yaxes(tickformat=".0%"), width="stretch")
+    st.plotly_chart(style(fig, 300, "Drawdown before withdrawals").update_yaxes(tickformat=".0%"), width="stretch")
+    st.caption("Drawdown is measured from the high within the selected view, including its opening value; it excludes university payments.")
 
     st.subheader("Performance KPIs")
-    k = F.performance(PATH, RETURNS, RF, CPI, a, b)
-    kb = F.kpis(bench.dropna(), RF, RETURNS.SPY, bench.dropna())
-    rows = [("CAGR", pct(k["cagr"], 2), pct(kb["cagr"], 2), "Compound annual growth of the path"),
-            ("Real CAGR", pct(k["real_cagr"], 2), pct(F.cpi_real(bench.dropna(), CPI)[2], 2),
-             f"(1 + CAGR)/(1 + CPI inflation) − 1; US CPI rose {pct(k['cpi_inflation'], 2)} a year (FRED CPIAUCSL)"),
-            ("Cumulative return", pct(k["cumulative_return"]), pct(kb["cumulative_return"]), "Whole period"),
-            ("Volatility", pct(k["annual_volatility"], 2), pct(kb["annual_volatility"], 2), "Daily standard deviation × √252"),
-            ("Sharpe ratio", f"{k['sharpe']:.2f}", f"{kb['sharpe']:.2f}", "Excess return over the 3-month T-bill (FRED DTB3) / its volatility"),
-            ("Sortino ratio", f"{k['sortino']:.2f}", f"{kb['sortino']:.2f}", "Annual mean return / downside deviation below 0"),
-            ("Beta to SPY", f"{k['beta']:.2f}", f"{kb['beta']:.2f}", "Excess-return regression on SPY"),
-            ("Treynor ratio", pct(k["treynor"], 2) if k["treynor"] is not None else "n/a", "", "Annual excess return / beta"),
-            ("Jensen's alpha", pct(k["jensen_alpha"], 2), "", "Annual excess return not explained by beta × SPY excess"),
-            ("Information ratio", f"{k['information_ratio']:.2f}" if k["information_ratio"] is not None else "n/a", "",
-             "Active return over 40/60 / tracking error"),
-            ("Maximum drawdown", pct(-k["maximum_drawdown"]), pct(-kb["maximum_drawdown"]), "Largest fall from a previous high"),
-            ("Calmar ratio", f"{k['calmar']:.2f}" if k["calmar"] is not None else "n/a", f"{kb['calmar']:.2f}" if kb["calmar"] else "", "CAGR / maximum drawdown"),
-            ("Longest time under water", f"{k['max_underwater_days']} days", f"{kb['max_underwater_days']} days", "Trading days below a previous high"),
-            ("Rebalances / turnover", f"{k['rebalances']} · {k['turnover_per_year']:.2f}× a year", "", "Month-end resets; sum of absolute weight changes")]
-    st.dataframe(pd.DataFrame(rows, columns=["KPI", "Final portfolio", "40/60 benchmark", "Definition"]), hide_index=True, width="stretch")
-    st.caption(f"Period {path.index[0].date()} to {path.index[-1].date()}. Daily simple returns compound the wealth path. "
-               "Fixed-weight benchmark rebalanced quarterly or on a 5-point drift.")
+    turnover = {"Final portfolio": path.turnover, **{n: f.turnover for n, f in frames.items()}}
+    series = {"Final portfolio": r, **bench}
+    costed = lambda n, c: annual(F.cagr(F.with_cost(series[n], turnover[n], c)), lambda x: pct(x, 2))
+    spec = [
+        ("CAGR", lambda q, n: annual(q["cagr"], lambda x: pct(x, 2)), "Compound annual growth, zero cost"),
+        ("CAGR at 5 bp cost", lambda q, n: costed(n, .0005), "5 bp per dollar traded on recorded rebalances; entry/exit costs excluded"),
+        ("CAGR at 10 bp cost", lambda q, n: costed(n, .001), "10 bp per dollar traded on recorded rebalances; entry/exit costs excluded"),
+        ("Real CAGR (actual CPI)", lambda q, n: annual(q["real_cagr_cpi"], lambda x: pct(x, 2)),
+         f"CPI index-ratio adjustment over the selected dates; CPI rose {pct(k['cpi_inflation'], 2)} a year"),
+        (f"Real CAGR at the {pct(CFG['inflation'], 2)} planning rate", lambda q, n: annual(q["real_cagr_policy"], lambda x: pct(x, 2)),
+         "Fixed planning inflation assumption, not actual inflation over the selected period"),
+        ("Cumulative return", lambda q, n: pct(q["cumulative_return"]), "Investment growth over the selected period"),
+        ("Volatility", lambda q, n: pct(q["annual_volatility"], 2), "Daily sample standard deviation × √252"),
+        ("Sharpe ratio", lambda q, n: annual(q["sharpe"], ratio),
+         "Annualised mean daily excess return over DTB3 / annualised standard deviation of those excess returns"),
+        ("Sortino ratio", lambda q, n: annual(q["sortino_excess"], ratio),
+         "Annualised mean excess return over DTB3 / downside deviation of excess returns below zero"),
+        ("Beta to SPY", lambda q, n: ratio(q["beta"]), "Excess-return regression on SPY; descriptive on short periods"),
+        ("Maximum drawdown", lambda q, n: pct(-q["maximum_drawdown"]), "Largest investment fall from a previous high within the view"),
+        ("Calmar ratio", lambda q, n: annual(q["calmar"], ratio), "CAGR / absolute maximum drawdown"),
+        ("Longest time under water", lambda q, n: f"{q['max_underwater_days']} trading days (approx. {q['max_underwater_days']/252:.1f} years)",
+         "Consecutive trading observations below a prior high; approximate years use 252 sessions")]
+    st.dataframe(pd.DataFrame([{"KPI": name, "Final portfolio": f(k, "Final portfolio"),
+                               **{n: f(kb[n], n) for n in chosen}, "Definition": definition}
+                              for name, f, definition in spec]), hide_index=True, width="stretch")
+    st.caption(f"Period {r.index[0].date()} to {r.index[-1].date()}. Final portfolio: {k['rebalances']} recorded resets "
+               f"and {k['turnover_per_year']:.2f}× NAV traded per year. Benchmarks rebalance quarterly or after "
+               "five-percentage-point drift. Actual CPI and planning-rate returns are separate; no withdrawals enter these KPIs.")
+    with st.expander("SPY-only risk-adjusted measures"):
+        st.caption("A one-factor equity model does not establish manager skill for a portfolio holding bonds, gold and energy. "
+                   "Treynor is unstable for low beta and unavailable near zero beta.")
+        st.dataframe(pd.DataFrame([
+            {"KPI": "Treynor ratio (vs SPY)", "Final portfolio": annual(k["treynor"], lambda x: pct(x, 2)),
+             **{n: annual(kb[n]["treynor"], lambda x: pct(x, 2)) for n in chosen}},
+            {"KPI": "Alpha vs SPY only (Jensen)", "Final portfolio": annual(k["jensen_alpha"], lambda x: pct(x, 2)),
+             **{n: annual(kb[n]["jensen_alpha"], lambda x: pct(x, 2)) for n in chosen}}]), hide_index=True, width="stretch")
 
+    st.markdown("**The final portfolio against the selected benchmarks**")
+    if chosen:
+        st.dataframe(pd.DataFrame([{"Benchmark": n, "CAGR difference (pp)": annual(x["cagr_diff"], lambda v: f"{100*v:+.2f}"),
+            "Annual mean return difference (pp)": annual(x["mean_diff"], lambda v: f"{100*v:+.2f}"),
+            "Volatility difference (pp)": f"{100*(k['annual_volatility']-kb[n]['annual_volatility']):+.2f}",
+            "Maximum drawdown, final vs benchmark": f"{pct(-k['maximum_drawdown'])} vs {pct(-kb[n]['maximum_drawdown'])}",
+            "Tracking error": pct(x["tracking_error"], 2), "Information ratio": annual(x["information_ratio"], ratio)}
+            for n, x in rel.items()]), hide_index=True, width="stretch")
+    st.caption("CAGR difference is geometric; annual mean return difference is arithmetic and supplies the information-ratio "
+               "numerator. Their signs can differ. Tracking error is annualised volatility of daily active returns. "
+               "The information ratio is descriptive; no t-test or claim that a gap is statistically significant is made.")
+    with st.expander("Benchmark definitions and matching period"):
+        rows = []
+        for n, (w, why) in catalog.items():
+            rows.append({"Benchmark": n, "Weights": "Unavailable" if w is None else " / ".join(f"{t} {pct(x, 0)}" for t, x in w.items() if x > 0),
+                         "Volatility over selected dates": "n/a" if w is None else pct(full_frames[n].loc[a:b, "return"].std()*np.sqrt(252), 2),
+                         "Definition": why})
+        st.dataframe(pd.DataFrame(rows), hide_index=True, width="stretch")
+        st.caption("The volatility match is approximate, uses a one-point weight grid, and refers to the full strategy history. "
+                   "It need not hold in a shorter view. Equal volatility does not imply equal tail risk. Static parity changes "
+                   "both the covariance estimator and trading convention, so it does not isolate monthly adaptation.")
     with st.expander("How the allocation rule works"):
         st.markdown(
-            "At each month-end close:\n"
-            "1. Take the last 750 trading days of daily returns for SPY, AGG, GLD and XLE.\n"
-            "2. Weight each day by 0.97^k, where k is days ago (half-life about 23 trading days), and estimate the covariance Σ.\n"
-            "3. Solve for long-only weights w with equal risk contributions, w_i(Σw)_i = σ_p²/4 for each ETF "
-            "(Spinu's convex formulation).\n"
-            "4. Trade to those weights at that close and hold them until the next month-end.\n\n"
-            "Only data up to each decision close is used. The first target (2006-12-28) needed 500 days of history.")
+            "1. Collect 500 daily ETF returns before estimating the first target.\n"
+            "2. Expand the window until 750 observations are available, then retain the latest 750.\n"
+            "3. At each month-end close, estimate EWMA covariance using weights proportional to 0.97^k "
+            "(half-life about 23 trading days).\n"
+            "4. Solve for long-only weights with equal volatility risk contributions across the four ETFs.\n"
+            "5. Trade to the target at that close; hold positions and allow weights to drift until the next reset.\n\n"
+            f"The first performance date is {PATH.index[0].date()}, after the initial estimation history "
+            f"beginning with prices on {DATA_START.date()}. Decisions use data through their close only; the "
+            "strategy was selected after this history had been seen.")
 
 
 def page_risk():
@@ -461,130 +724,248 @@ def page_risk():
     st.title("Risk: VaR, Expected Shortfall and EVT")
     choice = st.radio("Estimation window", list(ESTIMATION), horizontal=False)
     a, b = ESTIMATION[choice]
-    models, table = risk(EV["data_hash"], a, b, WKEY)
-    t = table[np.isclose(table.alpha, alpha)].set_index("method").loc[METHODS]
-    st.caption(f"Current target ({' · '.join(f'{k} {pct(v)}' for k, v in W.items())}) held fixed over the window · "
-               f"{alpha:.0%} confidence · one trading day · NAV {usd(VALUE)} · losses in USD of simple loss")
-
-    fig = go.Figure()
-    labels = [LABEL[m] for m in METHODS]
-    fig.add_trace(go.Bar(x=labels, y=t.var_usd, name=f"VaR {alpha:.0%}", marker=dict(color="#9ec3ef", cornerradius=4),
-                         hovertemplate="%{x}<br>VaR %{y:$,.0f}<extra></extra>"))
-    fig.add_trace(go.Bar(x=labels, y=t.es_usd, name=f"ES {alpha:.0%}", marker=dict(color=ACCENT, cornerradius=4),
-                         hovertemplate="%{x}<br>ES %{y:$,.0f}<extra></extra>"))
-    style(fig, 400, "USD loss, one day").update_layout(barmode="group", bargap=.25, bargroupgap=.08, hovermode="closest")
-    fig.update_yaxes(tickformat="$,.0f")
-    st.plotly_chart(fig, width="stretch")
-
-    out = pd.DataFrame({"Model": labels, "Family": [FAMILY_TEXT[m] for m in METHODS],
-                        "VaR %": t.var_pct.round(3).to_numpy(), "VaR USD": t.var_usd.round(0).to_numpy(),
-                        "ES %": t.es_pct.round(3).to_numpy(), "ES USD": t.es_usd.round(0).to_numpy(),
-                        "ES / VaR": (t.es_usd/t.var_usd).round(2).to_numpy(),
-                        "Basis": [t.basis[m] or ("next day, current volatility" if m in ("fhs", "garch_evt") else "whole window")
-                                  for m in METHODS],
-                        "Status": t.status.to_numpy()})
-    st.dataframe(out, hide_index=True, width="stretch")
-
-    h, n, e, mc = (t.loc[m] for m in ("historical", "normal", "evt", "mc_normal"))
+    scope = F.risk_scope(RETURNS, a, b, price_start=DATA_START, strategy_start=PATH.index[0])
+    c = st.columns(3)
+    c[0].metric("Data as of", CFG["snapshot_end"])
+    c[1].metric("Estimation observations", f"{scope['n']:,}")
+    c[2].metric("Invested NAV", usd(VALUE))
+    st.caption(f"Price history from {DATA_START.date()}; return estimation window {scope['first'].date()} to "
+               f"{scope['last'].date()}; strategy path starts {PATH.index[0].date()}. "
+               f"Confidence {alpha:.0%}; horizon one trading day.")
+    st.write("VaR is a loss threshold; ES is the average loss in the worst (1 - confidence) of days. Neither is a maximum possible loss.")
+    models, table = risk(EV["data_hash"], a, b, WKEY, RISK_KEY)
+    t = table[np.isclose(table.alpha, alpha)].set_index("method").reindex(METHODS)
+    st.subheader("Two portfolios, one measure")
+    sr = F.strategy_risk(PATH, VALUE, (alpha,), a, b).iloc[0]
+    st.dataframe(pd.DataFrame([
+        {"Portfolio": "Strategy as run: monthly targets, holdings drift", "VaR USD": sr.var_usd,
+         "ES USD": sr.es_usd, "Observations": sr.n, "First return": sr['first'].date(), "Last return": sr['last'].date()},
+        {"Portfolio": "Latest target replay: daily rebalancing", "VaR USD": t.loc['historical', 'var_usd'],
+         "ES USD": t.loc['historical', 'es_usd'], "Observations": scope['n'],
+         "First return": scope['first'].date(), "Last return": scope['last'].date()}]), hide_index=True, width="stretch")
+    st.caption("Latest target: " + " / ".join(f"{k} {pct(v)}" for k, v in W.items()))
+    st.markdown("The latest target is the most XLE-heavy since 2006; historical monthly holdings differ from this fixed replay. "
+                "See [Risk contributions](contributions).")
+    panels = [("Unconditional: whole estimation window", METHODS[:6]),
+              ("Conditional: next day, volatility estimated as of 30 September 2026", METHODS[6:])]
+    for col, (title, methods) in zip(st.columns(2), panels):
+        with col:
+            st.subheader(title)
+            good = [m for m in methods if str(t.loc[m, 'status']).lower().startswith(('ok', 'warning'))
+                    and np.isfinite(t.loc[m, 'var_usd']) and np.isfinite(t.loc[m, 'es_usd'])]
+            fig = go.Figure()
+            for field, label, color in [('var_usd', 'VaR', '#9ec3ef'), ('es_usd', 'ES', ACCENT)]:
+                fig.add_trace(go.Bar(x=[LABEL[m] for m in good], y=t.loc[good, field], name=f"{label} {alpha:.0%}",
+                    marker=dict(color=color, line=dict(color=[ACCENT if m == method else 'rgba(0,0,0,0)' for m in good],
+                                                      width=[3 if m == method else 0 for m in good])),
+                    hovertemplate="%{x}<br>%{y:$,.0f}<extra></extra>"))
+            style(fig, 400, "USD simple loss, one day").update_layout(barmode="group", hovermode="closest")
+            fig.update_yaxes(tickformat="$,.0f")
+            st.plotly_chart(fig, width="stretch")
+            for m in methods:
+                if m not in good:
+                    st.caption(f"Unavailable: {LABEL[m]}: {t.loc[m, 'status']}")
+            q = t.loc[methods]
+            st.dataframe(pd.DataFrame({"Model": [LABEL[m] for m in methods], "Family": [FAMILY_TEXT[m] for m in methods],
+                "VaR %": q.var_pct.to_numpy(), "VaR USD": q.var_usd.to_numpy(),
+                "ES %": q.es_pct.to_numpy(), "ES USD": q.es_usd.to_numpy(),
+                "ES / VaR": (q.es_usd/q.var_usd.where(q.var_usd > 0)).to_numpy(),
+                "Basis": [q.loc[m, 'basis'] or ("next day, volatility as of 30 Sep 2026" if m in METHODS[6:] else "whole window") for m in methods],
+                "Status": q.status.to_numpy()}), hide_index=True, width="stretch")
+    st.caption(f"Outlined bars highlight the sidebar methodology: {LABEL[method]}.")
     st.subheader("Why the methods disagree")
-    st.markdown(
-        f"- **Normal versus history.** The normal model puts ES at {usd(n.es_usd)}; the observed worst days average "
-        f"{usd(h.es_usd)} ({h.es_usd/n.es_usd:.2f}×). Daily returns have fatter tails than a bell curve, and the gap widens at "
-        "higher confidence.\n"
-        f"- **Monte Carlo (normal)** gives {usd(mc.es_usd)}. It simulates the four ETFs jointly and adds them up, so it differs "
-        "slightly from the single-series normal fit, but it shares the thin-tail assumption.\n"
-        f"- **EVT** fits only the largest losses (ξ = {models['evt'].params['xi']:.2f}) and gives {usd(e.es_usd)}, close to "
-        "history because the tail is estimated from the same extremes. Unlike history, it can extrapolate past the worst day seen.\n"
-        f"- **FHS and GARCH-EVT** scale risk to today's volatility, so they answer a different question: tomorrow's risk "
-        f"given current conditions ({usd(t.loc['garch_evt'].es_usd)} ES), not the average over the window.")
-
+    for note in F.disagreement_notes(table, models, alpha):
+        st.markdown(f"- {note}")
+    st.subheader("Reliability")
+    st.markdown("These are fitted estimates, not validated forecasts. The strategy's own sequential backtest "
+                "(breaches, Kupiec, conditional coverage, zone and clustering for both conditional models) is on "
+                "[Backtesting](backtest). The fixed-target replay has no backtest of its own and inherits no verdict.")
     st.subheader("Sensitivity to the estimation window")
     rows = []
     for label, (x, y) in ESTIMATION.items():
-        _, tb = risk(EV["data_hash"], x, y, WKEY)
+        _, tb = risk(EV["data_hash"], x, y, WKEY, RISK_KEY)
         tb = tb[np.isclose(tb.alpha, alpha)].set_index("method")
         rows.append({"Window": label, **{f"{LABEL[m]} ES": usd(tb.es_usd[m]) for m in ("historical", "normal", "evt", "garch_evt")}})
     st.dataframe(pd.DataFrame(rows), hide_index=True, width="stretch")
-
-    st.subheader("Bootstrap intervals")
-    b = intervals(EV["data_hash"], WKEY)
-    b = b[np.isclose(b.alpha, alpha)].set_index("method")
-    st.dataframe(pd.DataFrame({"Model": [LABEL[m] for m in b.index],
-                               f"VaR {alpha:.0%}, 95% interval": [f"{usd(r.var_usd_lo)} to {usd(r.var_usd_hi)}" for r in b.itertuples()],
-                               f"ES {alpha:.0%}, 95% interval": [f"{usd(r.es_usd_lo)} to {usd(r.es_usd_hi)}" for r in b.itertuples()],
-                               "Resamples": b.reps_ok.to_numpy()}), hide_index=True, width="stretch")
-    st.caption(f"{CFG['bootstrap_reps']} resamples of {CFG['bootstrap_block']}-day blocks of whole daily rows (circular), current target, "
-               "full sample. They cover estimation noise only: the EVT threshold percentile is held fixed (see the EVT page for "
-               "threshold sensitivity), and the choice of model is not covered.")
+    if a is None and b is None:
+        st.subheader("Full-sample bootstrap intervals")
+        boot = intervals(EV["data_hash"], WKEY, RISK_KEY)
+        boot = boot[np.isclose(boot.alpha, alpha)].set_index("method")
+        st.dataframe(pd.DataFrame({"Model": [LABEL[m] for m in boot.index],
+            f"VaR {alpha:.0%}, 95% interval": [f"{usd(r.var_usd_lo)} to {usd(r.var_usd_hi)}" for r in boot.itertuples()],
+            f"ES {alpha:.0%}, 95% interval": [f"{usd(r.es_usd_lo)} to {usd(r.es_usd_hi)}" for r in boot.itertuples()],
+            "Successful resamples": boot.reps_ok.to_numpy(), "Failed resamples": CFG['bootstrap_reps']-boot.reps_ok.to_numpy()}),
+            hide_index=True, width="stretch")
+        st.caption("Circular blocks of whole daily rows preserve cross-asset dependence. Intervals cover estimation noise; "
+                   "the EVT threshold percentile is fixed, and model choice is not covered.")
+    else:
+        st.info("Bootstrap intervals exist for the full sample only. They are hidden here because they do not match this window; "
+                "refitting the block bootstrap for each window is computationally expensive.")
+    with st.expander("Technical details"):
+        st.dataframe(pd.DataFrame([{"Model": LABEL[m], "Estimation n": scope['n'],
+            "Effective tail count": (CFG['n_sim'] if m in ('mc_normal', 'mc_t') else scope['n'])*(1-alpha),
+            "MC seed": CFG['seed'] if m in ('mc_normal', 'mc_t') else None,
+            "MC scenarios": CFG['n_sim'] if m in ('mc_normal', 'mc_t') else None} for m in METHODS]), hide_index=True)
+        for m in METHODS:
+            st.write(LABEL[m], models[m].params)
+        evt = models['evt']
+        if str(evt.status).lower().startswith(('ok', 'warning')):
+            st.write("EVT body/tail basis", {f"{v:.0%}": evt.basis(v) for v in (.90, .95, .99)})
+        st.caption(f"Bootstrap: {CFG['bootstrap_reps']} repetitions, {CFG['bootstrap_block']}-day blocks, seed {CFG['seed']}. "
+                   f"Strategy hash {SH}; run {EV['run']}; data hash {EV['data_hash'][:12]}.")
+        st.markdown("[EVT threshold diagnostics](evt)")
+        st.caption("Sidebar backtest dates affect only the Backtesting page.")
 
 
 def page_evt():
+    from quanedge.risk import fit_evt
+    from quanedge.risk import settings as S
+    from quanedge.risk.portfolio import loss_fraction
+    from quanedge.risk.validation import ModelFitError
+    from scipy.stats import norm
+
     alpha, method, start, end = SETTINGS
     st.title("EVT tail and threshold choice")
-    models, table = risk(EV["data_hash"], None, None, WKEY)
-    m = models["evt"]; scan = m.scan; p = m.params
-    if scan is None or scan.empty:
+    st.info(f"Today's target ({' / '.join(f'{k} {pct(v)}' for k, v in W.items())}), rebalanced daily with no costs over "
+            f"the full sample, {RETURNS.index[0].date()} to {RETURNS.index[-1].date()}. Charts use daily log losses; tables "
+            f"use USD simple losses on the {usd(VALUE)} invested NAV. This is not the strategy's changing holdings and not "
+            "GARCH-EVT. Sequential forecast evidence is below and on [Backtesting](backtest).")
+    models, table = risk(EV["data_hash"], None, None, WKEY, RISK_KEY)
+    m = models["evt"]
+    if not hasattr(m, "fit"):
+        st.warning(f"EVT result unavailable: {m.status}"); return
+    p = m.params
+    losses = target_losses(WKEY); r = -losses
+    scan = evt_scan(EV["data_hash"], WKEY, RISK_KEY, alpha)
+    if scan.empty:
         st.warning("No threshold scan is available for this fit."); return
-    st.caption("Peaks over threshold: a generalised Pareto distribution is fitted to daily log losses above a threshold u. "
-               "Full sample, current target held fixed.")
-    c = st.columns(4)
-    c[0].metric("Threshold u", pct(p["u"], 2), help=f"{p['threshold_q']:.1%} percentile of daily losses")
-    c[1].metric("Exceedances", f"{p['n_exceed']}")
-    c[2].metric("Shape ξ", f"{p['xi']:.3f}", help=f"Standard error {p['xi_se']:.3f}. ξ > 0 means a heavy, power-law tail.")
-    c[3].metric("Scale σ", pct(p["sigma"], 3))
-    st.info(f"**Rule:** {p['threshold_rule']}. A threshold is 'stable' when ξ lies within 1.96 standard errors of ξ at "
+    qq = evt_qq(EV["data_hash"], WKEY, RISK_KEY)
+    alts = {}
+    for label, q in (("90th percentile", .90), ("95th percentile", .95)):
+        try:
+            alts[label] = fit_evt(losses, threshold_q=q)
+        except (ModelFitError, ValueError) as err:
+            alts[label] = {"status": str(err)}
+    boot = intervals(EV["data_hash"], WKEY, RISK_KEY)
+    boot = boot[(boot.method == "evt") & np.isclose(boot.alpha, alpha)]
+    notes = F.evt_notes(m, scan, alpha, VALUE, alts, boot.iloc[0] if len(boot) else None, qq)
+    st.subheader("Conclusion")
+    st.write(notes["conclusion"])
+    seq = next((x for x in SUMMARY["validation"] if x["method"] == "evt" and x["alpha"] == .99), None)
+    if seq and seq.get("status") == "ok":
+        st.markdown(f"**Sequential evidence (a different fit):** EVT refitted on a rolling {CFG['window']}-day window of the "
+                    f"strategy's own path, refit every {CFG['refit']} days, 99% VaR, {CFG['evaluation_start']} to "
+                    f"{CFG['snapshot_end']}: {seq['breaches']} breaches in {seq['days']:,} days, Kupiec p {p_text(seq['kupiec_p'])}, "
+                    f"independence p {p_text(seq['independence_p'])}, conditional coverage p {p_text(seq['conditional_coverage_p'])}, "
+                    f"{seq['zone']} zone{'; breaches came in clusters' if seq.get('independence_p') is not None and seq['independence_p'] <= .05 else ''}. "
+                    "It tests the rolling EVT forecasts, not this full-sample fit.")
+    else:
+        st.markdown("**Sequential evidence:** no saved rolling EVT backtest is available for this run.")
+    chosen = scan.iloc[(scan.u-p["u"]).abs().argmin()]
+    c = st.columns(5)
+    c[0].metric("Threshold u (log loss)", pct(p["u"], 3), help=f"{p['threshold_q']:.1%} percentile")
+    c[1].metric("Exceedances / rate", f"{p['n_exceed']} / {m.zeta:.1%}")
+    c[2].metric("Shape ξ", f"{p['xi']:.3f}", help=f"Approximate 95% interval {p['xi']-1.96*p['xi_se']:.3f} to {p['xi']+1.96*p['xi_se']:.3f}")
+    c[3].metric("Scale σ (log loss)", pct(p["sigma"], 3))
+    c[4].metric("KS distance", f"{chosen.ks:.4f}")
+    st.caption(f"Approximate 95% shape interval: {p['xi']-1.96*p['xi_se']:.3f} to {p['xi']+1.96*p['xi_se']:.3f}. " + notes["shape"])
+
+    st.subheader("Threshold choice")
+    st.info(f"**Rule:** {p['threshold_rule']}. A threshold meets the stability heuristic when ξ lies within 1.96 standard errors of ξ at "
             "every higher candidate (at least three of them); candidates need at least 50 exceedances. This is a project "
             "heuristic, not an optimal or significance-calibrated procedure.")
-
+    st.write(f"The selected threshold includes the worst {m.zeta:.1%} of days. A lower u brings more non-tail days into the fit "
+             "and can bias it; a higher u leaves fewer points and increases uncertainty. The diagnostics below assess that trade-off.")
     ok = scan[scan.fit_ok]
-    c1, c2 = st.columns(2)
-    with c1:
-        fig = go.Figure(go.Scatter(x=ok.u, y=ok.mean_excess, mode="lines+markers", line=dict(color=ACCENT, width=2),
-                                   marker=dict(size=8), hovertemplate="u %{x:.2%}<br>mean excess %{y:.3%}<extra></extra>"))
-        fig.add_vline(x=p["u"], line_dash="dash", line_color=MUTED, annotation_text="chosen u")
-        st.markdown("**Mean excess over the threshold**")
-        st.plotly_chart(style(fig, 300, "Mean excess", legend=False).update_xaxes(tickformat=".1%", title="threshold u")
-                        .update_yaxes(tickformat=".2%"), width="stretch")
-        st.caption("Roughly linear and rising above the chosen threshold, which is consistent with a GPD tail with ξ > 0.")
-    with c2:
-        fig = go.Figure([go.Scatter(x=ok.q, y=ok.xi+1.96*ok.xi_se, line=dict(width=0), showlegend=False, hoverinfo="skip"),
-                         go.Scatter(x=ok.q, y=ok.xi-1.96*ok.xi_se, fill="tonexty", fillcolor="rgba(42,120,214,.15)",
-                                    line=dict(width=0), name="95% band", hoverinfo="skip"),
-                         go.Scatter(x=ok.q, y=ok.xi, name="ξ estimate", mode="lines+markers", line=dict(color=ACCENT, width=2),
-                                    marker=dict(size=8, color=np.where(ok.stable, ACCENT, "#ffffff"), line=dict(color=ACCENT, width=2)),
-                                    hovertemplate="q %{x:.3f}<br>ξ %{y:.3f}<extra></extra>")])
-        fig.add_vline(x=p["threshold_q"], line_dash="dash", line_color=MUTED, annotation_text="chosen")
-        st.markdown("**Shape ξ across thresholds** (filled = stable)")
-        st.plotly_chart(style(fig, 300, "ξ").update_xaxes(tickformat=".0%", title="threshold percentile"), width="stretch")
+    for pair in ((('mean_excess', 'Mean excess', True), ('xi', 'Shape ξ', False)),
+                 (('sigma_star', 'Modified scale σ* = σ − ξu', True), ('ks', 'KS distance', False))):
+        for col, (field, title, percent) in zip(st.columns(2), pair):
+            with col:
+                fig = go.Figure()
+                if field == 'xi':
+                    fig.add_trace(go.Scatter(x=ok.q, y=ok.xi+1.96*ok.xi_se, line=dict(width=0), showlegend=False))
+                    fig.add_trace(go.Scatter(x=ok.q, y=ok.xi-1.96*ok.xi_se, fill='tonexty', fillcolor='rgba(42,120,214,.15)', line=dict(width=0), name='Approximate 95% band'))
+                x = ok.u if field == 'mean_excess' else ok.q
+                fig.add_trace(go.Scatter(x=x, y=ok[field], mode='lines+markers', name=title,
+                              line=dict(color=ACCENT), marker=dict(size=7, color=np.where(ok.stable, ACCENT, '#ffffff'), line=dict(color=ACCENT, width=1)),
+                              customdata=ok.n_exceed, hovertemplate='%{x:.3%}<br>%{y:.5f}<br>exceedances %{customdata}<extra></extra>'))
+                fig.add_vline(x=p['u'] if field == 'mean_excess' else p['threshold_q'], line_dash='dash', line_color=MUTED)
+                st.markdown(f"**{title}**")
+                style(fig, 300, title, legend=field == 'xi').update_xaxes(tickformat='.1%', title='threshold u' if field == 'mean_excess' else 'threshold percentile')
+                if percent:
+                    fig.update_yaxes(tickformat='.2%')
+                st.plotly_chart(fig, width='stretch')
+    st.caption("Filled markers meet the stability heuristic. Bands are approximate, pointwise and computed on nested samples. "
+               "They are not simultaneous bands or a calibrated test.")
+    st.caption(notes['diagnostics'])
 
     st.subheader("Does the choice matter?")
-    from quanedge.risk import fit_evt
-    from quanedge.risk.portfolio import loss_fraction, portfolio_log_returns
-    r = portfolio_log_returns(np.log1p(RETURNS[F.UNIVERSE]), W); losses = -r.to_numpy()
+    fig = go.Figure()
+    body = (ok.q > alpha + 1e-12).to_numpy()            # above q = alpha the model answers from the empirical body
+    for field, label, color in (('es_usd', 'ES', ACCENT), ('var_usd', 'VaR', MUTED)):
+        fig.add_trace(go.Scatter(x=ok.q, y=ok[field], mode='lines+markers', name=f'{alpha:.0%} {label}', line=dict(color=color),
+                                marker=dict(size=7, color=np.where(body, '#ffffff', color), line=dict(color=color, width=1)),
+                                customdata=np.column_stack([ok.n_exceed, np.where(body, 'empirical body', 'GPD tail')]),
+                                hovertemplate='q %{x:.1%}<br>USD %{y:,.0f}<br>exceedances %{customdata[0]}<br>%{customdata[1]}<extra></extra>'))
+    for q, label in ((p['threshold_q'], 'chosen'), (.90, '90th'), (.95, '95th')):
+        fig.add_vline(x=q, line_dash='dash', annotation_text=label)
+    st.plotly_chart(style(fig, 340, 'USD simple loss').update_xaxes(tickformat='.0%', title='threshold percentile'), width='stretch')
+    if body.any():
+        st.caption(f"Hollow markers: thresholds above the {alpha:.0%} level, where the {alpha:.0%} VaR and ES come from the "
+                   "empirical losses below u, not the GPD tail. They are excluded from the stable-region range above.")
     rows = []
-    for label, q in (("Chosen by the rule", None), ("90th percentile", .90), ("95th percentile", .95)):
-        fit = m if q is None else fit_evt(losses, threshold_q=q)
-        rows.append({"Threshold": label, "u": pct(fit.params["u"], 2), "Exceedances": fit.params["n_exceed"],
-                     "ξ": f"{fit.params['xi']:.3f} ± {1.96*fit.params['xi_se']:.3f}",
-                     f"VaR {alpha:.0%}": usd(VALUE*loss_fraction(fit.var(alpha))), f"ES {alpha:.0%}": usd(VALUE*fit.es_fraction(alpha)),
-                     "Basis": fit.basis(alpha)})
-    st.dataframe(pd.DataFrame(rows), hide_index=True, width="stretch")
+    fits = {"Chosen by the rule (today's target)": m, **alts,
+            'Strategy path (rule chosen)': evt_strategy(EV['data_hash'], SH)}
+    for label, fit in fits.items():
+        if not hasattr(fit, 'fit'):
+            rows.append({'Threshold / portfolio': label, 'Status': f"unavailable: {fit.get('status', 'failed fit')}"}); continue
+        rows.append({'Threshold / portfolio': label, 'u (log loss)': pct(fit.fit.u, 3), 'Exceedances': fit.fit.n_exceed,
+                     'ξ (approx. 95% interval)': f"{fit.fit.xi:.3f} [{fit.fit.xi-1.96*fit.fit.se[0]:.3f}, {fit.fit.xi+1.96*fit.fit.se[0]:.3f}]",
+                     f'VaR {alpha:.0%}': usd(VALUE*loss_fraction(fit.var(alpha))), f'ES {alpha:.0%}': usd(VALUE*fit.es_fraction(alpha)),
+                     'Basis': fit.basis(alpha), 'Status': fit.status})
+    st.dataframe(pd.DataFrame(rows), hide_index=True, width='stretch')
 
-    st.subheader("Tail fit against the data")
-    srt = np.sort(losses)[::-1]; k = np.arange(1, len(srt)+1); emp = k/len(srt)
-    grid = np.linspace(p["u"], srt[0]*1.3, 200)
-    gpd = p["n_exceed"]/len(srt)*(1+p["xi"]*(grid-p["u"])/p["sigma"])**(-1/p["xi"])
-    from scipy.stats import norm
-    mu, sd = r.mean(), r.std()
-    fig = go.Figure([go.Scatter(x=srt[:p["n_exceed"]], y=emp[:p["n_exceed"]], mode="markers", name="Observed losses",
-                                marker=dict(size=6, color=MUTED)),
-                     go.Scatter(x=grid, y=gpd, name="GPD tail", line=dict(color=ACCENT, width=2)),
-                     go.Scatter(x=grid, y=norm.sf(grid, -mu, sd), name="Normal", line=dict(color="#eb6834", width=2, dash="dot"))])
-    style(fig, 360, "Probability a day's loss is larger").update_yaxes(type="log", tickformat=".0e")
-    fig.update_xaxes(tickformat=".1%", title="daily log loss"); fig.update_layout(hovermode="closest")
-    st.plotly_chart(fig, width="stretch")
-    st.caption("The normal curve falls away far faster than the observed losses: it makes the worst days look nearly impossible. "
-               "The GPD follows them. The tail shape alone is not a crash probability.")
+    st.subheader("Fit diagnostics (in-sample)")
+    tail = np.sort(losses[losses > p['u']]); maximum = tail[-1]
+    fig = go.Figure(go.Scatter(x=tail, y=(len(tail)-np.arange(len(tail)))/len(losses), mode='markers', name='Observed losses', marker=dict(color=MUTED, size=5)))
+    for grid, dash, name in ((np.linspace(p['u'], maximum, 200), 'solid', 'GPD: observed range'),
+                             (np.linspace(maximum, maximum*1.3, 80), 'dash', 'GPD: extrapolation')):
+        fig.add_trace(go.Scatter(x=grid, y=F.gpd_tail_prob(grid, m.fit, m.zeta), name=name, line=dict(color=ACCENT, dash=dash)))
+    grid = np.linspace(p['u'], maximum*1.3, 280)
+    fig.add_trace(go.Scatter(x=grid, y=norm.sf(grid, -r.mean(), r.std(ddof=1)), name='Normal', line=dict(color='#eb6834', dash='dot')))
+    fig.add_vrect(x0=maximum, x1=maximum*1.3, fillcolor=GRID, line_width=0, annotation_text='Extrapolation')
+    style(fig, 360, 'Probability of loss at least this large').update_yaxes(type='log', tickformat='.0e')
+    fig.update_xaxes(tickformat='.1%', title='daily log loss')
+    st.plotly_chart(fig, width='stretch'); st.caption(notes['survival'])
+    if qq['status'] == 'ok':
+        fig = go.Figure()
+        for field in ('hi', 'lo'):
+            fig.add_trace(go.Scatter(x=qq['theoretical'], y=qq[field], line=dict(width=0),
+                                    fill='tonexty' if field == 'lo' else None, fillcolor='rgba(42,120,214,.15)',
+                                    name='95% pointwise envelope', showlegend=field == 'lo'))
+        fig.add_trace(go.Scatter(x=qq['theoretical'], y=qq['theoretical'], name='Reference', line=dict(color=MUTED, dash='dash')))
+        fig.add_trace(go.Scatter(x=qq['theoretical'], y=qq['observed'], mode='markers', name='Observed excesses', marker=dict(color=ACCENT, size=5)))
+        st.plotly_chart(style(fig, 360, 'Observed excess (log loss)').update_xaxes(title='Fitted GPD excess quantile', tickformat='.1%').update_yaxes(tickformat='.1%'), width='stretch')
+    st.caption(notes['qq'])
+    st.caption('Parametric-bootstrap envelope: 200 simulated tail samples, refitted individually; refit-standardised order statistics mapped back to fitted GPD units. Threshold held fixed.')
+
+    with st.expander('All candidates'):
+        audit = scan[['q', 'u', 'n_exceed', 'fit_ok', 'note', 'xi', 'xi_se', 'sigma_star', 'ks', 'stable', 'var_usd', 'es_usd']].copy()
+        dropped = []
+        for q in S.EVT_THRESHOLD_GRID:
+            u = np.quantile(losses, q, method=S.QUANTILE_METHOD); n = int((losses > u).sum())
+            if n < S.EVT_MIN_EXCEED:
+                dropped.append(dict(q=q, u=u, n_exceed=n, fit_ok=False, note=f'fewer than {S.EVT_MIN_EXCEED} exceedances', stable=False))
+        audit = pd.concat([audit, pd.DataFrame(dropped)], ignore_index=True).sort_values('q')
+        st.caption(f'{len(dropped)} grid points dropped for fewer than {S.EVT_MIN_EXCEED} exceedances; {int((~scan.fit_ok).sum())} failed fits retained with reasons.')
+        st.dataframe(audit, hide_index=True, width='stretch')
+        if qq['failures']:
+            st.write('QQ refit failures:', qq['failures'])
+    st.subheader('Limits')
+    clustered = bool(seq and seq.get('independence_p') is not None and seq['independence_p'] <= .05)
+    st.write('Volatility clustering breaks the i.i.d. assumption behind POT' + (
+             ', and the rolling EVT backtest above shows its breaches cluster. ' if clustered else '. ') + 'Threshold-selection uncertainty is outside the bootstrap. Neither the rolling EVT backtest nor GARCH-EVT '
+             '(fixed 90th-percentile residual threshold) validates this full-sample fit.')
 
 
 def page_backtest():
@@ -598,9 +979,18 @@ def page_backtest():
                    "in the sidebar.")
     else:
         res, frame = F.backtest(FC, SH, method, alpha, start, end)
-        if res.get("status") != "ok" or res.get("days", 0) < 2:
-            st.warning(f"Not enough forecast days in this range ({res.get('days', 0)}).")
+        if res.get("days", 0) < 2:
+            st.warning(f"Not enough forecast days in this range ({res.get('days', 0)}). Choose a range of at least two "
+                       f"trading days between {FIRST_FC} and {LAST_FC}.")
         else:
+            if res["independence_p"] is None:
+                why = ("there were no breaches" if res["breaches"] == 0 else
+                       "every day was a breach" if res["breaches"] == res["days"] else "there are too few transitions")
+                st.info(f"The Christoffersen independence and conditional-coverage tests need breaches and non-breaches to "
+                        f"follow each other; in this range {why}, so they cannot be computed. The Kupiec test still applies.")
+            if res["days"] < 250:
+                st.info(f"Short range: {res['days']} forecast days, so about {res['expected_breaches']:.1f} breaches are expected "
+                        f"at {alpha:.0%}. The tests have little power here; a range of a year or more (250+ days) is more informative.")
             c = st.columns(5)
             c[0].metric("Days tested", f"{res['days']:,}", help=f"Coverage {res['coverage']:.1%}; missing forecasts {res['missing_days']}")
             c[1].metric("Breaches", f"{res['breaches']}", f"{res['breaches']-res['expected_breaches']:+.1f} vs {res['expected_breaches']:.1f} expected",
@@ -620,12 +1010,10 @@ def page_backtest():
             words = []
             words.append("too many breaches" if res["kupiec_p"] <= .05 and res["breaches"] > res["expected_breaches"] else
                          "too few breaches (conservative)" if res["kupiec_p"] <= .05 else "breach frequency acceptable")
-            if res["independence_p"] is not None:
-                words.append("breaches cluster" if res["independence_p"] <= .05 else "no evidence of clustering")
-            clustered = res["independence_p"] is not None and res["independence_p"] <= .05
-            verdict = ("acceptable, but watch the clustering" if res["passes_gate"] and clustered else "acceptable" if res["passes_gate"]
-                       else "questionable" if res["kupiec_p"] > .05 or (res["conditional_coverage_p"] or 0) > .05 else "unreliable")
-            st.markdown(f"**Reading:** {', '.join(words)} → model **{verdict}** for this range and level.")
+            words.append("clustering not testable" if res["independence_p"] is None else
+                         "breaches cluster" if res["independence_p"] <= .05 else "no evidence of clustering")
+            st.markdown(f"**Reading:** {', '.join(words)} for this range and level (p-values at or below 0.05 reject the "
+                        "hypothesis tested).")
 
             fig = go.Figure([go.Scatter(x=frame.index, y=frame.loss, name="Daily loss", line=dict(color=MUTED, width=1)),
                              go.Scatter(x=frame.index, y=frame["var"], name=f"{LABEL[method]} VaR {alpha:.0%}", line=dict(color=ACCENT, width=2)),
@@ -641,15 +1029,16 @@ def page_backtest():
 
     st.subheader("Reference test, fixed whatever the sidebar says")
     rows = []
-    for m, role in ((CFG["primary"], "Primary"), (CFG["challenger"], "Challenger")):
+    for m in ("garch_evt", "fhs"):
         v = next(x for x in SUMMARY["validation"] if x["method"] == m and x["alpha"] == .99)
-        rows.append({"Role": role, "Model": LABEL[m], "Breaches": v["breaches"], "Expected": round(v["expected_breaches"], 1),
-                     "Kupiec p": p_text(v["kupiec_p"]), "Cond. coverage p": p_text(v["conditional_coverage_p"]),
-                     "Zone": v["zone"], "Passes": tick(F.model_pass(v))})
+        rows.append({"Model": LABEL[m], "Breaches": v["breaches"], "Expected": round(v["expected_breaches"], 1),
+                     "Kupiec p": p_text(v["kupiec_p"]), "Independence p": p_text(v["independence_p"]),
+                     "Cond. coverage p": p_text(v["conditional_coverage_p"]), "Zone": v["zone"]})
     st.dataframe(pd.DataFrame(rows), hide_index=True, width="stretch")
-    st.caption(f"99% VaR, {CFG['evaluation_start']} to {CFG['snapshot_end']}, models named before these backtests were run. "
-               "Pass = coverage ≥ 95%, green or yellow, and Kupiec and conditional-coverage p-values both above 0.05. "
-               "GARCH-EVT passes; FHS fails because its breaches cluster.")
+    st.caption(f"99% VaR, {CFG['evaluation_start']} to {CFG['snapshot_end']}, on the strategy's own sequential forecasts. "
+               "Kupiec tests the breach frequency, Christoffersen independence tests clustering, conditional coverage tests "
+               "both; a p-value at or below 0.05 rejects that hypothesis. " + monitoring_note(
+                   *(next(x for x in SUMMARY["validation"] if x["method"] == m and x["alpha"] == .99) for m in ("garch_evt", "fhs"))))
 
     with st.expander("All saved models and levels for the chosen dates"):
         rows = []
@@ -708,7 +1097,7 @@ def page_stress():
         c1.dataframe(shocks, hide_index=True, width="stretch")
         c2.metric("Portfolio loss", usd(hyp["loss_usd"]), pct(hyp["return"]), delta_color="off")
         st.caption("SPY −25% and AGG −10% at once, gold unchanged; XLE's shock is the conditional mean given those, from the "
-                   "covariance of SPY's worst 10% of days in 2005-2016. Deterministic: it has no estimated probability.")
+                   "covariance of SPY's worst 10% of days from the data start to 2016. Deterministic: it has no estimated probability.")
     else:
         st.warning(f"Hypothetical scenario unavailable: {hyp.get('status')}")
 
@@ -737,7 +1126,7 @@ def page_contributions():
     alpha, method, start, end = SETTINGS
     st.title("Risk contributions and position sizing")
     contrib, tot = F.risk_contributions(RETURNS, W, alpha, VALUE)
-    st.caption(f"Source: historical attribution, joint daily rows of the four ETFs 2005-2026, current target, {alpha:.0%} ES, "
+    st.caption(f"Source: historical attribution, joint daily rows of the four ETFs {DATA_SPAN}, current target, {alpha:.0%} ES, "
                f"NAV {usd(VALUE)}. Volatility shares use the EWMA covariance the allocation rule uses. Portfolio-only models "
                "(FHS, GARCH-EVT) cannot split risk by ETF: attribution unavailable for them.")
     fig = go.Figure()
@@ -769,44 +1158,42 @@ def page_contributions():
 def page_limits():
     st.title("Assumptions & Limitations")
     st.caption("What this analysis does not capture, in plain language.")
-    test, _ = reserve(SH); r25 = test["results"][-1]
+    test, _ = reserve(EV["data_hash"], json.dumps(CFG, sort_keys=True)); r25 = test["results"][-1]
     reserve_line = (f"In a {r25['year']}-year test that resamples the strategy's own monthly returns, every cash reserve was paid in "
                     f"{pct(r25['all_payments_funded'])} of paths, but the USD 10m was kept in real terms in only "
-                    f"{pct(r25['real_capital_preserved'])}: the reserve grows {pct(CFG['reserve_growth'], 2)} a year, faster than US CPI. "
+                    f"{pct(r25['real_capital_preserved'])}: the reserve grows {pct(CFG['reserve_growth'], 2)} a year, matching the fixed CPI assumption used for this simulation. "
                     "These are illustrations from one history, not forecasts.")
-    backtest_line = ("- The breach counts of both risk models matched the 99% level, but the breaches came in clusters (independence "
-                     "tests failed), mostly around the months the overlay switches. Under the team's own pre-registered rule this "
-                     "is recorded as evaluation incomplete; the owner adopted v6 knowing it (31 October 2026, PLAN.md 13h)."
-                     if V6 else
-                     "- The backtest passed with GARCH-EVT, the backup model. The first-choice model (FHS) had breaches that came in "
-                     "clusters, which means risk rose faster than the model expected at the start of sudden shocks.")
-    overlay_block = ("""
-**About the recession overlay**
-- It uses the yield curve (inverted at some point in the last 24 months) confirmed by SPY below its 12-month average. The curve
-  preceded every US recession since 1969 but also gave false alarms (1966, 2022); the price check filters most of them.
-- Only two recessions (2008 and 2020) fall inside the 2005-2026 data, so the overlay's benefit rests mostly on economic reasoning
-  and the 60-year signal record, not on many tested episodes.
-- It holds cash (0%) while on. Cash is outside the brief's seven-ETF list; this is a disclosed policy choice.
-- It does not help in an inflation shock without a recession, such as 2022.
-- The rules were written in a session that had seen these crises; every number has a stated economic or published reason.
-""" if V6 else "")
+    ge, fhs = (next(v for v in SUMMARY["validation"] if v["method"] == m and v["alpha"] == .99) for m in ("garch_evt", "fhs"))
+    backtest_line = (monitoring_note(ge, fhs) + " Breaches cluster mostly around the months the overlay switches. Under the "
+                     "team's own pre-registered rule this is recorded as evaluation incomplete; the owner adopted v6 knowing it "
+                     "(31 October 2026).")
+    inflation_line = (f"{pct(CFG['inflation'], 2)} a year: the average US CPI inflation (FRED CPIAUCSL index ratio) from "
+                      f"{DATA_START:%d %B %Y} to {CFG['snapshot_end']}.")
     st.markdown("""
 **About the choice of portfolio**
-- This strategy was chosen after many alternatives had been tried on the same 2005-2026 data. Every number here is hindsight:
+- This strategy was chosen after many alternatives had been tried on the same DATA_SPAN data. Every number here is hindsight:
   there is no untouched test period. Good past results may partly reflect that search.
 - RESERVE_LINE
 
 **About the risk numbers**
 - VaR is not the most we can lose. It is a loss level that is exceeded about once in 100 days at 99%. Bigger losses happen.
 - Expected Shortfall is the average of the bad days, not a cap. A worse day than any in the data is possible.
-- All models learn from 2005-2026. A crisis unlike any in that period (for example, a long inflation decade) may not be captured.
+- All models learn from DATA_SPAN. A crisis unlike any in that period (for example, a long inflation decade) may not be captured.
 - The extreme-value (EVT) estimate rests on a few hundred bad days and a threshold rule we chose. A different threshold gives a
   somewhat different answer (see the EVT page).
 - The risk numbers assume today's weights are held for a day. Over weeks, losses compound and monthly rebalancing changes the
   weights; multi-day risk is not the one-day figure times a square root.
-BACKTEST_LINE
+- BACKTEST_LINE
 
-OVERLAY_BLOCK
+**About the recession overlay**
+- It uses the yield curve (inverted at some point in the last 24 months) confirmed by SPY below its 12-month average. The curve
+  preceded every US recession since 1969 but also gave false alarms (1966, 2022); the price check filters most of them.
+- Only two recessions (2008 and 2020) fall inside the data, so the overlay's benefit rests mostly on economic reasoning
+  and the 60-year signal record, not on many tested episodes.
+- It holds cash (0%) while on. Cash is outside the brief's seven-ETF list; this is a disclosed policy choice.
+- It does not help in an inflation shock without a recession, such as 2022.
+- The rules were written in a session that had seen these crises; every number has a stated economic or published reason.
+
 **About the portfolio**
 - Risk parity balances everyday volatility. It does not balance crash losses: energy and US stocks carry most of the tail risk.
 - Bonds did not protect in 2022, when stocks and bonds fell together. Gold helped in 2008 but not in March 2020.
@@ -818,18 +1205,20 @@ OVERLAY_BLOCK
   lower returns a little (turnover is about 0.95× NAV a year).
 - Adjusted closing prices from Yahoo Finance are used: dividends are reinvested, and fund fees are already in the prices.
 - No taxes, currency effects, cash yield on the reserve or new contributions are modelled. The reserve itself is assumed paid out.
-- Real returns use US CPI (FRED CPIAUCSL). That is US consumer inflation; a university's own costs (salaries, research,
-  construction) can rise faster. CPI is a revised series with an approximate publication lag, not what was known at the time.
+- Real returns use one inflation rate, INFLATION_LINE That is US consumer inflation; a university's own
+  costs (salaries, research, construction) can rise faster. CPI is a revised series with an approximate publication lag, not
+  what was known at the time, and a single average hides high-inflation years such as 2022.
 
 **About the data**
-- Only seven ETFs are eligible and this portfolio uses four. Each ETF's history starts in 2005 in the frozen snapshot; earlier
-  crises such as the 2000-2002 dot-com crash cannot be replayed with bonds and gold.
+- Only seven ETFs are eligible and this portfolio uses four. The common history used here starts on DATA_FIRST
+  (GLD first traded on 18 November 2004); earlier crises such as the 2000-2002 dot-com crash cannot be replayed with bonds and gold.
 - Suspected data errors were flagged and kept, not deleted. Genuine crash days remain in the data.
 
 **About human review**
 - AI tools (Claude Code, Codex, Antigravity) helped write the code and documents. Independent human review of the calculations and the
   investment judgement is still pending, and solo entry eligibility has not been confirmed by the organisers.
-""".replace("RESERVE_LINE", reserve_line).replace("BACKTEST_LINE", backtest_line).replace("OVERLAY_BLOCK", overlay_block))
+""".replace("RESERVE_LINE", reserve_line).replace("DATA_FIRST", f"{DATA_START:%d %B %Y}").replace("DATA_SPAN", DATA_SPAN).replace("BACKTEST_LINE", backtest_line)
+       .replace("INFLATION_LINE", inflation_line))
 
 
 def page_data():
@@ -837,13 +1226,15 @@ def page_data():
     meta = EV["meta"]; ST = meta.get("settings") or meta["strategy"]
     OV = ("\n- **Recession overlay (v6):** 10-year minus 3-month T-bill spread from FRED DGS10 and DTB3 (in the frozen raw data); "
           "SPY 12-month average from the frozen prices. Unemployment (UNRATE) and the Baa credit spread (BAA10Y) were supplied by "
-          "the owner from FRED and are kept with SHA-256 hashes in `context/fred/` (tested, not used by the rule)." if V6 else "")
+          "the owner from FRED and are kept with SHA-256 hashes in `context/fred/` (tested, not used by the rule).")
     st.markdown(f"""
 - **Prices:** Yahoo Finance adjusted closes via yfinance, frozen snapshot to {CFG['snapshot_end']} (`data/clean/prices_clean.csv`,
   SHA-256 `{EV['data_hash'][:16]}…`). Trading calendars aligned; anomalies flagged, not deleted.
 - **Risk-free rate:** FRED DTB3, converted from a discount basis to a bond-equivalent daily rate.
 - **Inflation:** FRED CPIAUCSL (US CPI, all urban consumers), index ratios as available on each date; never the level as a rate.
-- **Strategy evidence:** `results/{EV['run']}/` (pre-registered at tag `{meta['prereg_tag']}`, created {meta['created']}).
+  Policy rate {pct(CFG['inflation'], 2)} a year = average from {DATA_START:%d %B %Y} to {CFG['snapshot_end']} (mandate {CFG['mandate']}).
+- **Strategy evidence:** `results/{EV['run']}/` (strategy pre-registered at tag `{meta['prereg_tag']}`, policy tag
+  `{meta.get('policy_tag', meta['prereg_tag'])}`, created {meta['created']}).
   Strategy hash `{SH}` on every forecast row; the dashboard refuses forecasts with another hash or a changed price file.
 - **Settings:** EWMA λ = {ST['ewma_lambda']}, window {ST['window']} days, first target after
   {ST['min_history']} days, month-end decisions, universe SPY, AGG, GLD, XLE.{OV}
@@ -860,7 +1251,7 @@ def page_data():
     st.code("python -m pip install -r requirements.lock.txt\npython -m quanedge.data.run --check-only\n"
             "python -m quanedge.dynamic_parity_eval   # rebuilds results/dynamic-parity-r1 (v5 core)\n"
             "python -m quanedge.recession_overlay     # rebuilds results/recession-overlay-r1 (v6 final)\n"
-            "python -m quanedge.universe              # rebuilds results/universe-r1 (why these four ETFs)\n"
+            "python -m quanedge.universe              # rebuilds results/universe-r3 (why these four ETFs)\n"
             "python -m streamlit run dashboard.py")
     st.download_button("Download the daily strategy path (CSV)", PATH.to_csv().encode(), "final_portfolio_path.csv", "text/csv")
     st.download_button("Download the risk forecasts (CSV)", FC.to_csv().encode(), "final_portfolio_forecasts.csv", "text/csv")

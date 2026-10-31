@@ -161,7 +161,7 @@ def gather(root=None):
     from .risk import fit_evt
     from .risk.portfolio import loss_fraction, portfolio_log_returns
     root = root or config.ROOT
-    ev = F.load_evidence(root); prices, returns, rf, cpi = F.load_market(root)
+    ev = F.load_evidence(root, model="v5"); prices, returns, rf, cpi = F.load_market(root)
     cfg = F.policy(); V = float(cfg["value"]); path = ev["path"]; summary = ev["summary"]
     w = F.current_target(path)
     perf = F.performance(path, returns, rf, cpi)

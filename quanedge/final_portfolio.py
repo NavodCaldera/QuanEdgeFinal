@@ -1,12 +1,12 @@
 """Final portfolio: monthly dynamic EWMA risk parity (candidate v4d, PLAN.md section 13e).
 
 Streamlit-free calculations for dashboard.py. The expensive evidence (strategy path,
-sequential risk forecasts and the frozen check results) is read from the pre-registered
-run results/dynamic-parity-r1 and verified by hash; everything else here is cheap and
-recomputed from the frozen price snapshot.
+sequential risk forecasts and the check results) is read from results/recession-overlay-r1
+(final model v6: the strategy plus the recession overlay) and verified by hash; everything else
+here is cheap and recomputed from the frozen price snapshot.
 
-The owner chose this strategy as the final portfolio on 31 October 2026. Real returns
-deflate by US CPI (FRED CPIAUCSL index ratios, as available on each date).
+The owner adopted v6 as the final model on 31 October 2026. Real returns deflate by the policy
+inflation rate (config `inflation`); the CPI rate over a path's own dates is reported beside it.
 """
 import hashlib
 import json
@@ -22,8 +22,7 @@ from .stress import SCENARIOS, attribution, hypothetical, reverse_stress, stress
 
 NAME = "v4d_monthly"
 RUN = "dynamic-parity-r1"           # v5 core (without the recession overlay)
-RUN_V6 = "recession-overlay-r1"     # v6 final model (owner decision 31 Oct 2026, PLAN.md 13h)
-MODELS = {"v6": "With recession overlay (v6, final)", "v5": "Without overlay (v5 core)"}
+RUN_V6 = "recession-overlay-r1"     # v6 final model (owner decision 31 Oct 2026)
 UNIVERSE = ["SPY", "AGG", "GLD", "XLE"]
 BACKTEST_METHODS = ["historical", "normal", "evt", "fhs", "garch_evt"]
 
@@ -40,10 +39,11 @@ def policy():
     return yaml.safe_load((config.ROOT/"config/final.yaml").read_text(encoding="utf-8"))
 
 
-def load_evidence(root=None, model="v5"):
+def load_evidence(root=None, model="v6"):
     """Summary, metadata, daily path and forecasts of a strategy, after identity checks.
 
-    model "v6" reads the final model (v5 core plus the recession overlay) from results/recession-overlay-r1."""
+    model "v6" (default) reads the final model, the v5 core plus the recession overlay;
+    "v5" reads the core strategy without the overlay."""
     from .risk import load_forecasts
     root = root or config.ROOT
     if model == "v6":
@@ -52,6 +52,8 @@ def load_evidence(root=None, model="v5"):
             e = ro.load_saved(root/"results"/RUN_V6)
         except ro.OverlayEvidenceError as err:
             raise EvidenceError(str(err)) from err
+        if sha256(root/"data/clean/prices_clean.csv") != e["meta"]["data_hash"]:
+            raise EvidenceError("price snapshot differs from the one the evidence was computed on")
         return {"summary": e["summary"], "meta": e["meta"], "strategy_hash": e["meta"]["strategy_hash"],
                 "data_hash": e["meta"]["data_hash"], "path": e["path"], "forecasts": e["forecasts"],
                 "folder": root/"results"/RUN_V6, "run": RUN_V6, "model": "v6"}
@@ -95,6 +97,12 @@ def cpi_real(r, cpi):
     return cagr, inflation, (1+cagr)/(1+inflation)-1
 
 
+def policy_real(cagr, cfg=None):
+    """Real CAGR at the policy inflation rate (average US CPI from the data start)."""
+    cfg = cfg or policy()
+    return (1+cagr)/(1+cfg["inflation"])-1
+
+
 def current_target(path):
     """Target weights in force after the last decision close (the allocation to hold now)."""
     w = canonical_weights({t: float(path[f"target_{t}"].iloc[-1]) for t in UNIVERSE})
@@ -132,11 +140,170 @@ def benchmark_returns(returns):
     return replay(returns[["SPY", "AGG"]], {"SPY": .4, "AGG": .6}, cost=0., drift=.05)["return"]
 
 
+def same_risk_spy_weight(path, returns, step=.01):
+    """SPY weight of the SPY/AGG mix whose volatility over the strategy's dates first reaches the
+    strategy's own (grid of 1 point). Chosen after the fact, to compare return at equal risk."""
+    x = returns.loc[path.index[0]:path.index[-1], ["SPY", "AGG"]]; target = path["return"].std()
+    for w in np.arange(0, 1+step/2, step):
+        if replay(x, {"SPY": w, "AGG": 1-w}, cost=0., drift=.05)["return"].std() >= target:
+            return float(round(w, 2))
+    return 1.
+
+
+def benchmarks(path, returns, cfg=None):
+    """Reference allocations; unavailable fits are isolated to their own entry.
+
+    The approximate volatility match and static parity use full-history information.
+    They are retrospective comparisons, not historically selected strategies.
+    """
+    from .portfolio import construct
+    cfg = cfg or policy()
+    result = {}
+    errors = (ValueError, RuntimeError, np.linalg.LinAlgError)
+    try:
+        w = same_risk_spy_weight(path, returns)
+        result[f"SPY/AGG {w:.0%}/{1-w:.0%} (approx. vol-matched)"] = (
+            {"SPY": w, "AGG": 1-w},
+            f"Volatility approximately matched on {path.index[0].date()} to {path.index[-1].date()} "
+            "using a one-percentage-point weight grid; shorter periods need not match.")
+    except errors as err:
+        result["SPY/AGG volatility match"] = (None, f"Unavailable: {err}")
+    try:
+        fitted = construct(returns, cfg, "near_parity")
+        if fitted.get("weights") is None:
+            raise ValueError(fitted.get("reason", "static parity optimisation failed"))
+        weights = {t: float(fitted["weights"][t]) for t in UNIVERSE}
+        if not np.isfinite(list(weights.values())).all() or min(weights.values()) < 0 or not np.isclose(sum(weights.values()), 1):
+            raise ValueError("static parity weights are invalid")
+        result["Static risk parity"] = (weights,
+            "Fixed full-sample risk parity on the same four ETFs; Ledoit-Wolf covariance, "
+            "quarterly/drift rebalancing. Differences do not isolate monthly updating.")
+    except errors as err:
+        result["Static risk parity"] = (None, f"Unavailable: {err}")
+    result["40/60 SPY/AGG"] = ({"SPY": .4, "AGG": .6}, "Conventional conservative stock/bond mix.")
+    result["Permanent 25/50/25"] = ({"SPY": .25, "AGG": .5, "GLD": .25}, "Simple stock/bond/gold mix.")
+    return result
+
+
+def benchmark_path(weights, returns, start, end):
+    """Daily returns of a fixed allocation started at target on the supplied full-history start."""
+    return benchmark_frame(weights, returns, start, end)["return"]
+
+
+def benchmark_frame(weights, returns, start, end):
+    """Zero-cost fixed-weight replay; build on full strategy dates, then slice for display."""
+    return replay(returns.loc[start:end, list(weights)], weights, cost=0., drift=.05)
+
+
+def benchmark_window(frame, start=None, end=None):
+    """A view of an already-invested benchmark; preserves opening holdings and trade dates."""
+    return frame.loc[start:end].copy()
+
+
+def with_cost(r, turnover, cost):
+    """Exact proportional-cost sensitivity on the recorded, scale-invariant trade path."""
+    traded = turnover.reindex(r.index)
+    if not np.isfinite(cost) or cost < 0 or traded.isna().any() or not np.isfinite(traded).all() or (traded < 0).any():
+        raise ValueError("nonnegative finite costs and complete turnover history are required")
+    if (cost*traded >= 1).any():
+        raise ValueError("trading costs exhaust portfolio wealth")
+    return (1+r)*(1-cost*traded)-1
+
+
+def cagr(r):
+    if len(r) < 2:
+        return np.nan
+    years = (r.index[-1]-r.index[0]).days/365.25
+    return float(np.expm1(np.log1p(r).sum()/years)) if years > 0 else np.nan
+
+
+def page_kpis(r, rf, market, cpi, cfg=None):
+    """Page-only KPIs, separating actual CPI adjustment from the fixed planning assumption."""
+    out = kpis(r, rf, market, r)
+    if out.get("status"):
+        return out
+    _, inflation, real = cpi_real(r, cpi)
+    excess = (r-rf.reindex(r.index)).dropna()
+    downside = np.sqrt(np.mean(np.minimum(excess, 0)**2))*np.sqrt(252)
+    out.update(cpi_inflation=inflation, real_cagr_cpi=real, real_cagr_policy=policy_real(out["cagr"], cfg),
+               sortino_excess=float(excess.mean()*252/downside) if downside > 1e-12 else None)
+    return out
+
+
+def relative(r, b):
+    """Descriptive return differences and information ratio; no significance inference."""
+    frame = pd.concat([r.rename("portfolio"), b.rename("benchmark")], axis=1).dropna()
+    if len(frame) < 2:
+        return {k: None for k in ("cagr_diff", "mean_diff", "tracking_error", "information_ratio")}
+    active = frame.portfolio-frame.benchmark
+    te = float(active.std()*np.sqrt(252))
+    return {"cagr_diff": cagr(frame.portfolio)-cagr(frame.benchmark), "mean_diff": float(active.mean()*252),
+            "tracking_error": te, "information_ratio": float(active.mean()*252/te) if te > 1e-12 else None}
+
+
+def reserve_ledger(r, cfg=None):
+    """Actual fund-balance replay with fixed calendar-anchored withdrawals and visible shortfalls.
+
+    Start with the full fund in the first full calendar year of the strategy history,
+    matching reserve_history. Year-1 payment is deducted before that day's return.
+    Build this ledger once on the full path; date filters must only slice it.
+    """
+    cfg = cfg or policy()
+    columns = ["balance", "required_payment", "paid_payment", "shortfall", "depleted"]
+    if r.empty:
+        return pd.DataFrame(columns=columns, index=pd.DatetimeIndex([], name="date"))
+    if not np.isfinite(r).all() or (r <= -1).any() or r.index.has_duplicates or not r.index.is_monotonic_increasing:
+        raise ValueError("reserve replay needs finite, chronological returns above -100%")
+    # The saved strategy begins in a partial year; its first full year funds payment one.
+    first_year = r.index[0].year if r.index[0].month == 1 and r.index[0].day <= 7 else r.index[0].year+1
+    invest = r.loc[r.index.year >= first_year]
+    if invest.empty:
+        return pd.DataFrame(columns=columns, index=pd.DatetimeIndex([], name="date"))
+    nav = float(cfg["fund_value"])
+    rows = []; year = invest.index[0].year
+    pos = r.index.get_loc(invest.index[0])
+    base = r.index[pos-1] if pos > 0 else invest.index[0]-pd.Timedelta(days=1)
+    rows.append((base, nav, 0., 0., 0., False))
+    previous_year = None
+    for date, ret in invest.items():
+        need = paid = short = 0.
+        if date.year != previous_year:
+            need = cfg["reserve_initial"]*(1+cfg["reserve_growth"])**(date.year-year)
+            paid = min(nav, need); short = max(need-paid, 0.)
+            nav -= paid
+        nav = max(0., nav*(1+ret))
+        rows.append((date, nav, need, paid, short, nav <= 0))
+        previous_year = date.year
+    return pd.DataFrame(rows, columns=["date", *columns]).set_index("date")
+
+
+def reserve_window(ledger, start=None, end=None):
+    """Zoom an existing fund history without resetting payment years or rebasing balances."""
+    view = ledger.loc[start:end]
+    if view.empty:
+        return view.copy()
+    pos = ledger.index.get_loc(view.index[0])
+    return ledger.iloc[max(0, pos-1):ledger.index.get_loc(view.index[-1])+1].copy()
+
+
+def takeaway(name_k, bench_k, rel):
+    """Factual comparison only; small observed gaps are not evidence of future superiority."""
+    ahead = [n for n in bench_k if rel[n]["cagr_diff"] > 0]
+    behind = [n for n in bench_k if rel[n]["cagr_diff"] <= 0]
+    shallower = [n for n in bench_k if name_k["maximum_drawdown"] > bench_k[n]["maximum_drawdown"]]
+    deeper = [n for n in bench_k if n not in shallower]
+    gap = lambda xs: ", ".join(f"{n} ({100*rel[n]['cagr_diff']:+.2f} pp)" for n in xs) if xs else "none"
+    fall = lambda xs: ", ".join(f"{n} ({100*-bench_k[n]['maximum_drawdown']:.1f}%)" for n in xs) if xs else "none"
+    return {"ahead": gap(ahead), "behind": gap(behind), "shallower": fall(shallower), "deeper": fall(deeper)}
+
+
 def performance(path, returns, rf, cpi, start=None, end=None):
     """KPIs of the strategy path against SPY (market) and 40/60 SPY/AGG (benchmark)."""
     r = window(path, start, end)["return"]
     out = kpis(r, rf, returns.SPY, benchmark_returns(returns))
-    out["cpi_inflation"], out["real_cagr"] = cpi_real(r, cpi)[1:] if len(r) > 1 else (np.nan, np.nan)
+    out["path_cpi_inflation"] = cpi_real(r, cpi)[1] if len(r) > 1 else np.nan
+    out["cpi_inflation"] = policy()["inflation"]
+    out["real_cagr"] = policy_real(out["cagr"]) if len(r) > 1 else np.nan
     years = (r.index[-1]-r.index[0]).days/365.25 if len(r) > 1 else np.nan
     w = window(path, start, end)
     out["rebalances"] = int(w.rebalanced.astype(bool).sum())
@@ -305,7 +472,7 @@ def comparison(path, returns, rf, cpi):
     """The strategy beside fixed-weight alternatives over the strategy's own dates.
 
     Optimised weights (Markowitz minimum variance and maximum Sharpe, static risk parity) use the
-    whole 2005-2026 sample, so they are hindsight comparisons; all fixed weights rebalance quarterly
+    whole November 2004 to September 2026 sample, so they are hindsight comparisons; all fixed weights rebalance quarterly
     or on a 5-point drift at zero cost. Retrospective portfolio evaluation."""
     from .portfolio import construct, replay, tail_weights
     cfg = policy(); start = path.index[0]; x = returns.loc[start:]
@@ -321,7 +488,7 @@ def comparison(path, returns, rf, cpi):
         r = path["return"] if w is None else replay(x[list(w)], w, cost=cfg["cost"], drift=cfg["drift"])["return"]
         k = kpis(r, rf, returns.SPY, bench); wealth = (1+r).cumprod(); loss = -r.to_numpy()
         row = {"portfolio": label, "weights": None if w is None else {t: float(w.get(t, 0.)) for t in UNIVERSE},
-               "cagr": k["cagr"], "real_cagr": cpi_real(r, cpi)[2], "volatility": k["annual_volatility"],
+               "cagr": k["cagr"], "real_cagr": policy_real(k["cagr"], cfg), "volatility": k["annual_volatility"],
                "max_drawdown": -k["maximum_drawdown"], "sharpe": k["sharpe"],
                "es99_daily": float(tail_weights(loss)@loss)}
         for name, (a, b) in SCENARIOS.items():
@@ -350,7 +517,7 @@ def expected_returns(returns, weights, cfg=None):
 def reserve_test(path, cfg=None):
     """25-year cash-reserve survival on the strategy's own monthly returns: joint non-circular
     12-month blocks, the 1 January reserve paid first, real values deflated by the policy CPI
-    rate. Identical to the mandate v5 run's calculation (pipeline.survival_of)."""
+    rate. Uses the active policy and the same accounting as pipeline.survival_of."""
     from .stress import reserve_survival
     cfg = cfg or policy()
     m = ((1+path["return"]).resample("ME").prod()-1).iloc[1:]       # the first month is partial
@@ -391,3 +558,181 @@ def bootstrap(returns, weights, value, cfg=None):
         out[f"es_usd_{side}"] = value*out[f"es_frac_{side}"]
     return out
 
+
+
+def strategy_risk(path, value, alphas=(.90, .95, .99), start=None, end=None):
+    """Historical one-day risk of the recorded monthly strategy, before withdrawals."""
+    from .risk.var_es import historical
+    from .risk.portfolio import loss_fraction
+    r = path.loc[start:end, "return"]
+    model = historical(np.log1p(r))
+    return pd.DataFrame([dict(alpha=a, var=model.var(a), es=model.es(a),
+        es_fraction=model.es_fraction(a), var_usd=value*loss_fraction(model.var(a)),
+        es_usd=value*model.es_fraction(a), n=len(r), effective_tail_count=len(r)*(1-a),
+        first=r.index[0], last=r.index[-1]) for a in alphas])
+
+
+def risk_scope(returns, start=None, end=None, *, price_start=None, strategy_start=None):
+    """Dates and sample count for the selected return window."""
+    r = returns.loc[start:end]
+    return dict(first=r.index[0], last=r.index[-1], n=len(r),
+                price_start=price_start, strategy_start=strategy_start)
+
+
+def disagreement_notes(table, models, alpha):
+    """Evidence-driven comparisons; failed fits never supply narrative parameters."""
+    selected = table[np.isclose(table.alpha, alpha)].set_index("method")
+    notes = []
+    def valid(method):
+        if method not in selected.index:
+            return False
+        row = selected.loc[method]
+        return str(row.status).lower().startswith(("ok", "warning")) and np.isfinite(row.es_usd)
+    for method, row in selected.iterrows():
+        if not valid(method):
+            notes.append(f"Unavailable: {method}: {row.status}")
+    if valid("normal") and valid("historical") and selected.loc["normal", "es_usd"] > 0:
+        ratio = selected.loc["historical", "es_usd"]/selected.loc["normal", "es_usd"]
+        ratios = []
+        for a in sorted(table.alpha.unique()):
+            q = table[np.isclose(table.alpha, a)].set_index("method")
+            if all(m in q.index and str(q.loc[m, "status"]).lower().startswith(("ok", "warning"))
+                   and np.isfinite(q.loc[m, "es_usd"]) for m in ("normal", "historical")) and q.loc["normal", "es_usd"] > 0:
+                ratios.append((a, q.loc["historical", "es_usd"]/q.loc["normal", "es_usd"]))
+        detail = ", ".join(f"{a:.0%}: {v:.2f}x" for a, v in ratios)
+        widens = len(ratios) > 1 and all(y[1] > x[1] for x, y in zip(ratios, ratios[1:]))
+        notes.append(f"Normal versus history: historical ES is {ratio:.2f}x normal ES. Ratios ({detail}). "
+                     + ("The relative gap widens with confidence." if widens else "No consistent increase in the relative gap across confidence levels."))
+    if valid("mc_normal") and valid("normal") and selected.loc["normal", "es_usd"] > 0:
+        gap = abs(selected.loc["mc_normal", "es_usd"]/selected.loc["normal", "es_usd"]-1)*100
+        word = "is within" if gap <= 5 else "differs by"
+        notes.append(f"Monte Carlo normal ES {word} {gap:.2f}% of the normal fit. Joint ETF log-return scenarios "
+                     "aggregated through simple returns use different portfolio accounting from a normal fit to portfolio log returns.")
+    if valid("evt") and valid("historical") and selected.loc["historical", "es_usd"] > 0:
+        gap = (selected.loc["evt", "es_usd"]/selected.loc["historical", "es_usd"]-1)*100
+        params = models["evt"].params
+        xi, se = params.get("xi"), params.get("xi_se")
+        shape = f" Shape xi = {xi:.3f}" if xi is not None and np.isfinite(xi) else ""
+        if shape and se is not None and np.isfinite(se):
+            shape += f" +/- {1.96*se:.3f} (approximate 95% interval)."
+        notes.append(f"EVT ES differs from historical ES by {gap:+.2f}%.{shape} Basis: {selected.loc['evt', 'basis']}.")
+    return notes
+
+
+# APP-018: EVT page diagnostics; frozen risk implementations remain unchanged.
+def evt_scan(losses, value, alpha):
+    from .risk.evt import threshold_scan
+    from .risk.portfolio import loss_fraction
+    scan = threshold_scan(losses, alphas=(alpha,), dollar_es=True)
+    scan["var_usd"] = value * loss_fraction(scan[f"var_{alpha:g}"])
+    scan["es_usd"] = value * scan[f"es_fraction_{alpha:g}"]
+    return scan
+
+
+def gpd_tail_prob(x, fit, zeta):
+    from scipy.stats import genpareto
+    return zeta * genpareto.sf(np.asarray(x)-fit.u, c=fit.xi, scale=fit.sigma)
+
+
+def gpd_qq(fit, losses, reps=200, seed=None):
+    """Pointwise parametric envelope, refitting every simulated tail sample.
+
+    Refit-standardised order statistics are mapped back to the original fitted
+    GPD units using its inverse CDF. Failed refits remain in the counts.
+    """
+    from scipy.stats import genpareto
+    from .risk.evt import fit_gpd, gpd_ppf
+    from .risk.validation import ModelFitError
+    seed = policy()["seed"] if seed is None else seed
+    observed = np.sort(np.asarray(losses)[np.asarray(losses) > fit.u]-fit.u)
+    n = len(observed); probs = (np.arange(n)+.5)/n
+    theoretical = gpd_ppf(probs, fit.xi, fit.sigma)
+    rng = np.random.default_rng(seed); samples = []; failures = []
+    for _ in range(reps):
+        y = genpareto.rvs(fit.xi, scale=fit.sigma, size=n, random_state=rng)
+        try:
+            refit = fit_gpd(y, 0.)
+            pit = genpareto.cdf(np.sort(y), refit.xi, scale=refit.sigma)
+            standardised = gpd_ppf(pit, fit.xi, fit.sigma)
+            if not np.isfinite(standardised).all():
+                raise ModelFitError("non-finite refitted order statistics")
+            samples.append(standardised)
+        except (ModelFitError, ValueError, FloatingPointError) as err:
+            failures.append(str(err))
+    out = dict(theoretical=theoretical, observed=observed, reps_ok=len(samples),
+               reps_failed=len(failures), failures=failures, seed=seed)
+    if not samples:
+        return dict(out, status="unavailable: all parametric-bootstrap refits failed")
+    lo, hi = np.quantile(samples, [.025, .975], axis=0)
+    return dict(out, status="ok", lo=lo, hi=hi, outside=(observed < lo) | (observed > hi))
+
+
+def strategy_evt(path):
+    """Rule-chosen EVT on the strategy's own daily path; flags a choice at either end of the grid."""
+    from .risk import settings as S
+    from .risk.evt import fit_evt
+    from .risk.validation import ModelFitError
+    try:
+        model = fit_evt(-np.log1p(path["return"]).to_numpy())
+    except (ModelFitError, ValueError) as err:
+        return {"status": f"unavailable: {err}"}
+    q, grid = model.params["threshold_q"], S.EVT_THRESHOLD_GRID
+    if abs(q-grid[0]) < 1e-3:
+        model.status = f"ok; selected at the lowest grid point ({grid[0]:.1%}); a lower threshold was not examined"
+    elif abs(q-grid[-1]) < 1e-3:
+        model.status = f"ok; selected at the highest grid point ({grid[-1]:.1%}); a higher threshold was not examined"
+    return model
+
+
+def evt_notes(model, scan, alpha, value, alt_fits, boot_row, qq):
+    """Generate page conclusions and captions from the actual fitted evidence."""
+    from .risk.portfolio import loss_fraction
+    if not hasattr(model, "fit"):
+        reason = model.get("status", "failed fit") if isinstance(model, dict) else getattr(model, "status", "failed fit")
+        return {"conclusion": f"EVT result unavailable: {reason}"}
+    f = model.fit; base = value*model.es_fraction(alpha)
+    words = [f"At {alpha:.0%}, EVT VaR is USD {value*loss_fraction(model.var(alpha)):,.0f} and ES is USD {base:,.0f}; basis: {model.basis(alpha)}."]
+    for label, alt in alt_fits.items():
+        if not hasattr(alt, "fit"):
+            words.append(f"{label}: unavailable ({alt.get('status', 'failed fit')}).")
+        elif np.isfinite(base) and base != 0:
+            words.append(f"{label}: ES changes by {(value*alt.es_fraction(alpha)/base-1):+.2%} from the selected threshold.")
+    # Above q = alpha the model answers from the empirical body, so only q <= alpha rows are GPD-tail estimates.
+    stable = scan.loc[scan.fit_ok & scan.stable & (scan.q <= alpha + 1e-12), "es_usd"].dropna()
+    words.append(f"GPD-tail ES across thresholds meeting the stability heuristic: USD {stable.min():,.0f} to USD {stable.max():,.0f}."
+                 if len(stable) else "Stable-region GPD-tail ES range unavailable at this confidence level.")
+    if boot_row is not None and np.isfinite([boot_row.es_usd_lo, boot_row.es_usd_hi]).all():
+        words.append(f"Full-sample 95% bootstrap ES interval: USD {boot_row.es_usd_lo:,.0f} to USD {boot_row.es_usd_hi:,.0f} (threshold percentile fixed; {int(boot_row.reps_ok)} successful, {int(boot_row.reps_failed)} failed resamples).")
+    else:
+        words.append("Full-sample bootstrap ES interval unavailable.")
+    words.append("This does not establish forecast calibration or protection against future crises.")
+    ok = scan.loc[scan.fit_ok]; above = ok.loc[ok.u >= f.u]
+    slope = np.polyfit(above.u, above.mean_excess, 1)[0] if len(above)>1 else np.nan
+    direction = "rising" if slope > 0 else "falling" if slope < 0 else "flat" if slope == 0 else "unavailable"
+    drift = ""
+    if len(ok) > 1:
+        scale = ok.sigma_star
+        drift = (f" Across valid fits ξ ranges from {ok.xi.min():.2f} to {ok.xi.max():.2f} and σ* from {scale.min():.3%} to "
+                 f"{scale.max():.3%} log loss{', changing sign' if scale.min() < 0 < scale.max() else ''}; both would be flat if a "
+                 "single GPD held from the lowest threshold upward.")
+        top = ok.loc[ok.stable & (ok.u >= f.u)]
+        if len(top) > 1:
+            hi = top.iloc[-1]; lo = ok.iloc[(ok.u-f.u).abs().argmin()]
+            drift += (f" From the selected threshold to the highest one meeting the heuristic ({hi.q:.1%}), ξ moves "
+                      f"{hi.xi-lo.xi:+.2f} and σ* {hi.sigma_star-lo.sigma_star:+.3%}; the heuristic accepts this because the "
+                      "higher-threshold standard errors are wide.")
+    shape = "positive (power-law tail)" if f.xi > 0 else "zero (exponential tail)" if f.xi == 0 else "negative (finite upper endpoint)"
+    shape += "; fitted log-loss variance " + ("finite" if f.xi < .5 else "not finite")
+    shape += "; fitted log ES " + ("finite" if f.xi < 1 else "not finite") + "."
+    if qq.get("status") == "ok":
+        outside = qq["outside"]; upper = np.arange(len(outside)) >= .9*len(outside)
+        where = f"{int((outside & upper).sum())} in the upper 10% and {int((outside & ~upper).sum())} in the remaining body of the fitted tail"
+        caption = (f"{outside.mean():.1%} of excesses fall outside the pointwise 95% envelope (about 5% would by chance "
+                   f"if the fitted GPD were correct): {where}.")
+    else:
+        caption = f"QQ envelope unavailable: {qq.get('status', 'failed refits')}."
+    maximum = float(model.losses.max()); extension = .3*maximum
+    return dict(conclusion=" ".join(words), shape=shape,
+                diagnostics=f"Mean-excess slope above u is {direction}.{drift}",
+                qq=caption+f" Successful refits: {qq.get('reps_ok', 0)}; failed: {qq.get('reps_failed', 0)}. In-sample diagnostic; extrapolation remains uncertain.",
+                survival=f"Dashed extrapolation extends {extension:.3%} log-loss units (30%) beyond the largest observed loss of {maximum:.3%}. In-sample diagnostic; extrapolation remains uncertain.")

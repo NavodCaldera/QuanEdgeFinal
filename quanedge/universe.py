@@ -1,12 +1,12 @@
 """Why the portfolio holds SPY, AGG, GLD and XLE and not EFA, EEM or XLK (mandate v3 universe).
 
 Streamlit-free evidence for the dashboard's Decision page and the report. Everything is
-recomputed from the frozen price and macro snapshot (2005-01-03 to 2026-09-30) except the
+recomputed from the frozen price and macro snapshot (data start to 2026-09-30) except the
 optimiser table, which reads the weight files of the seven-ETF runs final-20261027 (v1) and
 final-v2-20261030 (v2). All of it is retrospective and descriptive: the four-ETF rule was
 written on 30 October 2026 after these data were seen (PLAN.md section 13c).
 
-Run: python -m quanedge.universe   (writes results/universe-r1/)
+Run: python -m quanedge.universe   (writes results/universe-r3/ on the v6 price snapshot; universe-r2 is the v7 2004 snapshot)
 """
 import hashlib
 import json
@@ -22,7 +22,7 @@ from .stress import SCENARIOS
 KEEP = ["SPY", "AGG", "GLD", "XLE"]
 DROP = ["EFA", "EEM", "XLK"]
 EQUITY = ["SPY", "EFA", "EEM", "XLE", "XLK"]
-OUT = "universe-r1"
+OUT = "universe-r3"
 SEVEN_ETF_RUNS = {"v1 (final-20261027)": "final-20261027", "v2 (final-v2-20261030)": "final-v2-20261030"}
 OPTIMISERS = ["min_cvar", "min_variance", "selected", "max_sharpe"]
 
@@ -94,8 +94,8 @@ def crises(prices):
             w = p.loc[a:b]
             row[f"{name} return"] = w.iloc[-1]/w.iloc[0]-1
             row[f"{name} max fall"] = -(w/w.cummax()-1).min()
-        row["max fall 2005-2026"] = -(p/p.cummax()-1).min()
-        row["annual return 2005-2026"] = (p.iloc[-1]/p.iloc[0])**(365.25/(p.index[-1]-p.index[0]).days)-1
+        row["max fall, full period"] = -(p/p.cummax()-1).min()
+        row["annual return, full period"] = (p.iloc[-1]/p.iloc[0])**(365.25/(p.index[-1]-p.index[0]).days)-1
         row["annual volatility"] = p.pct_change().std()*np.sqrt(252)
         rows.append(row)
     return pd.DataFrame(rows)
@@ -135,6 +135,58 @@ def monthly_negative(r):
                          "negative_share": float((c < 0).mean()), "median": float(c.median()),
                          "both_held": a in KEEP and b in KEEP})
     return pd.DataFrame(rows).sort_values("negative_share", ascending=False)
+
+
+def energy_bond(prices, macro):
+    """XLE against AGG: correlation by calendar year, and how each held ETF did when bonds did badly.
+
+    Returns (yearly, months, summary). months: within-month XLE-AGG correlation with both ETFs' monthly
+    returns, most negative first. yearly: within-year daily log-return correlation of XLE-AGG and, for
+    reference, SPY-AGG, with each ETF's buy-and-hold return that year. summary: one row per measure
+    (full-sample, monthly and rolling correlations; AGG's worst 5% of days; months with the 10-year
+    yield up more than 0.25 points). Descriptive and retrospective."""
+    r = log_returns(prices[KEEP])
+    yearly = []
+    for year, d in r.groupby(r.index.year):
+        p = prices.loc[str(year), KEEP]; upto = prices.loc[:p.index[0], KEEP]
+        base = upto.iloc[-2] if len(upto) > 1 else upto.iloc[0]          # previous year-end close
+        yearly.append({"year": int(year), "days": len(d), "XLE-AGG": float(d.XLE.corr(d.AGG)), "SPY-AGG": float(d.SPY.corr(d.AGG)),
+                       "XLE return": float(p.XLE.iloc[-1]/base.XLE-1), "AGG return": float(p.AGG.iloc[-1]/base.AGG-1)})
+    yearly = pd.DataFrame(yearly)
+    month = r.groupby(r.index.to_period("M")).apply(lambda d: d.XLE.corr(d.AGG))
+    mret = prices[KEEP].resample("ME").last().pct_change()
+    mret.index = mret.index.to_period("M")
+    months = pd.DataFrame({"month": month.index.astype(str), "XLE-AGG": month.to_numpy(),
+                           "XLE return": mret.XLE.reindex(month.index).to_numpy(),
+                           "AGG return": mret.AGG.reindex(month.index).to_numpy()}).sort_values("XLE-AGG")
+    rolling = r.XLE.rolling(252).corr(r.AGG).dropna()
+    bad = r.AGG <= r.AGG.quantile(.05)
+    m = prices[KEEP].resample("ME").last(); ret = m.pct_change().dropna()
+    dy = macro.DGS10.reindex(prices.index).ffill().resample("ME").last().diff().reindex(ret.index)
+    shock = (dy > .25).fillna(False).astype(bool)
+    rows = [("Daily correlation, full sample", float(r.XLE.corr(r.AGG))),
+            ("Monthly correlation, full sample", float(np.log1p(ret).XLE.corr(np.log1p(ret).AGG))),
+            ("Years with negative correlation", int((yearly["XLE-AGG"] < 0).sum())),
+            ("Years", len(yearly)),
+            ("Months with negative correlation", int((month < 0).sum())),
+            ("Months", int(month.notna().sum())),
+            ("Months below -0.3", int((month < -.3).sum())),
+            ("Months below -0.5", int((month < -.5).sum())),
+            ("Share of rolling 1-year windows negative", float((rolling < 0).mean())),
+            ("Most negative rolling 1-year correlation", float(rolling.min())),
+            ("AGG worst 5% days", int(bad.sum())),
+            *[(f"Mean daily return on AGG worst 5% days: {t}", float(np.expm1(r.loc[bad, t]).mean())) for t in KEEP],
+            ("Rate-shock months (10y yield +0.25 pt)", int(shock.sum())),
+            *[(f"Mean monthly return in rate-shock months: {t}", float(ret.loc[shock, t].mean())) for t in KEEP]]
+    every = log_returns(prices[[t for t in TICKERS if t in prices]])
+    for t in [t for t in every if t != "AGG"]:                   # the same years for every eligible ETF against AGG
+        y = every.groupby(every.index.year).apply(lambda d: d[t].corr(d.AGG))
+        rows += [(f"Daily correlation with AGG: {t}", float(every[t].corr(every.AGG))),
+                 (f"Negative years with AGG: {t}", int((y < 0).sum())),
+                 (f"Negative years with AGG since 2020: {t}", int((y.loc[2020:] < 0).sum())),
+                 ("Years since 2020", int(len(y.loc[2020:])))]
+    rows = list(dict(rows).items())
+    return yearly, months, pd.DataFrame(rows, columns=["measure", "value"])
 
 
 def es99(x):
@@ -194,7 +246,8 @@ def evidence(prices, macro):
     r = log_returns(prices[TICKERS]); simple = prices[TICKERS].pct_change().dropna()
     full, stress, n_stress = correlations(r)
     static, dynamic = parity_comparison(simple)
-    return {"correlation": full, "stress_correlation": stress, "stress_days": n_stress,
+    eb_years, eb_months, eb_summary = energy_bond(prices, macro)
+    return {"energy_bond_years": eb_years, "energy_bond_months": eb_months, "energy_bond": eb_summary, "correlation": full, "stress_correlation": stress, "stress_days": n_stress,
             "bets": bets_table(r), "spanning": spanning(r), "crises": crises(prices[TICKERS]),
             "regimes": regimes(prices[TICKERS], macro), "monthly_negative": monthly_negative(r),
             "parity_static": static, "parity_dynamic": dynamic, "optimisers": optimiser_choices(),
@@ -202,7 +255,7 @@ def evidence(prices, macro):
 
 
 def load_saved(price_hash, folder=None):
-    """Saved tables from results/universe-r1, or None if absent or computed on other prices."""
+    """Saved tables from results/<OUT>, or None if absent or computed on other prices."""
     folder = folder or config.ROOT/"results"/OUT
     try:
         meta = json.loads((folder/"metadata.json").read_text(encoding="utf-8"))

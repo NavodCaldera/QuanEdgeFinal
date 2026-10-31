@@ -1,0 +1,24 @@
+{
+  "description": "Why SPY, AGG, GLD and XLE: retrospective descriptive evidence (quanedge.universe)",
+  "start": "2005-01-04",
+  "end": "2026-09-30",
+  "days": 5469,
+  "stress_days": 274,
+  "price_hash": "76bac76cbc98b5ce62291bd6257600047cc20857943d363edd1f807f743d4d0d",
+  "source_hash": "3244d38ab7b4ed1d3bf996ed83392ea888f8644434b8a052e8f2ec8fc867294a",
+  "outputs": {
+    "bets.csv": "3ff899faa088c3e2784f8fcddf5ec33e61ec5a973db5cf3c8114c082b05b7465",
+    "correlation.csv": "c9e12d37113a360153ce6227f2763859be5d3a61bc808f3b31e563e96b5adc36",
+    "crises.csv": "8a6de13c64383d1c1963b5ad059bba780fc0d621583942499e39a46564c620b8",
+    "energy_bond.csv": "b1ca4064af9b5fb4bc04e0fcf0d8050b387499e8192672e251dfff65a7b893db",
+    "energy_bond_months.csv": "46926db26244d6b147371d54b430063864a9270cdf39ccc05e80c12f8e2906ac",
+    "energy_bond_years.csv": "ce42f9ad56b04c98e6f9e1d78b3931ab51f08f818878ff6532d819cec6ac302d",
+    "monthly_negative.csv": "b8588da6b660f255f61653845baafc7d59d6a40eaa200f3d214fec9ea3d6d964",
+    "optimisers.csv": "8d2c8190a026f3b5e9d6f9b64d3fd4834ae95d1fa70ef9afbfc750974d5dae8a",
+    "parity_dynamic.csv": "7676b350de02a2dd2cb6518f3afd8c7c01e925a422d512867c4bc5b55136466e",
+    "parity_static.csv": "c2d77e69e21b8e59a1b42d2717939d6d91f099cda4c25c17c329314ea5a2f4e9",
+    "regimes.csv": "9e57145ca80fe3cbd9507a68a9befb4082034293795b76b561c3a8b09b3a3697",
+    "spanning.csv": "5c2c9859118b22bdfc71dbbddf1a68c3faf9b55632f2cde46ca8ac4c443f9399",
+    "stress_correlation.csv": "abb369be242df2d29e76af491f3a519c1f7cdfa290f1e6a785f87b00d19f9c3c"
+  }
+}

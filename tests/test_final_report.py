@@ -30,7 +30,7 @@ def test_report_length_and_required_sections(report):
 
 def test_report_quotes_the_dashboard_numbers(report):
     _, _, text, numbers = report
-    ev = F.load_evidence(); prices, returns, rf, cpi = F.load_market(); V = float(F.policy()["value"])
+    ev = F.load_evidence(model="v5"); prices, returns, rf, cpi = F.load_market(); V = float(F.policy()["value"])
     w = F.current_target(ev["path"])
     assert numbers["weights"] == w
     perf = F.performance(ev["path"], returns, rf, cpi)
@@ -77,7 +77,7 @@ def test_data_facts_are_internally_consistent():
 
 def test_reserve_history_matches_the_v5_reserve_accounting():
     from quanedge.strategy import reserve_path
-    ev = F.load_evidence(); _, _, _, cpi = F.load_market(); cfg = F.policy()
+    ev = F.load_evidence(model="v5"); _, _, _, cpi = F.load_market(); cfg = F.policy()
     h = F.reserve_history(ev["path"], cpi, cfg)
     p = reserve_path(ev["path"]["return"], cfg)
     assert h["end_usd"] == pytest.approx(cfg["fund_value"]*p.wealth.iloc[-1], rel=1e-12)
@@ -88,7 +88,7 @@ def test_bootstrap_reproduces_the_mandate_v5_run():
     saved = config.RESULTS_DIR/"final-v5-20261031"/"selected"/"uncertainty.csv"
     if not saved.exists():
         pytest.skip("mandate v5 run not present")
-    ev = F.load_evidence(); _, returns, _, _ = F.load_market()
+    ev = F.load_evidence(model="v5"); _, returns, _, _ = F.load_market()
     mine = F.bootstrap(returns, F.current_target(ev["path"]), float(F.policy()["value"]))
     theirs = pd.read_csv(saved)
     cols = [c for c in theirs if c != "method"]
@@ -97,7 +97,7 @@ def test_bootstrap_reproduces_the_mandate_v5_run():
 
 
 def test_comparison_weights_are_feasible():
-    ev = F.load_evidence(); _, returns, rf, cpi = F.load_market()
+    ev = F.load_evidence(model="v5"); _, returns, rf, cpi = F.load_market()
     c = F.comparison(ev["path"], returns, rf, cpi)
     assert c.weights.iloc[0] is None and c.portfolio.iloc[0].startswith("Final portfolio")
     for w in c.weights.iloc[1:]:
