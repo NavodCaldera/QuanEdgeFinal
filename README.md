@@ -12,10 +12,12 @@ python -m venv .venv
 python -m pip install -r requirements.lock.txt
 python -m quanedge.data.run --check-only
 python -m pytest -q
-python -m streamlit run app.py
+python -m streamlit run dashboard.py
 ```
 
-The app reads the completed run named by `results/latest.txt`; it makes no data downloads. Its initial state explains when no completed run is present.
+`dashboard.py` is the committee dashboard for the final portfolio, monthly dynamic EWMA risk parity on SPY, AGG, GLD and XLE. It reads the frozen price snapshot and the pre-registered strategy evidence in `results/dynamic-parity-r1/` (rebuilt by `python -m quanedge.dynamic_parity_eval`). It refuses that evidence if the price file or the forecasts' strategy hash has changed. It makes no data downloads. Pages: Decision, Portfolio, Risk (VaR, ES, EVT), EVT tail, Backtesting, Stress tests, Risk contributions, Assumptions & Limitations, Data & provenance. Real returns are deflated by US CPI (FRED CPIAUCSL index ratios).
+
+The earlier multi-portfolio viewer, `python -m streamlit run app.py`, still reads the run named by `results/latest.txt`.
 
 ## Reproduce the analysis
 
