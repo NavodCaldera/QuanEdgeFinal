@@ -1,0 +1,24 @@
+{
+  "label": "Context macro series for mandate v6 tests; outside data/ so the frozen pipeline's data hash is unchanged.",
+  "source": "FRED (Federal Reserve Bank of St. Louis), fredgraph.csv downloads",
+  "retrieval": "Downloaded by the owner and uploaded to the session on 2026-10-31 (this environment's network policy blocks fred.stlouisfed.org); not a programmatic retrieval",
+  "series": {
+    "UNRATE": "Civilian unemployment rate, monthly, seasonally adjusted, percent (revised vintage as downloaded); 2025-10 blank as published",
+    "BAA10Y": "Moody's Baa corporate yield minus 10-year Treasury, daily, percentage points"
+  },
+  "use": "UNRATE: Sahm-rule test (documented backup, not in the v6 rule). BAA10Y: tested and rejected as too noisy. Values after 2026-09-30 are never used.",
+  "files": {
+    "UNRATE.csv": {
+      "sha256": "621ff6fadf50910cb7a21ee20ba610c247cb043b29b4e05c4c1a72fadca2a06c",
+      "rows": 945,
+      "first": "1948-01-01",
+      "last": "2026-09-01"
+    },
+    "BAA10Y.csv": {
+      "sha256": "c6e37a6ca40dfae67fa0c9c0d3e456fdcaee6ed4fcdbc3d90c990bc73bfd0fc0",
+      "rows": 10651,
+      "first": "1986-01-02",
+      "last": "2026-10-29"
+    }
+  }
+}

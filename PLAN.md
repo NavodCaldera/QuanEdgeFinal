@@ -354,6 +354,23 @@ The owner chose candidate v4d (section 13e) as the investment method and set the
 
 **Disclosure before the tag:** v5 was written after every input to its checks had been seen. Recorded v4d results (13e, PORT-015): path ES99 1.69%, 30 Sep 2026 target ES99 2.60% (which failed the 2.5% budget), 4.9% expected real at 3.64% inflation, FHS failed on clustering (conditional coverage p 0.011), GARCH-EVT passed (26 breaches vs 24.5, p 0.76/0.091), GFC drawdown 18.5%. The budget and inflation basis were changed knowing they turn v4d's C2 from fail to pass and raise its real return; the v5 run is therefore expected to give Accept and confirms reproducibility, not an independent test. The method was chosen after comparing about twenty allocation rules on the same history (sections 19-19c). Realised real CAGR on the CPI basis was about 3.5% (2007-2026), below the 3.64% reserve growth, so real capital is expected to erode while the reserve is paid.
 
+### 13h. Mandate v6: v5 strategy plus a yield-curve recession overlay (owner change, 31 October 2026, tagged `prereg-v6` before its run)
+
+The owner asked for protection against long, fundamental downturns (dot-com, GFC), with every number justified by economics or published research rather than by fit. Mandates v1-v5, their runs and verdicts stay as recorded. Policy values (budget, inflation basis, reserve, risk models, checks) are v5's, unchanged (`config/final.yaml` at this tag).
+
+| Item | Rule | Reason for the number |
+|---|---|---|
+| Core | v5 strategy exactly: equal-risk EWMA risk parity, SPY/AGG/GLD/XLE, lambda 0.97, 750 days, month-end | lambda 0.97 is RiskMetrics' published monthly decay (half-life about 23 trading days); 750 days is about three years, one business-cycle phase; month-end matches the monthly CPI/payroll cycle and FOMC spacing; equal risk because we hold no reliable return forecast |
+| Warning | 10-year Treasury minus 3-month T-bill (bond-equivalent), monthly mean, negative in any of the last 24 months | Inversion is a definition, not a threshold (Estrella and Mishkin 1996; preceded all 8 US recessions since 1969 in our 1962-2025 test, probit z = -3.7). 24 months is the upper end of the published 6-24 month lead |
+| Confirmation | SPY month-end close below the mean of its last 12 month-end closes | Earnings are reported year on year; a one-year trend is the standard annual filter (Faber 2007) and screens the curve's false alarms (1966, 2022) |
+| Action | SPY and XLE targets halved; freed weight held as cash at 0% | A false alarm or mild recession is about as likely as a deep one, so the cut is half. XLE is cut because oil demand and energy earnings fall in recessions. Cash, not AGG, because AGG also fell in the October 2008 liquidity crunch; 0% matches the reserve |
+| Exit | First month-end with SPY above its 12-month mean | Stocks bottom before the economy; symmetric with entry |
+| Not included | Sahm rule (UNRATE) and credit spread (BAA10Y) | Tested on owner-supplied FRED files (`context/fred`): Sahm confirmed 6 of 8 recessions 2-9 months late and added nothing in 2005-2026; the credit-spread measure was on in 143 months outside recession windows. The fast GARCH panic rule is also excluded: it switched on and off repeatedly for little benefit |
+
+**Checks:** v5's C1-C5 (section 13g) on the v6 path, with the strategy hash on every forecast row; C1 allows ETF weights summing below 1 when the overlay is on, the remainder cash. Cash is outside the brief's seven-ETF list and is a disclosed policy choice.
+
+**Disclosure before the tag:** the overlay was designed in the session that produced sections 19-19c and the 31 October exploratory tables. Its scratch backtest had been seen: CAGR 6.55% vs 6.43% for the v5 core (April 2005 start), maximum drawdown 13.9% vs 18.5%, ES99 1.47% vs 1.64%, GFC fall 13.9% vs 18.5%, COVID 11.5% vs 13.5%; an 18-month warning window was seen to miss part of 2008 before 24 months was chosen from the literature range. No risk forecast or C4 backtest of the overlay path had been computed. The run is a retrospective portfolio evaluation; the defence rests on the 60-year signal record and the stated reasons, not on the backtest.
+
 ## 14. Work plan
 
 Fix phase timeboxes as shares of the time left once the deadline is known. Two milestones are hard: the **thin slice** at about 15% of the time and the **minimum viable submission** at about 60%.
