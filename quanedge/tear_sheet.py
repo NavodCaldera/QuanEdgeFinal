@@ -76,7 +76,7 @@ def gather(root=None):
     w = F.current_target(p6)
     perf6, perf5 = F.performance(p6, returns, rf, cpi), F.performance(p5, returns, rf, cpi)
     bench = F.benchmark_returns(returns).reindex(p6.index)
-    kb = F.kpis(bench, rf, returns.SPY, bench); kb["real_cagr"] = F.cpi_real(bench, cpi)[2]
+    kb = F.kpis(bench, rf, returns.SPY, bench); kb["real_cagr"] = F.policy_real(kb["cagr"])     # same basis as F.performance
     wealth = {"v6": F.wealth_usd(p6["return"], V), "v5": F.wealth_usd(p5["return"], V), "40/60": F.wealth_usd(bench, V)}
     _, table = F.risk_now(returns, w, V)
     t99 = table[np.isclose(table.alpha, .99)].set_index("label")
@@ -258,7 +258,7 @@ def compose(Q, figure, path, footer):
                    grid(["KPI", "v6 final", "v5 core", "40/60"], kp, [.29*half, .24*half, .24*half, .23*half], "lrrr"),
                    Spacer(1, 2.5),
                    Paragraph("Daily simple returns, zero trading cost, before the cash reserve; overlay cash earns 0%. Real deflates by "
-                             f"US CPI ({pct(p6['cpi_inflation'], 2)} a year). Sharpe over the 3-month T-bill.", small))
+                             f"the policy CPI rate ({pct(p6['cpi_inflation'], 2)} a year, US CPI 2005-2026). Sharpe over the 3-month T-bill.", small))
     story += [two(alloc, kpis), Spacer(1, 5)]
 
     from PIL import Image as PILImage

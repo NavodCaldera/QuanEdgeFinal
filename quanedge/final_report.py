@@ -35,6 +35,13 @@ V5_NAMES = {"permanent": "permanent 25/50/25", "balanced_35_50_15": "balanced 35
             "min_variance": "minimum variance", "max_sharpe": "maximum Sharpe", "min_cvar": "minimum CVaR", "40_60": "40/60",
             "60_40": "60/40", "equal_weight": "equal weight", "max_return": "the mandate v1 return-maximising rule"}
 TITLE = "Monthly dynamic risk parity for the Serendib University Endowment Fund"
+TITLE_V6 = "Monthly dynamic risk parity with a recession overlay for the Serendib University Endowment Fund"
+OUT_V6 = config.RESULTS_DIR/"final-report-v6-r1"
+OVERLAY_COLOR = "#eda100"
+V6_REFERENCES = [
+    "Estrella, A. and Mishkin, F. (1996). The yield curve as a predictor of U.S. recessions. Current Issues in Economics and "
+    "Finance 2(7), Federal Reserve Bank of New York.",
+    "Faber, M. (2007). A quantitative approach to tactical asset allocation. Journal of Wealth Management 9(4), 69-79."]
 U = F.UNIVERSE
 COLOR = {"SPY": "#2a78d6", "AGG": "#eb6834", "GLD": "#1baf7a", "XLE": "#eda100"}   # the dashboard's validated palette
 ROLE = {"SPY": "US large-cap equity", "AGG": "US investment-grade bonds", "GLD": "Gold", "XLE": "US energy equity"}
@@ -156,17 +163,47 @@ def frequency_variants(path, returns, cfg):
     return pd.DataFrame(rows)
 
 
-def gather(root=None):
+def overlay_evidence(ev, ev5, returns, rf, cpi, V, cfg):
+    """v6 only: what the recession overlay did, beside the v5 core (the same rule without it), and where the
+    final model's clustered 99% breaches fall relative to the months the overlay switched."""
+    p6, p5 = ev["path"], ev5["path"]; s6, s5 = ev["summary"], ev5["summary"]
+    on = p6["overlay_on"].astype(bool)
+    month_on = on.groupby(on.index.to_period("M")).last()
+    switches = month_on.index[month_on.ne(month_on.shift(fill_value=False))]
+    near = set()
+    for m in switches:                              # the switch month and the month after it
+        near |= {m, m+1}
+    _, frame = F.backtest(ev["forecasts"], ev["strategy_hash"], cfg["challenger"], .99, cfg["evaluation_start"], cfg["snapshot_end"])
+    br = frame.index[frame.breach]
+    months = s6["overlay_months_on"]
+    runs = []
+    for m in (pd.Period(x, "M") for x in months):
+        if runs and m == runs[-1][1]+1:
+            runs[-1][1] = m
+        else:
+            runs.append([m, m])
+    w5 = F.wealth_usd(p5["return"], V)
+    stress5 = {k: F.scenario_pnl(p5, returns, a, b, V) for k, (a, b) in SCENARIOS.items() if p5.index[0] < pd.Timestamp(a)}
+    return {"months_on": len(months), "months": int(len(month_on))-1, "periods": [[str(a), str(b)] for a, b in runs],
+            "on_now": bool(on.iloc[-1]), "average_cash": float(s6["average_cash"]), "switch_months": [str(m) for m in switches],
+            "breaches": int(len(br)), "breaches_near_switch": int(sum(d.to_period("M") in near for d in br)),
+            "v5_performance": F.performance(p5, returns, rf, cpi), "v5_stress": stress5, "v5_wealth": w5,
+            "v5_validation": {(v["method"], v["alpha"]): v for v in s5["validation"]},
+            "v5_strategy_hash": ev5["strategy_hash"], "es99_path": s6["es99"]["path"], "es99_path_v5": s5.get("es99", {}).get("path"),
+            "rule": ev["meta"]["overlay"]}
+
+
+def gather(root=None, model="v6"):
     """Every number and series the report uses, from the dashboard's evidence and calculations."""
     from .risk import fit_evt
     from .risk.portfolio import loss_fraction, portfolio_log_returns
     root = root or config.ROOT
-    ev = F.load_evidence(root, model="v5"); prices, returns, rf, cpi = F.load_market(root)
+    ev = F.load_evidence(root, model=model); prices, returns, rf, cpi = F.load_market(root)
     cfg = F.policy(); V = float(cfg["value"]); path = ev["path"]; summary = ev["summary"]
     w = F.current_target(path)
     perf = F.performance(path, returns, rf, cpi)
     bench = F.benchmark_returns(returns).reindex(path["return"].index)
-    kb = F.kpis(bench, rf, returns.SPY, bench); kb["real_cagr"] = F.cpi_real(bench, cpi)[2]
+    kb = F.kpis(bench, rf, returns.SPY, bench); kb["real_cagr"] = F.policy_real(kb["cagr"])     # same basis as F.performance
     wealth = F.wealth_usd(path["return"], V); bwealth = F.wealth_usd(bench, V)
     models, table = F.risk_now(returns, w, V)
     windows = {"Full sample, 2005-2026": (None, None),
@@ -205,6 +242,7 @@ def gather(root=None):
     if v5_run.exists():
         bundle = json.loads(v5_run.read_text(encoding="utf-8"))
         v5_checks = {k: p["checks"] for k, p in bundle["portfolios"].items() if p.get("checks")}
+    if v5_run.exists() and model == "v5":
         sel = bundle["portfolios"]["selected"]; folder = root/"results"/V5_RUN/"selected"
         theirs = pd.read_csv(folder/"performance.csv", index_col=0, parse_dates=True)["return"]
         fc5 = pd.read_csv(folder/"forecasts.csv", index_col=0, parse_dates=True); fc = ev["forecasts"]
@@ -216,11 +254,18 @@ def gather(root=None):
          "evt": evt.params, "losses": losses, "frame": frame, "by_year": by_year, "hist": hist, "contrib": contrib,
          "stress": stress, "hyp": hyp, "rev": rev, "comparison": comparison, "frontier": fr, "frontier_points": points,
          "mc_error": F.mc_error(returns, w, V),
-         "frequency": frequency_variants(path, returns, cfg), "expected": F.expected_returns(returns, w),
+         "frequency": frequency_variants(path if model == "v5" else F.load_evidence(root, model="v5")["path"], returns, cfg), "expected": F.expected_returns(returns, w),
          "bootstrap": F.bootstrap(returns, w, V), "sens": sens, "thresholds": pd.DataFrame(thresholds),
          "validation": validation, "corr": returns.corr(), "stationarity": strat_stationarity}
+    overlay = None
+    if model == "v6":
+        overlay = overlay_evidence(ev, F.load_evidence(root, model="v5"), returns, rf, cpi, V, cfg)
+        D["v5_wealth"] = overlay.pop("v5_wealth"); D["overlay_on"] = path["overlay_on"].astype(bool)
+    settings = ev["meta"].get("settings") or dict(ev["meta"]["strategy"], universe=U,
+                                                  risk_parity="Spinu convex form, equal volatility contributions")
     N = {"value": V, "fund": float(cfg["fund_value"]), "weights": w, "strategy_hash": ev["strategy_hash"], "data_hash": ev["data_hash"],
-         "evidence_run": F.RUN, "prereg_tag": ev["meta"]["prereg_tag"], "settings": ev["meta"]["settings"], "policy": cfg,
+         "evidence_run": ev["run"], "prereg_tag": ev["meta"]["prereg_tag"], "settings": settings, "policy": cfg,
+         "model": model, "overlay": overlay, "cash": 1-sum(w.values()),
          "start": str(path.index[0].date()), "end": str(path.index[-1].date()), "performance": perf, "benchmark": kb,
          "end_value": float(wealth.iloc[-1]), "bench_end_value": float(bwealth.iloc[-1]),
          "current_drawdown": float(F.drawdown(wealth).iloc[-1]), "targets": len(hist),
@@ -266,7 +311,7 @@ def save(fig, folder, name):
 def fig_targets(D, folder):
     hist, path = D["hist"], D["path"]
     idx = list(hist.index)+[path.index[-1]]; vals = np.vstack([hist[U].to_numpy(), hist[U].to_numpy()[-1]])
-    fig, ax = plt.subplots(figsize=(6.9, 2.35)); lower = np.zeros(len(idx))
+    fig, ax = plt.subplots(figsize=(6.9, 2.1)); lower = np.zeros(len(idx))
     for t, col in zip(U, vals.T):
         upper = lower+col
         ax.fill_between(idx, lower, upper, step="post", color=COLOR[t], linewidth=0, label=t)
@@ -284,13 +329,23 @@ def fig_wealth(D, N, folder):
     fig, (a, d) = plt.subplots(2, 1, figsize=(6.9, 3.15), sharex=True, gridspec_kw={"height_ratios": [3, 2], "hspace": .1})
     for ax in (a, d):
         shade(ax, label=ax is a)
+    if "overlay_on" in D:                       # v6: months the recession overlay held cash
+        on = D["overlay_on"]; starts = on.index[on & ~on.shift(fill_value=False)]; ends = on.index[on & ~on.shift(-1, fill_value=False)]
+        for ax in (a, d):
+            for s0, e0 in zip(starts, ends):
+                ax.axvspan(s0, e0, color=OVERLAY_COLOR, alpha=.22, linewidth=0,
+                           label="Overlay on (cash)" if ax is a and s0 == starts[0] else None)
+    if "v5_wealth" in D:
+        a.plot(D["v5_wealth"].index, D["v5_wealth"]/1e6, color=NEUTRAL, lw=.9, label="v5 core (no overlay)")
+        d.plot(D["v5_wealth"].index, F.drawdown(D["v5_wealth"]), color=NEUTRAL, lw=.7)
     a.plot(w.index, w, color=ACCENT, lw=1.5, label="Final portfolio"); a.plot(b.index, b, color=MUTED, lw=1.0, label="40/60 SPY/AGG")
     (n1, v1), (n2, v2) = sorted({"Final": w.iloc[-1], "40/60": b.iloc[-1]}.items(), key=lambda kv: kv[1])
     gap = .08*(max(w.max(), b.max())-min(w.min(), b.min()))
     y1, y2 = (v1, v2) if v2-v1 >= gap else ((v1+v2-gap)/2, (v1+v2+gap)/2)     # keep the two end labels apart
     for name, v, y in ((n1, v1, y1), (n2, v2, y2)):
         a.text(w.index[-1]+pd.Timedelta(days=40), y, f"{name} {v:.1f}m", color=INK, fontsize=6.6, va="center", clip_on=False)
-    a.set_ylabel("USD million"); a.legend(loc="upper left", ncol=2, bbox_to_anchor=(0, .93))
+    a.set_ylabel("USD million")
+    a.legend(loc="upper left", ncol=4 if "v5_wealth" in D else 2, bbox_to_anchor=(0, .93), fontsize=6.4 if "v5_wealth" in D else 7)
     dw, db = F.drawdown(D["wealth"]), F.drawdown(D["bench_wealth"])
     d.fill_between(dw.index, dw, 0, color=LIGHT, linewidth=0, alpha=.7); d.plot(dw.index, dw, color=ACCENT, lw=.8)
     d.plot(db.index, db, color=MUTED, lw=.8)
@@ -410,7 +465,7 @@ def fig_backtest(D, folder):
 
 def fig_stress(D, folder):
     rows = D["stress"]; names = [r["scenario"] for r in rows]
-    fig, ax = plt.subplots(figsize=(6.9, 2.2)); x = np.arange(len(rows)); width = .19
+    fig, ax = plt.subplots(figsize=(6.9, 1.95)); x = np.arange(len(rows)); width = .19
     for i, t in enumerate(U):
         vals = [r["path"]["pnl_usd"][t] for r in rows]
         ax.bar(x+(i-1.5)*width, vals, width=width*.92, color=COLOR[t], label=t)
@@ -424,7 +479,7 @@ def fig_stress(D, folder):
 
 def fig_contrib(D, folder):
     c = D["contrib"]; x = np.arange(len(U)); width = .26
-    fig, ax = plt.subplots(figsize=(6.9, 1.9))
+    fig, ax = plt.subplots(figsize=(6.9, 1.7))
     for i, (col, label, color) in enumerate((("weight", "Share of money", NEUTRAL), ("vol_contribution", "Share of volatility", LIGHT),
                                              ("es_share", "Share of 99% ES", ACCENT))):
         ax.bar(x+(i-1)*width, c[col], width=width*.92, color=color, label=label)
@@ -651,27 +706,50 @@ def compose(N, D, figs):
     # at the start of year t, so (1 - w_t)(1 + r) = 1, i.e. r = w_t/(1 - w_t)
     real_draw = lambda t: cfg["reserve_initial"]/cfg["fund_value"]*((1+cfg["reserve_growth"])/(1+cfg["inflation"]))**(t-1)
     need1, need25 = (real_draw(t)/(1-real_draw(t)) for t in (1, cfg["survival_years"]))
+    V6 = N["model"] == "v6"; ov = N["overlay"] or {}
+    if V6:
+        v5p, v5s, v5v = ov["v5_performance"], ov["v5_stress"], ov["v5_validation"]
+        ge5 = v5v[(cfg["challenger"], .99)]
+        mon = lambda x: pd.Period(x, "M").strftime("%b %Y")
+        ov_periods = "; ".join(mon(a)+("" if a == b else f"–{mon(b)}") for a, b in ov["periods"])
+        overlay_rule = ("while the yield curve (10-year Treasury minus 3-month bill) has been inverted in any of the last 24 months "
+                        "<i>and</i> SPY closes the month below the mean of its last 12 month-end closes, half of the SPY and XLE targets "
+                        "are held as cash at 0%, until SPY closes a month above that mean")
+    worst_fall = max(stress, key=lambda k: stress[k]["path"]["max_fall"])
     doc = Doc()
 
     # ---------------------------------------------------------------- front page
-    doc.add("title", TITLE, ["Technical report and investment memorandum · Team Ghosted (solo entry) · Quant Edge 1.0 final",
+    doc.add("title", TITLE_V6 if V6 else TITLE, ["Technical report and investment memorandum · Team Ghosted (solo entry) · Quant Edge 1.0 final",
                              f"Data 3 Jan 2005 to {date(N['end'])} · prepared 31 Oct 2026 · committee dashboard: "
                              "<font face='DV-I'>python -m streamlit run dashboard.py</font>"])
-    doc.box(f"<b>Recommendation: accept the mandate with this portfolio.</b> Invest the USD {V/1e6:.1f} million by monthly dynamic "
-            f"risk parity across SPY, AGG, GLD and XLE. From 1 October 2026 hold {alloc}, and reset the weights at every month-end "
-            f"close with the rule in section 3. Measure one-day 99% risk daily with GARCH-EVT, refitted as in its backtest (latest "
-            f"forecast, for {date(lf['date'])}: VaR {usd(lf['var_usd'])}). Call an extra committee review if the fall from the previous "
-            f"high passes 15%, if 99% VaR breaches exceed 9 in any 250 days, or if a month-end target's historical ES exceeds "
-            f"{usd(budget)}. Plan spending on a real return below the {pct(perf['real_cagr'])} a year the strategy earned after US "
+    rec = (f"<b>Recommendation: hold this portfolio (mandate v6, the owner's final model).</b> Invest the USD {V/1e6:.1f} million by "
+           f"monthly dynamic risk parity across SPY, AGG, GLD and XLE with a recession overlay. From 1 October 2026 hold {alloc}; reset "
+           f"the weights at every month-end close with the rule in section 3, and {overlay_rule} (section 3.4; the overlay is "
+           f"{'on' if ov['on_now'] else 'off'} at the {date(N['end'])} close). Measure one-day 99% risk daily with GARCH-EVT refitted as "
+           f"in its backtest (latest forecast, for {date(lf['date'])}: VaR {usd(lf['var_usd'])}; FHS {usd(lf_fhs['var_usd'])}), using "
+           "the higher of the two in any month the overlay switches. Call an extra committee review if the fall from the previous high "
+           "passes 15% or if 99% VaR breaches exceed 9 in any 250 days." if V6 else
+           f"<b>Recommendation: accept the mandate with this portfolio.</b> Invest the USD {V/1e6:.1f} million by monthly dynamic "
+           f"risk parity across SPY, AGG, GLD and XLE. From 1 October 2026 hold {alloc}, and reset the weights at every month-end "
+           f"close with the rule in section 3. Measure one-day 99% risk daily with GARCH-EVT, refitted as in its backtest (latest "
+           f"forecast, for {date(lf['date'])}: VaR {usd(lf['var_usd'])}). Call an extra committee review if the fall from the previous "
+           f"high passes 15%, if 99% VaR breaches exceed 9 in any 250 days, or if a month-end target's historical ES exceeds "
+           f"{usd(budget)}.")
+    doc.box(rec+f" Plan spending on a real return below the {pct(perf['real_cagr'])} a year the strategy earned after US "
             "inflation, because that figure is history chosen after the fact."
             +(f" <b>Main risk accepted:</b> a crash that arrives before the next month-end meets today's weights, which, held through "
               f"{' and '.join(breaching)}, would have fallen {' and '.join(pct(-held[k]['drawdown']) for k in breaching)}, beyond the "
               "20% limit (section 7)." if breaching else ""),
+            *([f"<b>Disclosed:</b> under the team's pre-registered rule the overlay's evaluation is incomplete: its 99% VaR breach counts "
+               f"match the expected rate, but the breaches cluster (conditional coverage p {pval(ge99['conditional_coverage_p'])} for "
+               f"GARCH-EVT and {pval(fh99['conditional_coverage_p'])} for FHS, both below 0.05). The owner adopted v6 for its smaller "
+               f"falls (largest {pct(-perf['maximum_drawdown'])} against {pct(-v5p['maximum_drawdown'])} for the v5 core, which passes "
+               f"with GARCH-EVT, p {pval(ge5['conditional_coverage_p'])}). Section 5.6 and PLAN.md 13h record the decision."] if V6 else []),
             "This is the team's proposal for the owner's and the committee's review. Independent human review of the calculations "
             "and of the investment judgement is pending.")
     doc.table(["ETF", "Exposure", "Weight", "USD", "Share of volatility", "Share of 99% ES"],
               [[t, ROLE[t], pct(w[t]), num(w[t]*V), pct(c.vol_contribution[t]), pct(c.es_share[t])] for t in U]
-              + [["Total", "", "100.0%", num(V), "100.0%", "100.0%"]],
+              + [["Total", f"cash {pct(N['cash'])}" if V6 else "", pct(1-N["cash"]), num(V*(1-N["cash"])), "100.0%", "100.0%"]],
               [.08, .3, .12, .16, .17, .17], align=["l", "l", "r", "r", "r", "r"],
               caption=f"Allocation to hold now: target set at the {date(N['end'])} close from data up to that close. Volatility "
                       "shares use the rule's EWMA covariance; ES shares use 2005-2026 daily history (section 5.8).")
@@ -689,10 +767,13 @@ def compose(N, D, figs):
           else "Within the 20% limit")],
         ["Hypothetical joint equity-bond shock", f"{pct(hyp['return'])} (loss {usd(hyp['loss_usd'])})",
          f"SPY −25%, AGG −10%, GLD 0%, XLE {pct(hyp['shocks']['XLE'])}"],
+        *([["Recession overlay", f"Cash held in {ov['months_on']} of {ov['months']} months",
+             f"{ov_periods}. v5 core without it: largest fall {pct(-v5p['maximum_drawdown'])}, GFC {pct(v5s['GFC']['return'])}"]] if V6 else []),
         [f"99% VaR backtest, {date(ge99_first(D))} to {date(N['end'])}",
-         f"GARCH-EVT {ge99['breaches']} breaches vs {ge99['expected_breaches']:.1f} expected; passes",
+         f"GARCH-EVT {ge99['breaches']} breaches vs {ge99['expected_breaches']:.1f} expected; "+("breaches cluster" if V6 else "passes"),
          f"Kupiec p {pval(ge99['kupiec_p'])}, conditional coverage p {pval(ge99['conditional_coverage_p'])}, {ge99['zone']}. "
-         f"FHS (named first) {fh99['breaches']} breaches; fails on clustering (p {pval(fh99['conditional_coverage_p'])})"],
+         f"FHS (named first) {fh99['breaches']} breaches; fails on clustering (p {pval(fh99['conditional_coverage_p'])})"
+         +(". Evaluation incomplete; v5 core GARCH-EVT passes (p "+pval(ge5['conditional_coverage_p'])+")" if V6 else "")],
         [f"{cfg['survival_years']}-year cash-reserve test (resampled history)", f"All reserves paid in {pct(r25['all_payments_funded'])} of paths",
          f"USD 10m kept in real terms in {pct(r25['real_capital_preserved'])}; median real balance {usdm(r25['median_real_balance_usd'])}"],
         ["Income: trailing 12-month distribution yield", pct(N["distribution_yield"]["portfolio"], 2),
@@ -711,9 +792,13 @@ def compose(N, D, figs):
           + " and ".join(f"{pct(-x)} on {date(d)}" for d, x in sorted(N["covid_agg_worst"].items())) + ". "
           f"<b>How bad can losses get?</b> On about 1 day in 100 the loss exceeds {usd(t99.var_usd['historical'])}, and those days average "
           f"{usd(t99.es_usd['historical'])}. The worst crisis as run cost {usd(worst['loss_usd'])}; the hypothetical shock costs "
-          f"{usd(hyp['loss_usd'])}. None of these is a maximum. <b>How confident are we?</b> GARCH-EVT forecasts passed a "
-          f"{ge99['days']:,}-day backtest, but the first-named model (FHS) did not, and the strategy was chosen after many alternatives "
-          "were tried on the same 2005-2026 data, so there is no untouched test period.")
+          f"{usd(hyp['loss_usd'])}. None of these is a maximum. <b>How confident are we?</b> "
+          +("Less than for the v5 core. v6's risk forecasts have about the right number of breaches over "
+            f"{ge99['days']:,} days but they cluster, so neither named model passes the pre-registered test; the overlay's benefit rests "
+            "mainly on one deep recession (2008); and the strategy and the overlay were chosen after many alternatives were tried on the "
+            "same 2005-2026 data, so there is no untouched test period." if V6 else
+            f"GARCH-EVT forecasts passed a {ge99['days']:,}-day backtest, but the first-named model (FHS) did not, and the strategy was "
+            "chosen after many alternatives were tried on the same 2005-2026 data, so there is no untouched test period."))
     doc.note("Evaluation labels: performance, comparisons and stress tests are a <b>retrospective portfolio evaluation</b>; VaR backtests are "
              "a <b>sequential risk-forecast evaluation</b> (each day's forecast uses data up to the day before). No result is an untouched "
              "out-of-sample test.")
@@ -740,18 +825,24 @@ def compose(N, D, figs):
          "The client's first priority: avoid large losses"],
         ["Daily risk budget", f"Historical one-day 99% ES of the current weights at most {pct(cfg['es_budget'], 0)} of NAV ({usd(budget)})",
          "ES measures how large tail losses are, not only how often they occur"],
-        ["Universe and concentration", "SPY, AGG, GLD, XLE; long-only, fully invested; no per-ETF caps. Equal risk contributions "
+        *([["Recession overlay", upper_first(overlay_rule)+".", "Inversion has preceded every US recession since 1969 (Estrella and "
+             "Mishkin 1996); the 12-month trend confirms it and screens false alarms (section 3.4)"]] if V6 else []),
+        ["Universe and concentration", "SPY, AGG, GLD, XLE; long-only, fully invested"
+         +(", except cash at 0% while the overlay is on" if V6 else "")+"; no per-ETF caps. Equal risk contributions "
          f"spread volatility, not tail loss (XLE carries {pct(c.es_share['XLE'])} of ES)", f"EFA, EEM and XLK move with SPY (daily "
          f"correlation {corr.loc['SPY', 'EFA']:.2f}, {corr.loc['SPY', 'EEM']:.2f}, {corr.loc['SPY', 'XLK']:.2f}) and add little diversification"],
         ["Rebalancing", "Re-estimate and trade at each month-end close; holdings drift in between; trading cost assumed zero",
          "Monthly matches how fast volatility changes (section 3)"],
-        ["Monitoring", "One-day 99% VaR from GARCH-EVT refitted as in its backtest, daily; FHS as a second view; review at a 15% "
-         "fall, a Basel red zone or a month-end target above the ES budget", "GARCH-EVT is the model whose forecasts passed the "
-         "backtest (section 5.6); chosen after that backtest"],
+        ["Monitoring", "One-day 99% VaR from GARCH-EVT refitted as in its backtest, daily; FHS as a second view"
+         +("; the higher of the two in months the overlay switches; review at a 15% fall or a Basel red zone" if V6 else
+           "; review at a 15% fall, a Basel red zone or a month-end target above the ES budget"),
+         "On v6 both models' breaches cluster (section 5.6), hence the higher-of-two safeguard" if V6 else
+         "GARCH-EVT is the model whose forecasts passed the backtest (section 5.6); chosen after that backtest"],
         ["Benchmarks", "40/60 SPY/AGG (active return); SPY (beta, Treynor, Jensen's alpha); 3-month T-bill (Sharpe)",
          "A passive balanced mix the endowment could hold instead"]],
         [.16, .48, .36], align=["l", "l", "l"],
-        caption="Investment policy (mandate v5, tag prereg-v5). These are the team's choices, not competition rules; the brief "
+        caption=("Investment policy (mandate v6, tag prereg-v6: the v5 policy values, tag prereg-v5, plus the recession overlay). "
+                 if V6 else "Investment policy (mandate v5, tag prereg-v5). ")+"These are the team's choices, not competition rules; the brief "
                 "leaves the horizon, objective and limits to the manager.")
     doc.note("The policy was written in October 2026 with the 2005-2026 history in view. In particular the ES budget was raised from 2.5% "
              f"to 3% of NAV after the current target's ES ({pct(t99.es_pct['historical']/100, 2)}) was seen to exceed 2.5% (section 6).")
@@ -800,14 +891,44 @@ def compose(N, D, figs):
               [[k, pct(r.cagr, 2), pct(r.volatility), pct(r.max_drawdown), f"{r.turnover:.2f}×", f"{int(r.rebalances):,}",
                 pct(r.GFC), pct(r.COVID), pct(r["Rates 2022"])] for k, r in frq.iterrows()],
               [.19, .09, .1, .11, .12, .1, .09, .09, .11], label="frequency",
-              caption=f"The same rule re-estimated weekly, monthly and quarterly, {date(N['start'])} to {date(N['end'])}. Crisis "
+              caption=("The core rule (no overlay)" if V6 else "The same rule")+f" re-estimated weekly, monthly and quarterly, {date(N['start'])} to {date(N['end'])}. Crisis "
                       "columns: return from the scenario start close to its end close. Zero trading cost. Retrospective.")
     wk, qt, mo = frq.loc["Weekly"], frq.loc["Quarterly"], frq.loc["Monthly (chosen)"]
     doc.p(f"Weekly re-estimation traded {wk.turnover:.2f}× NAV a year against {mo.turnover:.2f}× and its largest fall was "
           f"{pct(wk.max_drawdown)} ({'beyond' if wk.max_drawdown > limit else 'within'} the 20% limit); quarterly re-estimation "
           f"{'lost more' if qt.COVID < mo.COVID else 'lost less'} in COVID ({pct(qt.COVID)} against {pct(mo.COVID)}) because its weights "
           "were set before volatility rose. Monthly sits between noise and staleness; no calendar rule catches a crash that unfolds "
-          "within days.")
+          "within days."+(" All three rows are the core rule without the overlay (the monthly row is the v5 core)." if V6 else ""))
+    if V6:
+        doc.h2("3.4 The recession overlay")
+        doc.p("The core rule reacts to volatility, so it cuts risk only after markets have become turbulent. The overlay adds a slower, "
+              "economic signal aimed at long downturns such as 2008. At each month-end close: (1) <b>warning</b>: the 10-year Treasury "
+              "yield minus the 3-month bill yield (FRED DGS10 and DTB3, bond-equivalent, monthly mean) was negative in any of the last "
+              "24 months; an inverted curve has preceded every US recession since 1969 (Estrella and Mishkin 1996), and 24 months is the "
+              "upper end of its published 6-24 month lead. (2) <b>Confirmation</b>: SPY's month-end close is below the mean of its last 12 "
+              "month-end closes, a one-year trend filter (Faber 2007) that screens the curve's false alarms. (3) <b>Action</b>: while both "
+              "hold, half of the SPY and XLE targets are held as cash at 0%; XLE is cut because energy demand and earnings fall in "
+              "recessions, and cash rather than AGG because AGG also fell in the October 2008 liquidity crunch. (4) <b>Exit</b>: the first "
+              "month-end with SPY above its 12-month mean. Sahm-rule and credit-spread signals were tested and added nothing.")
+        rows = [["CAGR", pct(perf["cagr"], 2), pct(v5p["cagr"], 2)], ["Real CAGR (US CPI)", pct(perf["real_cagr"], 2), pct(v5p["real_cagr"], 2)],
+                ["Volatility", pct(perf["annual_volatility"]), pct(v5p["annual_volatility"])],
+                ["Largest fall from a high", pct(-perf["maximum_drawdown"]), pct(-v5p["maximum_drawdown"])],
+                *[[("2022 rates" if k == "Rates 2022" else k)+" (start to end close)", pct(stress[k]["path"]["return"]),
+                   pct(v5s[k]["return"])] for k in SCENARIOS],
+                ["Historical ES99 of the daily path", pct(ov["es99_path"], 2), pct(ov["es99_path_v5"], 2) if ov["es99_path_v5"] else "n/a"],
+                ["Months in cash (average cash); turnover a year", f"{ov['months_on']} ({pct(ov['average_cash'], 1)}); "
+                 f"{perf['turnover_per_year']:.2f}×", f"none; {v5p['turnover_per_year']:.2f}×"]]
+        doc.table(["Measure", "v6 (with overlay)", "v5 core (no overlay)"], rows, [.46, .27, .27], label="overlay",
+                  caption=f"What the overlay changed, {date(N['start'])} to {date(N['end'])}, daily, zero cost, before the cash reserve. "
+                          "Retrospective.")
+        doc.p(f"The overlay held cash in {ov_periods}. It mattered most in the GFC, where it was on from December 2007 to June 2009: the "
+              f"strategy ended the scenario {pct(stress['GFC']['path']['return'])} against {pct(v5s['GFC']['return'])} for the core, and "
+              f"its largest fall over the whole period dropped from {pct(-v5p['maximum_drawdown'])} to {pct(-perf['maximum_drawdown'])}. "
+              "In 2022 it switched on only in November, after the rate-rise drawdown, so that scenario is unchanged; apart from the GFC, "
+              f"each spell lasted at most {max(pd.Period(b, 'M').ordinal-pd.Period(a, 'M').ordinal+1 for a, b in ov['periods'][1:])} "
+              "months. Today's target is unaffected while the overlay is off. "
+              f"<b>Disclosure:</b> the overlay was designed in the session that had seen the 2005-2026 data and a scratch backtest of it, "
+              f"and registered at tag {N['prereg_tag']} before its risk forecasts were computed; a disclosed post-tag timing fix was rerun.")
 
     # ---------------------------------------------------------------- 4 risk methods
     doc.h1("4. Risk measurement and validation methods")
@@ -870,11 +991,13 @@ def compose(N, D, figs):
           f"{minus(format(perf['information_ratio'], '.2f'))} reflects the small shortfall against 40/60. On {date(N['end'])} the strategy stood "
           f"{pct(-N['current_drawdown'])} below its previous high.")
     doc.figure(figs["wealth"], f"Growth of {usd(V)} and fall from the previous high, final portfolio against 40/60 SPY/AGG (quarterly "
-               "or 5-point drift rebalancing), daily, zero cost, before the cash reserve. Shaded: the three crisis scenarios.")
+               "or 5-point drift rebalancing)"+(" and the v5 core without the overlay" if V6 else "")+", daily, zero cost, before the cash "
+               "reserve. Grey: the three crisis scenarios"+("; orange: months the overlay held cash." if V6 else "."))
     k = perf
     doc.table(["KPI", "Final portfolio", "40/60 SPY/AGG", "Definition"], [
         ["CAGR", pct(k["cagr"], 2), pct(kb["cagr"], 2), "Compound annual growth of the daily path"],
-        ["Real CAGR", pct(k["real_cagr"], 2), pct(kb["real_cagr"], 2), f"(1 + CAGR)/(1 + CPI inflation) − 1; CPI {pct(k['cpi_inflation'], 2)} a year (FRED CPIAUCSL)"],
+        ["Real CAGR", pct(k["real_cagr"], 2), pct(kb["real_cagr"], 2), f"(1 + CAGR)/(1 + {pct(cfg['inflation'], 2)}) − 1: the policy CPI rate, "
+         "US CPI 2005-2026 (FRED CPIAUCSL)"],
         ["Cumulative return", pct(k["cumulative_return"]), pct(kb["cumulative_return"]), "Whole period"],
         ["Volatility", pct(k["annual_volatility"], 2), pct(kb["annual_volatility"], 2), "Daily standard deviation × √252"],
         ["Sharpe ratio", f"{k['sharpe']:.2f}", f"{kb['sharpe']:.2f}", "Annual excess return over the 3-month T-bill (FRED DTB3) / its volatility"],
@@ -889,8 +1012,8 @@ def compose(N, D, figs):
         ["Rebalancing", f"{k['rebalances']} resets; {k['turnover_per_year']:.2f}× a year", "Quarterly or 5-pt drift", "Month-end resets; sum of absolute weight changes"]],
         [.18, .19, .17, .46], align=["l", "r", "r", "l"],
         caption=f"Performance, {date(N['start'])} to {date(N['end'])}, daily simple returns, zero cost, before the cash reserve. "
-                f"CPI inflation over these dates was {pct(k['cpi_inflation'], 2)} a year; the policy's {pct(cfg['inflation'], 2)} "
-                "covers 2005-2026.")
+                f"Real returns deflate by the policy rate {pct(cfg['inflation'], 2)} a year (US CPI 2005-2026); CPI over these dates "
+                f"was {pct(k.get('path_cpi_inflation', k['cpi_inflation']), 2)} a year.")
     doc.h2("5.2 Comparison with alternatives")
     weights_text = lambda r: "dynamic" if r.weights is None else "/".join(f"{100*r.weights[t]:.0f}" for t in U)
     doc.table(["Portfolio", "Weights % SPY / AGG / GLD / XLE", "CAGR", "Real", "Vol.", "Max fall", "Sharpe", "ES99 1-day", "GFC", "COVID", "2022"],
@@ -1047,7 +1170,28 @@ def compose(N, D, figs):
     doc.figure(figs["backtest"], f"GARCH-EVT one-day 99% VaR against realised log loss of the strategy, {date(ge99_first(D))} to "
                f"{date(N['end'])} (a), and breaches by year against the expected 1% (b).")
     hs99, ev99, nm99 = val[("historical", .99)], val[("evt", .99)], val[("normal", .99)]
-    doc.p(f"At 99% GARCH-EVT had {ge99['breaches']} breaches in {ge99['days']:,} days against {ge99['expected_breaches']:.1f} expected "
+    if V6:
+        doc.p(f"At 99% GARCH-EVT had {ge99['breaches']} breaches in {ge99['days']:,} days against {ge99['expected_breaches']:.1f} expected "
+              f"(Kupiec p {pval(ge99['kupiec_p'])}) and FHS {fh99['breaches']} (Kupiec p {pval(fh99['kupiec_p'])}): the number of breaches "
+              f"is acceptable for both. The breaches cluster, though (independence p {pval(ge99['independence_p'])} and "
+              f"{pval(fh99['independence_p'])}; conditional coverage p {pval(ge99['conditional_coverage_p'])} and "
+              f"{pval(fh99['conditional_coverage_p'])}), so neither model passes the pre-registered gate and the formal outcome is "
+              f"<b>evaluation incomplete</b>. {ov['breaches_near_switch']} of GARCH-EVT's {ov['breaches']} breaches fell in a month the "
+              "overlay switched or the month after: a switch changes the portfolio's risk at once, while the GARCH filter learns it only "
+              "from the following days' returns. The same rule without the overlay (v5 core) passes with GARCH-EVT "
+              f"({ge5['breaches']} breaches, conditional coverage p {pval(ge5['conditional_coverage_p'])}). GARCH-EVT breaches were most "
+              "frequent in "+", ".join(f"{y} ({int(n)})" for y, n in D["by_year"]["sum"].sort_values(ascending=False).head(3).items())+". "
+              f"Historical simulation and unconditional EVT ({hs99['breaches']} and {ev99['breaches']} breaches) cluster more strongly, and "
+              f"the normal model has too many ({nm99['breaches']}). At 95%, FHS and GARCH-EVT had {ge95['breaches']} and "
+              f"{fh95['breaches']} breaches against {ge95['expected_breaches']:.1f} expected (independence p {pval(ge95['independence_p'])}).")
+        doc.p("The owner adopted v6 despite this result, for its smaller falls; the decision and its reason are logged in PLAN.md 13h. As "
+              "a safeguard, daily risk limits use the higher of the GARCH-EVT and FHS forecasts in any month the overlay switches. The "
+              f"validated specification is the rolling one in this table (750-day window, refit every 21 days, on the strategy's own "
+              f"returns); its latest forecasts, for {date(lf['date'])} with data to {date(lf['data_through'])}, are VaR "
+              f"{usd(lf['var_usd'])} (GARCH-EVT) and {usd(lf_fhs['var_usd'])} (FHS). Table @T:models@'s GARCH-EVT figure "
+              f"({usd(t99.var_usd['garch_evt'])}) comes from one fit on 2005-2026 with today's weights and is shown for comparison.")
+    else:
+      doc.p(f"At 99% GARCH-EVT had {ge99['breaches']} breaches in {ge99['days']:,} days against {ge99['expected_breaches']:.1f} expected "
           f"(Kupiec p {pval(ge99['kupiec_p'])}) and passes conditional coverage (p {pval(ge99['conditional_coverage_p'])}); its last 250 "
           f"days are {ge99['zone']}. Its independence test on its own (p {pval(ge99['independence_p'])}) still points to some clustering. "
           f"FHS, the model named first, had {fh99['breaches']} breaches (Kupiec p {pval(fh99['kupiec_p'])}) that cluster (independence "
@@ -1062,7 +1206,7 @@ def compose(N, D, figs):
           f"{pct(hs99.get('red_window_share'), 0)}, while GARCH-EVT and FHS never were. At 95%, FHS and GARCH-EVT both had "
           f"{ge95['breaches']} breaches against {ge95['expected_breaches']:.1f} expected with no sign of clustering (independence p "
           f"{pval(ge95['independence_p'])}).")
-    doc.p(f"Using GARCH-EVT for daily monitoring is a choice made after this backtest, because the model named first (FHS) failed; FHS "
+      doc.p(f"Using GARCH-EVT for daily monitoring is a choice made after this backtest, because the model named first (FHS) failed; FHS "
           "had also failed on clustering for the static risk-parity and overlay candidates studied before this strategy's "
           "settings were registered. The validated specification is the rolling one in this table (750-day window, refit every 21 days, "
           f"on the strategy's own returns); its latest forecast, for {date(lf['date'])} with data to {date(lf['data_through'])}, is VaR "
@@ -1075,19 +1219,24 @@ def compose(N, D, figs):
         srows.append([name, f"{date(r['start'])} to {date(r['end'])}", pct(p["return"]), num(-p["loss_usd"]), pct(p["max_fall"]),
                       f"{date(p['worst_day'])} ({pct(p['worst_day_return'])})", pct(kept["return"]), pct(-kept["drawdown"])])
     doc.table(["Scenario", "Dates", "As run", "As run, P&amp;L USD", "Max fall, as run", "Worst day, as run", "Target held", "Max fall, held"],
+              # v6: 'as run' includes the overlay state
               srows, [.1, .215, .075, .12, .1, .17, .1, .1], align=["l", "l", "r", "r", "r", "l", "r", "r"],
-              caption="Historical crisis paths on NAV USD 9.6 million. 'As run' is the strategy path, month-end resets included, from "
+              caption="Historical crisis paths on NAV USD 9.6 million. 'As run' is the strategy path, month-end resets"
+                      +(" and overlay" if V6 else "")+" included, from "
                       "the start close; 'target held' buys the 1 October 2026 weights at the start close and lets them drift.")
     doc.figure(figs["stress"], "Dollar profit or loss by ETF in each crisis, strategy as run (holdings at each prior close × that day's "
                "return); the parts add up to the portfolio result.")
     doc.p(f"As run, the worst scenario was {worst_name} ({pct(worst['return'])}, a loss of {usd(worst['loss_usd'])}) and the largest fall inside "
-          f"any scenario was {pct(gfc['path']['max_fall'])} in the GFC, within the 20% limit. Bonds and gold offset most of the GFC "
-          f"equity loss (AGG {usd(gfc['path']['pnl_usd']['AGG'])}, GLD {usd(gfc['path']['pnl_usd']['GLD'])}); in COVID every ETF lost "
+          f"any scenario was {pct(stress[worst_fall]['path']['max_fall'])} in {'the GFC' if worst_fall == 'GFC' else worst_fall}, "
+          f"{'within' if stress[worst_fall]['path']['max_fall'] <= limit else 'beyond'} the 20% limit. "
+          +(f"With the overlay holding cash, the strategy gained {pct(gfc['path']['return'])} over the GFC scenario (v5 core "
+            f"{pct(v5s['GFC']['return'])}). " if V6 else "")+
+          f"Bonds and gold offset most of the GFC equity loss (AGG {usd(gfc['path']['pnl_usd']['AGG'])}, GLD {usd(gfc['path']['pnl_usd']['GLD'])}); in COVID every ETF lost "
           f"money; in 2022 AGG lost most ({usd(-rates['path']['pnl_usd']['AGG'])}) and only XLE gained "
           f"({usd(rates['path']['pnl_usd']['XLE'])}). Bonds and gold diversify some crises, not all. Bought at the start close and left "
           f"to drift, today's target would have fallen {pct(-held['GFC']['drawdown'])} in the GFC and {pct(-held['COVID']['drawdown'])} in COVID"
           +(f" ({' and '.join(breaching)} beyond the limit)" if breaching else "")+
-          ": the monthly rule did better by cutting equity and energy as their volatility rose, so a crash that arrives before the next "
+          ": the monthly rule"+(" and the overlay" if V6 else "")+" did better by cutting equity and energy as their volatility rose, so a crash that arrives before the next "
           "month-end meets today's weights"+(", which hold more energy than at any earlier month-end." if N["xle_at_maximum"] else "."))
     doc.table(["", *U, "Portfolio"],
               [["Shock", *(pct(hyp["shocks"][t]) for t in U), pct(hyp["return"])],
@@ -1169,9 +1318,16 @@ def compose(N, D, figs):
         f"target's ES ({pct(t99.es_pct['historical']/100, 2)} of NAV) exceeded 2.5%, and the inflation basis was moved from an unverified "
         "3.64% to US CPI. The budget is met by the point estimate only (bootstrap upper bound "
         f"{usd(bh.es_usd_hi)}).",
-        f"<b>Risk-model validation is partial.</b> The backtest passes only with the second-named model (GARCH-EVT); FHS fails on "
-        f"clustering, as it had for earlier candidates, and GARCH-EVT's own independence p-value ({pval(ge99['independence_p'])}) also "
-        "shows some clustering at the onset of shocks. Making GARCH-EVT the monitoring model was decided after the backtest.",
+        (f"<b>Risk-model validation is incomplete.</b> On the v6 path both named models' breaches cluster (conditional coverage p "
+         f"{pval(ge99['conditional_coverage_p'])} and {pval(fh99['conditional_coverage_p'])}), so the pre-registered rule records "
+         "evaluation incomplete; v6 was adopted by the owner's decision, with the higher-of-two forecast safeguard in switch months. "
+         f"The v5 core passes with GARCH-EVT (p {pval(ge5['conditional_coverage_p'])})." if V6 else
+         f"<b>Risk-model validation is partial.</b> The backtest passes only with the second-named model (GARCH-EVT); FHS fails on "
+         f"clustering, as it had for earlier candidates, and GARCH-EVT's own independence p-value ({pval(ge99['independence_p'])}) also "
+         "shows some clustering at the onset of shocks. Making GARCH-EVT the monitoring model was decided after the backtest."),
+        *(["<b>The overlay rests on little evidence.</b> Its benefit comes mainly from one deep recession (2008); it can switch on for "
+           "short spells that cost return if markets recover, react a month late, or miss a crash with no curve inversion. It was designed "
+           "after the 2005-2026 data had been seen. Cash is outside the brief's seven-ETF list: a disclosed policy choice."] if V6 else []),
         "<b>Today's weights carry more crash risk than the strategy's history suggests.</b> "
         +(f"XLE is at its highest weight since 2006 ({pct(w['XLE'])}). " if N["xle_at_maximum"] else "")+
         f"Bought at the start of the GFC or COVID and left to drift without the monthly resets, today's target would have fallen "
@@ -1195,8 +1351,11 @@ def compose(N, D, figs):
 
     # ---------------------------------------------------------------- 7 recommendation
     doc.h1("7. Recommendation and monitoring")
-    doc.p("<b>Accept the mandate with this portfolio</b>, subject to the owner's and the committee's review. Table @T:limits@ sets "
-          "the evidence against each policy limit.")
+    doc.p(("<b>Hold this portfolio (mandate v6, the owner's final model)</b>, subject to the committee's review. Under the "
+           "pre-registered rule the outcome is evaluation incomplete, because the risk-forecast backtest does not pass; the owner "
+           "adopted v6 for its smaller falls. " if V6 else
+           "<b>Accept the mandate with this portfolio</b>, subject to the owner's and the committee's review. ")
+          +"Table @T:limits@ sets the evidence against each policy limit.")
     shrunk = exp[exp.estimator != "Raw historical means"].set_index("window").loc["Full sample"]
     doc.table(["Policy limit", "Requirement", "Evidence", "Met?"], [
         ["Daily risk budget", f"Historical one-day 99% ES at most {usd(budget)} ({pct(cfg['es_budget'], 0)} of NAV)",
@@ -1211,21 +1370,25 @@ def compose(N, D, figs):
          f"{pct(-held['GFC']['drawdown'])} (GFC), {pct(-held['COVID']['drawdown'])} (COVID)",
          "As run yes; today's weights held no" if breaching else "Yes"],
         ["Validated risk model", "The named model, or if it fails the challenger, passes the 99% backtest",
-         f"GARCH-EVT passes (Kupiec p {pval(ge99['kupiec_p'])}, conditional coverage p {pval(ge99['conditional_coverage_p'])}); "
-         f"FHS fails (p {pval(fh99['conditional_coverage_p'])})", "Yes, through the challenger"],
-        ["Universe and positions", "SPY, AGG, GLD, XLE only; long-only; fully invested",
-         f"All {N['targets']} month-end targets", "Yes"]],
+         f"GARCH-EVT {'clusters' if V6 else 'passes'} (Kupiec p {pval(ge99['kupiec_p'])}, conditional coverage p "
+         f"{pval(ge99['conditional_coverage_p'])}); FHS fails (p {pval(fh99['conditional_coverage_p'])})",
+         "No: evaluation incomplete; owner's decision" if V6 else "Yes, through the challenger"],
+        ["Universe and positions", "SPY, AGG, GLD, XLE only; long-only; fully invested"+("; cash at 0% while the overlay is on" if V6 else ""),
+         f"All {N['targets']} month-end targets"+(f"; cash in {ov['months_on']} months" if V6 else ""), "Yes"]],
         [.15, .27, .42, .16], align=["l", "l", "l", "l"], label="limits",
-        caption="Policy limits (mandate v5) against the evidence for the recommended strategy. The fixed mixes' results against the "
+        caption=f"Policy limits (mandate {'v6' if V6 else 'v5'}) against the evidence for the recommended strategy. The fixed mixes' results against the "
                 "same limits are summarised in section 5.2.")
     doc.p("Monitoring:")
     doc.numbered([
-        f"<b>Hold</b> {alloc} from 1 October 2026 and reset the weights at every month-end close by the rule in section 3.2.",
+        f"<b>Hold</b> {alloc} from 1 October 2026 and reset the weights at every month-end close by the rule in section 3.2"
+        +(f"; apply the recession overlay (section 3.4) at the same close." if V6 else "."),
         f"<b>Daily limit:</b> measure one-day 99% risk with GARCH-EVT refitted as in its backtest (latest forecast, for "
-        f"{date(lf['date'])}: VaR {usd(lf['var_usd'])}); FHS stays as a second view because its breaches cluster.",
+        f"{date(lf['date'])}: VaR {usd(lf['var_usd'])}); "
+        +("use the higher of GARCH-EVT and FHS in any month the overlay switches, because breaches cluster around switches." if V6 else
+          "FHS stays as a second view because its breaches cluster."),
         f"<b>Review triggers:</b> an extra committee review if the fall from the previous high passes 15% (the largest so far was "
-        f"{pct(-perf['maximum_drawdown'])}), if 99% VaR breaches exceed 9 in any 250 days (Basel red zone), or if a month-end target's "
-        f"historical ES exceeds the {usd(budget)} budget.",
+        f"{pct(-perf['maximum_drawdown'])}), if 99% VaR breaches exceed 9 in any 250 days (Basel red zone)"
+        +("." if V6 else f", or if a month-end target's historical ES exceeds the {usd(budget)} budget."),
         f"<b>Expectation setting:</b> plan spending on a real return below the {pct(perf['real_cagr'])} earned historically, and treat "
         "the reserve schedule as a slow draw on real capital (section 5.9)."])
     if breaching:
@@ -1233,13 +1396,17 @@ def compose(N, D, figs):
               f"today's weights held through {' or '.join(breaching)} ({' and '.join(pct(-held[k]['drawdown']) for k in breaching)}) "
               "if such a crash came before the rule reacted. We accept that risk because the rule cut equity and energy within weeks in "
               "every past crisis, the 15% review trigger gives the committee a decision point before 20%, and the weights are reset again "
-              "at the end of October. If the committee wants the limit protected mechanically, two options exist, neither backtested here: "
+              "at the end of October. "
+              +("The overlay reacts monthly, so it does not remove this risk. " if V6 else "")+
+              "If the committee wants the limit protected mechanically, two options exist, neither backtested here: "
               "re-estimate the target mid-month when the daily GARCH-EVT VaR or the fall from the high crosses a preset level, or cap any "
               f"one ETF's share of 99% ES (XLE now carries {pct(c.es_share['XLE'])}). Either would be a logged change to the strategy "
               "and would need its own backtest before use.")
-    doc.p("<b>What would change this recommendation:</b> GARCH-EVT failing its own coverage tests on new data, a month-end target "
-          "whose ES persistently exceeds the budget, or a sustained rise in the joint fall of stocks and bonds, the 2022 pattern that "
-          "neither AGG nor gold offset.")
+    doc.p("<b>What would change this recommendation:</b> "
+          +("breaches continuing to cluster on new data after the safeguard, the overlay failing to act in a recession or acting "
+            "repeatedly without one, " if V6 else "GARCH-EVT failing its own coverage tests on new data, ")+
+          "a month-end target whose ES persistently exceeds the budget, or a sustained rise in the joint fall of stocks and bonds, the "
+          "2022 pattern that neither AGG nor gold offset.")
 
     # ---------------------------------------------------------------- 8 reproducibility and AI
     doc.h1("8. Reproducibility, provenance and AI use")
@@ -1247,7 +1414,9 @@ def compose(N, D, figs):
           "using the same evidence and functions as the committee dashboard (<font face='DV-I'>quanedge/final_portfolio.py</font>). "
           "Setup: <font face='DV-I'>python -m pip install -r requirements.lock.txt</font>; "
           "<font face='DV-I'>python -m quanedge.data.run --check-only</font> verifies the frozen data; "
-          "<font face='DV-I'>python -m quanedge.dynamic_parity_eval</font> rebuilds the strategy evidence. "
+          +("<font face='DV-I'>python -m quanedge.recession_overlay</font> rebuilds the v6 evidence and "
+            "<font face='DV-I'>python -m quanedge.dynamic_parity_eval</font> the v5 core. " if V6 else
+            "<font face='DV-I'>python -m quanedge.dynamic_parity_eval</font> rebuilds the strategy evidence. ")+
           f"Identities: price file SHA-256 {N['data_hash'][:16]}…; strategy hash {N['strategy_hash'][:16]}… on every forecast row; "
           f"evidence run results/{N['evidence_run']} (settings registered at tag {N['prereg_tag']}); policy config at tag "
           f"{cfg['prereg_tag']}; report code revision {N.get('code_rev', 'recorded in manifest.json')}. numbers.json and the CSV files in "
@@ -1259,14 +1428,14 @@ def compose(N, D, figs):
             f"policy rate, where this report uses CPI over the strategy's own dates ({pct(perf['real_cagr'], 2)})." if same else ""))
     doc.p("<b>AI use.</b> Codex (OpenAI) restored and extended the data and risk modules and wrote the first portfolio, validation, "
           "stress, pipeline, application and document code (26-29 October 2026). Claude Code (Anthropic) implemented mandates v2-v5 and "
-          "their runs, the exploratory studies, the dynamic risk-parity evaluation, the committee dashboard and this report and its "
-          "generator (29-31 October 2026); earlier risk-engine work also used Claude Code, and earlier data work Antigravity and Claude "
+          "their runs, the exploratory studies, the dynamic risk-parity evaluation, "+("the recession overlay (v6), the tear sheet, " if V6 else "")
+          +"the committee dashboard and this report and its generator (29-31 October 2026); earlier risk-engine work also used Claude Code, and earlier data work Antigravity and Claude "
           "Code. AI output was checked by automated tests and reconciliations (dollar ES contributions add up to portfolio ES; crisis "
           "P&amp;L by ETF adds up to the path loss; the bootstrap reproduces an independent run exactly; forecast files are refused for "
           "other weights). These are software checks, not human validation. Human reviewer and date: pending. The owner must be able "
           "to explain and defend every result.")
     doc.h2("References")
-    doc.add("refs", REFERENCES)
+    doc.add("refs", sorted(REFERENCES+V6_REFERENCES) if V6 else REFERENCES)
     return doc
 
 
@@ -1443,13 +1612,15 @@ def export_tables(D, folder):
         frame.to_csv(folder/f"{name}.csv", index=False)
 
 
-def build(out=None, root=None):
-    out = Path(out or OUT); out.mkdir(parents=True, exist_ok=True)
-    N, D = gather(root)
+def build(out=None, root=None, model="v6"):
+    out = Path(out or (OUT_V6 if model == "v6" else OUT)); out.mkdir(parents=True, exist_ok=True)
+    N, D = gather(root, model)
     N["code_rev"] = git_rev()
     figs = figures(N, D, out/"figures")
     doc = compose(N, D, figs)
-    footer = f"Serendib University Endowment Fund · monthly dynamic risk parity · technical report r1 · data to {N['end']}"
+    footer = (f"Technical report v6 r1 · Serendib University Endowment Fund · risk parity with recession overlay · data to {N['end']}"
+              if model == "v6" else
+              f"Serendib University Endowment Fund · monthly dynamic risk parity · technical report r1 · data to {N['end']}")
     to_pdf(doc, out/"technical_report.pdf", footer)
     to_markdown(doc, out/"technical_report.md", "figures")
     export_tables(D, out/"tables")
@@ -1460,11 +1631,15 @@ def build(out=None, root=None):
     ev = config.ROOT/"results"/F.RUN
     inputs = {p: sha(config.ROOT/p) for p in ["data/clean/prices_clean.csv", "data/clean/macro_clean.csv", "config/final.yaml",
                                               *(f"results/{F.RUN}/{f.name}" for f in sorted(ev.glob("v4d_monthly_*.csv"))),
-                                              f"results/{F.RUN}/summary.json", f"results/{F.RUN}/metadata.json"]}
+                                              f"results/{F.RUN}/summary.json", f"results/{F.RUN}/metadata.json",
+                                              *((f"results/{F.RUN_V6}/{f}" for f in ("path.csv", "forecasts.csv", "summary.json",
+                                                                                      "metadata.json")) if model == "v6" else ())]}
     norm = lambda p: hashlib.sha256((config.ROOT/p).read_bytes().replace(b"\r\n", b"\n")).hexdigest()
-    sources = {p: norm(p) for p in ["quanedge/final_portfolio.py", "quanedge/final_report.py", "dashboard.py"]}
+    sources = {p: norm(p) for p in ["quanedge/final_portfolio.py", "quanedge/final_report.py", "dashboard.py",
+                                    *(["quanedge/recession_overlay.py"] if model == "v6" else [])]}
     outputs = {p.relative_to(out).as_posix(): sha(p) for p in sorted(out.rglob("*")) if p.is_file() and p.name != "manifest.json"}
     manifest = {"created_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"), "code_rev": N["code_rev"], "pages": pages,
+                "model": model,
                 "evaluation_label": "retrospective portfolio evaluation; backtests are sequential risk-forecast evaluation",
                 "inputs": inputs, "sources_lf_normalised": sources, "outputs": outputs,
                 "human_review": "pending"}
@@ -1475,8 +1650,9 @@ def build(out=None, root=None):
 
 
 def main():
-    argparse.ArgumentParser(description=__doc__.splitlines()[0]).parse_args()
-    out, pages = build()
+    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap.add_argument("--model", choices=["v6", "v5"], default="v6", help="v6 final model (default) or the v5 report final-report-r1")
+    out, pages = build(model=ap.parse_args().model)
     print(f"{out/'technical_report.pdf'}: {pages} pages")
 
 
