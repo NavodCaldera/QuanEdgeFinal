@@ -1,6 +1,6 @@
 {
-  "created_utc": "2026-10-31T18:01:26+00:00",
-  "code_rev": "a294a8b4ce0e",
+  "created_utc": "2026-10-31T18:12:03+00:00",
+  "code_rev": "c6222e7335ad",
   "pages": 15,
   "model": "v6",
   "evaluation_label": "retrospective portfolio evaluation; backtests are sequential risk-forecast evaluation",
@@ -19,8 +19,8 @@
   },
   "sources_lf_normalised": {
     "quanedge/final_portfolio.py": "48974eea427d71659104e712e2c00935a8e53cae861d98ae49adaab48911bebf",
-    "quanedge/final_report.py": "aa77a43fa4d30a311062756489adfb838b0aa4224aa4cd667433a5115be6437c",
-    "dashboard.py": "95ac6d39f1cad6f19fb60e39969aeafdac18a00dbc6c21c623865261470f7c4b",
+    "quanedge/final_report.py": "d2bc6523337acb986dd197c944efcc6197bb573915275fe705387918fca7ba44",
+    "dashboard.py": "32edea0d3f16762cb82bbfd9cbc76e84a615b0fe4dd745c9cfb3b6edb466cb8b",
     "quanedge/recession_overlay.py": "411a1f42831bbf8e4607f9074464830515672ea652070a5e958e90d7c5233c9b"
   },
   "outputs": {
@@ -32,7 +32,7 @@
     "figures/fig6_backtest.png": "09e743ec03ce6eaae3df0eac5f7536d6c4e8e16dad5fd9c138eeb07b30d9b25b",
     "figures/fig7_stress_pnl.png": "70434fbadbc9869bc0f91bfab57c0e2056eed4a8b8b3d8655dfc4eb333a5f895",
     "figures/fig8_contributions.png": "6385a0a185db7a309cb5c97fbf5abeabc8d48d4aa2fff113decaa1a2c07f1da3",
-    "numbers.json": "4a10c400fd52a2fd2aacc708bea95c6d86f0077c5b4e67b15acd0f95f17b9082",
+    "numbers.json": "b29178708260fe03e73c313c75f8ea9134a2ffeda7ec6d68d5318b061bd6ea09",
     "tables/backtests.csv": "d82b01cb4efe812c8bfa4cc1ac86c0e4bef74ba40fe4f2801efdfc4680cbd518",
     "tables/bootstrap.csv": "acbfb5ab78a5fe7679e9b6db70ddaeb2f83be53ecf765a343037fc6c469d82a3",
     "tables/breaches_by_year.csv": "d0cf48fcc9fc108d676b751be71d42a4731bea3e4aa7aa18b87d5c3236b0abea",
@@ -49,8 +49,8 @@
     "tables/stress.csv": "3f1d8e4baa7cd481bb0b08e7e3adb586eaa5de7108e97e9e9c2b4ed27f8d919e",
     "tables/target_history.csv": "32788f1aa4d88866cb78eb794e38d1ded6601f956f568e8bdc29766bcbef0681",
     "tables/window_sensitivity.csv": "2a47ad0c5137d404de4a40c38df03f05850489f7ee01a0d0462b07ad99ebf337",
-    "technical_report.md": "1d45b721c9ee59da81979c2c9580f4084789f0fd1ae56ac1fa5fecc49e53a1f8",
-    "technical_report.pdf": "f8f5ceb64ac5e098e665c20ec00072253f898a4fd4c70a8d5b3a9100aa0499d2"
+    "technical_report.md": "587f94640b0883ed1ba76625c11441842885f371beea55737210042c311c9943",
+    "technical_report.pdf": "02d80fa774968ec5a1a7cff2c010b1bc1a249e252a984771dc3829d73a2611cb"
   },
   "human_review": "pending"
 }

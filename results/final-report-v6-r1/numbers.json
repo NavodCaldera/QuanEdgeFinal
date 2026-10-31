@@ -130,6 +130,8 @@
     ],
     "breaches": 29,
     "breaches_near_switch": 10,
+    "days_near_switch_share": 0.14414046549612086,
+    "breaches_near_switch_2020": 6,
     "v5_performance": {
       "cagr": 0.06160348340671806,
       "cumulative_return": 2.257770520059795,
@@ -1225,6 +1227,6 @@
   },
   "cpi_policy": 0.0259,
   "nominal_floor": 0.03615900000000005,
-  "code_rev": "a294a8b4ce0e",
+  "code_rev": "c6222e7335ad",
   "pages": 15
 }

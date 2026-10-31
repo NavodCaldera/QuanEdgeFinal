@@ -1,6 +1,6 @@
 {
-  "created_utc": "2026-10-31T18:01:33+00:00",
-  "code_rev": "a294a8b4ce0e",
+  "created_utc": "2026-10-31T18:12:09+00:00",
+  "code_rev": "c6222e7335ad",
   "pages": 1,
   "model": "v6",
   "inputs": {
@@ -13,13 +13,13 @@
     "results/recession-overlay-r1/metadata.json": "7c3f0cc9e256cf0f8cc93e7b6b034ac41da6ff83e946256bad6cd8301c67cd61"
   },
   "sources_lf_normalised": {
-    "quanedge/tear_sheet.py": "3ddd10bf5383c253d62ccdda1c6bba1ba338a99519118c7487e37d6f6826a722",
+    "quanedge/tear_sheet.py": "97ab4bceed9177a2bc264f259ae32d51a77d6f768c0f808feeb4bc5ee7f2d113",
     "quanedge/final_portfolio.py": "48974eea427d71659104e712e2c00935a8e53cae861d98ae49adaab48911bebf"
   },
   "outputs": {
-    "executive_tear_sheet.pdf": "a5f222ea248b0a20cacbf0e46930cee0dafe823d067cc54d017745b0c03fcaec",
+    "executive_tear_sheet.pdf": "4650c4f348bcef8c085d0dbc14ee647cd27754549bbe36533b16c10aa9c502c8",
     "wealth_drawdown.png": "56043f4b48ae44ba9cb5fa173c58ffea4a27fd6201b083246ce230167e8f1a96",
-    "numbers.json": "79a6b68774a8ce3412a94f069c0afb3e5944cc5652653714e661b29dd360b296"
+    "numbers.json": "4d2cd69ddf33e8cd263d2e218744f39c6980e18af2ecc9ee3c97bfc21c58afee"
   },
   "evaluation_label": "retrospective portfolio evaluation; backtests are sequential risk-forecast evaluation",
   "human_review": "pending"
