@@ -17,7 +17,7 @@ from . import config
 from .config import TICKERS
 from .backtest import assess, model_pass
 from .comparison import ewma_cov
-from .portfolio import canonical_weights, replay, kpis
+from .portfolio import canonical_weights, replay, kpis, tail_weights
 from .stress import SCENARIOS, attribution, hypothetical, reverse_stress, stress_tests
 
 NAME = "v4d_monthly"
@@ -336,6 +336,134 @@ def risk_contributions(returns, weights, alpha, value, lam=.97, window_days=750)
                   "diversification_benefit_usd": es["diversification_benefit_usd"]}
 
 
+def _losses(sim, weights, value):
+    """Per-ETF and portfolio dollar losses from joint simple-return rows (columns UNIVERSE)."""
+    w = np.array([weights[t] for t in UNIVERSE])
+    asset = -value*np.asarray(sim, float)*w
+    return asset, asset.sum(axis=1)
+
+
+def component_var(returns, weights, alpha, value, band=None):
+    """Historical component VaR: mean per-ETF dollar loss over the scenarios ranked within +/-band
+    of the VaR order statistic (a kernel estimate of E[L_i | L = VaR]). The parts need not add up
+    to portfolio VaR exactly; the residual is reported, not forced away."""
+    asset, total = _losses(returns[UNIVERSE], weights, value)
+    n = len(total); band = band or max(5, int(round(.005*n)))
+    order = np.argsort(total)
+    k = int(np.clip(round(alpha*(n-1)), band, n-1-band))
+    pick = order[k-band:k+band+1]
+    var = float(np.quantile(total, alpha))
+    parts = asset[pick].mean(axis=0)
+    return {"var_usd": var, "components": dict(zip(UNIVERSE, parts.tolist())),
+            "residual_usd": float(parts.sum()-var), "scenarios": int(len(pick))}
+
+
+def es_usd(returns, weights, alpha, value):
+    _, total = _losses(returns[UNIVERSE], weights, value)
+    return float(tail_weights(total, alpha)@total)
+
+
+def funded_swap(returns, weights, src, dst, amount, alpha, value):
+    """Exact change in historical dollar ES from moving `amount` USD from src to dst (NAV fixed),
+    against the first-order estimate from the marginal ES column."""
+    moved = dict(weights); moved[src] -= amount/value; moved[dst] += amount/value
+    m = attribution(returns[UNIVERSE], weights, alpha, value)["marginal_es_usd_per_dollar"]
+    exact = es_usd(returns, moved, alpha, value) - es_usd(returns, weights, alpha, value)
+    return {"from": src, "to": dst, "exact_usd": exact, "first_order_usd": amount*(m[dst]-m[src]),
+            "feasible": moved[src] >= 0}
+
+
+def swap_table(returns, weights, alpha, value, amount=1e6):
+    return pd.DataFrame([funded_swap(returns, weights, a, b, amount, alpha, value)
+                         for a in UNIVERSE for b in UNIVERSE if a != b])
+
+
+def es_shares(returns, weights, alpha, value):
+    asset, total = _losses(returns[UNIVERSE], weights, value)
+    tw = tail_weights(total, alpha)
+    return pd.Series(tw@asset/(tw@total), index=UNIVERSE)
+
+
+def share_robustness(returns, weights, value, alphas=(.90, .95, .99), recent_days=750):
+    """ES shares at each confidence, on the full sample and on the last `recent_days` rows."""
+    rows = {}
+    for a in alphas:
+        rows[f"Full sample, {a:.0%}"] = es_shares(returns, weights, a, value)
+        rows[f"Last {recent_days} days, {a:.0%}"] = es_shares(returns.iloc[-recent_days:], weights, a, value)
+    return pd.DataFrame(rows).T
+
+
+def share_bootstrap(returns, weights, alpha, value, reps=500, block=20, seed=0):
+    """95% circular moving-block bootstrap intervals for ES shares (whole rows, so ETF
+    dependence is kept)."""
+    x = returns[UNIVERSE].to_numpy(); n = len(x); rng = np.random.default_rng(seed)
+    out = []
+    for _ in range(reps):
+        starts = rng.integers(0, n, int(np.ceil(n/block)))
+        idx = ((starts[:, None] + np.arange(block)) % n).ravel()[:n]
+        asset, total = _losses(x[idx], weights, value)
+        tw = tail_weights(total, alpha)
+        out.append(tw@asset/(tw@total))
+    q = np.percentile(np.array(out), [2.5, 97.5], axis=0)
+    return pd.DataFrame({"lo": q[0], "hi": q[1]}, index=UNIVERSE)
+
+
+def mc_t_shares(returns, weights, alpha, value, nu=5, n=200_000, seed=0):
+    """Check: ES shares from a multivariate-t simulation of daily log returns (sample mean,
+    sample covariance matched with scale (nu-2)/nu, fixed nu), converted to simple returns."""
+    lr = np.log1p(returns[UNIVERSE].to_numpy())
+    rng = np.random.default_rng(seed)
+    z = rng.multivariate_normal(np.zeros(len(UNIVERSE)), np.cov(lr.T)*(nu-2)/nu, size=n, method="eigh")
+    sim = np.expm1(lr.mean(axis=0) + z/np.sqrt(rng.chisquare(nu, n)/nu)[:, None])
+    asset, total = _losses(sim, weights, value)
+    tw = tail_weights(total, alpha)
+    return pd.Series(tw@asset/(tw@total), index=UNIVERSE), float(tw@total)
+
+
+def crisis_attribution(path, returns, value, scenarios=SCENARIOS):
+    """Per-ETF dollar P&L of the strategy path in each required crisis, beside each ETF's own return."""
+    rows = []
+    for name, (start, end) in scenarios.items():
+        if path.index[0] >= pd.Timestamp(start):
+            continue
+        p = scenario_pnl(path, returns, start, end, value)
+        own = (1+returns.loc[start:end, UNIVERSE].iloc[1:]).prod()-1
+        for t in UNIVERSE:
+            rows.append({"scenario": name, "etf": t, "pnl_usd": p["pnl_usd"][t], "etf_return": float(own[t]),
+                         "weight_at_start": p["holdings_at_start"][t]})
+    return pd.DataFrame(rows)
+
+
+def share_history(path, returns, alpha, value):
+    """ES share of each month-end target held (overlay halving applied), measured on data up to
+    that decision only."""
+    hist = target_history(path)
+    on = path["overlay_on"].reindex(hist.index).fillna(False).astype(bool) if "overlay_on" in path else None
+    x = returns[UNIVERSE]; rows = {}
+    for d, w in hist.iterrows():
+        w = w.to_dict()
+        if on is not None and on[d]:
+            w["SPY"] *= .5; w["XLE"] *= .5
+        past = x.loc[:d]
+        if len(past) >= 250:
+            rows[d] = es_shares(past, w, alpha, value)
+    return pd.DataFrame(rows).T
+
+
+def tilt_table(returns, weights, alpha, value, src="XLE", dst="AGG", steps=(0, .02, .04, .06, .08, .10)):
+    """What-if: move weight from src to dst; ES, src ES share and historical mean annual return.
+    Descriptive only, not part of the strategy."""
+    rows = []
+    for s in steps:
+        if weights[src] - s < 0:
+            break
+        w = dict(weights); w[src] -= s; w[dst] += s
+        r = returns[UNIVERSE].to_numpy()@np.array([w[t] for t in UNIVERSE])
+        rows.append({"moved": s, "es_usd": es_usd(returns, w, alpha, value),
+                     "share": float(es_shares(returns, w, alpha, value)[src]), "mean_annual": float(r.mean()*252)})
+    return pd.DataFrame(rows)
+
+
 def backtest(forecasts, strategy_hash, method, alpha, start, end):
     """Kupiec/Christoffersen/traffic light on the strategy's own forecasts; refuses another hash."""
     result = assess(forecasts, strategy_hash, method, alpha, start, end)
@@ -434,9 +562,28 @@ def scenario_pnl(path, asset_returns, start, end, value):
             "worst_day": str(days["return"].idxmin().date()), "worst_day_return": float(days["return"].min())}
 
 
-def stress_panel(path, prices, returns, weights, value):
+def recovery(path, start, end):
+    """Trading days after the scenario end until wealth regains its peak at the scenario start;
+    None if it never did by the last date."""
+    wealth = (1 + path["return"]).cumprod()
+    peak = wealth.loc[:start].max()
+    after = wealth.loc[end:]
+    hit = after.index[after >= peak]
+    return {"days": int(after.index.get_loc(hit[0])) if len(hit) else None,
+            "date": str(hit[0].date()) if len(hit) else None}
+
+
+# Further episodes from results/crisis-methods-r1 (deepest ETF drawdowns since 2005), beyond the three required scenarios.
+EPISODES = {"Lehman liquidity shock": ("2008-09-09", "2008-10-10"), "Gold bear market": ("2011-08-22", "2015-12-17"),
+            "Oil collapse": ("2014-06-23", "2016-01-20"), "2018 trade tensions": ("2018-01-26", "2018-12-24"),
+            "COVID dash for cash": ("2020-03-06", "2020-03-18"), "Bond bear market": ("2020-08-04", "2022-10-20"),
+            "China / global tightening": ("2021-02-17", "2022-10-24"), "Gold correction 2026": ("2026-01-29", "2026-07-16")}
+
+
+def stress_panel(path, prices, returns, weights, value, reverse_loss=None):
     """Historical scenarios (strategy path, and today's target held buy-and-hold), the frozen
-    hypothetical shock and a reverse stress for today's target."""
+    hypothetical shock and a reverse stress for today's target (one-step loss `reverse_loss`,
+    default the policy drawdown limit)."""
     w7 = canonical_weights(weights)
     rows = []
     held = {s["scenario"]: s for s in stress_tests(prices[UNIVERSE], weights, value)}
@@ -444,12 +591,50 @@ def stress_panel(path, prices, returns, weights, value):
         row = {"scenario": name, "start": start, "end": end}
         if path.index[0] < pd.Timestamp(start):
             row["path"] = scenario_pnl(path, returns, start, end, value)
+            row["recovery"] = recovery(path, start, end)
+            row["days"] = int(((path.index > pd.Timestamp(start)) & (path.index <= pd.Timestamp(end))).sum())
         row["today_buy_hold"] = held.get(name)
         rows.append(row)
     cfg = policy()
     hyp = hypothetical(returns.loc[:cfg["training_end"]], w7, value)
-    rev = reverse_stress(returns.loc[:cfg["training_end"]], w7, cfg["drawdown_limit"])
+    rev = reverse_stress(returns.loc[:cfg["training_end"]], w7, reverse_loss or cfg["drawdown_limit"])
     return rows, hyp, rev
+
+
+def episodes(path, returns, value, scenarios=EPISODES):
+    """The strategy path through further historical episodes: return, largest fall, ETF P&L."""
+    out = []
+    for name, (start, end) in scenarios.items():
+        if path.index[0] >= pd.Timestamp(start):
+            continue
+        p = scenario_pnl(path, returns, start, end, value)
+        worst = min(p["pnl_usd"], key=p["pnl_usd"].get); best = max(p["pnl_usd"], key=p["pnl_usd"].get)
+        out.append({"scenario": name, "start": start, "end": end, "return": p["return"], "pnl_usd": -p["loss_usd"],
+                    "max_fall": p["max_fall"], "worst": worst, "worst_usd": p["pnl_usd"][worst],
+                    "best": best, "best_usd": p["pnl_usd"][best], "recovery": recovery(path, start, end)})
+    return out
+
+
+def stress_findings(rows):
+    """One generated sentence per scenario: net result, largest loser, largest gainer and whether
+    the gains more than offset, partly offset or did not offset the losses."""
+    out = []
+    for s in rows:
+        p = s.get("path")
+        if not p:
+            continue
+        pnl = p["pnl_usd"]; net = -p["loss_usd"]
+        losers = {t: v for t, v in pnl.items() if v < 0}; gainers = {t: v for t, v in pnl.items() if v > 0}
+        lose_txt = ", ".join(f"{t} {v:,.0f}" for t, v in sorted(losers.items(), key=lambda x: x[1])) or "none"
+        if not gainers:
+            how = "every ETF lost money; nothing diversified"
+        elif net >= 0:
+            how = "gains in " + " and ".join(gainers) + " more than offset the losses"
+        else:
+            how = "gains in " + " and ".join(gainers) + f" offset {sum(gainers.values())/-sum(losers.values()):.0%} of the losses"
+        out.append(f"**{s['scenario']}:** net {'gain' if net >= 0 else 'loss'} of USD {abs(net):,.0f} ({p['return']:+.1%}); "
+                   f"{how} (losses: {lose_txt}).")
+    return out
 
 
 def custom_shock(weights, shocks, value):

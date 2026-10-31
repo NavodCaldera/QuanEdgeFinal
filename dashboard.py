@@ -27,7 +27,9 @@ CRISIS_FILL = "rgba(128,128,128,.12)"
 
 
 def usd(x, d=0):
-    return "n/a" if x is None or not np.isfinite(x) else f"USD {x:,.{d}f}"
+    if x is None or not np.isfinite(x):
+        return "n/a"
+    return f"USD {(0. if round(x, d) == 0 else x):,.{d}f}"           # no "USD -0"
 
 
 def money(x):
@@ -83,6 +85,18 @@ def intervals(data_hash, weights_key, settings_key):
 @st.cache_resource(show_spinner="Measuring what each ETF adds")
 def universe(data_hash):
     return U.load_saved(data_hash) or U.evidence(*U.load())
+
+
+@st.cache_resource(show_spinner="Splitting risk by ETF")
+def attribution_set(data_hash, strategy_hash, weights_key, alpha, settings_key):
+    """Every number on the Risk contributions page, for one weight vector and confidence."""
+    w, value, seed = dict(weights_key), json.loads(settings_key)["value"], json.loads(settings_key)["seed"]
+    contrib, tot = F.risk_contributions(RETURNS, w, alpha, value)
+    return {"contrib": contrib, "tot": tot, "cvar": F.component_var(RETURNS, w, alpha, value),
+            "swaps": F.swap_table(RETURNS, w, alpha, value), "robust": F.share_robustness(RETURNS, w, value),
+            "boot": F.share_bootstrap(RETURNS, w, alpha, value, seed=seed), "mc": F.mc_t_shares(RETURNS, w, alpha, value, seed=seed),
+            "crisis": F.crisis_attribution(PATH, RETURNS, value), "history": F.share_history(PATH, RETURNS, alpha, value),
+            "tilt": F.tilt_table(RETURNS, w, alpha, value)}
 
 
 @st.cache_resource(show_spinner="Building the benchmarks")
@@ -1115,19 +1129,32 @@ def page_backtest():
 def page_stress():
     alpha, method, start, end = SETTINGS
     st.title("Stress tests")
-    rows, hyp, rev = F.stress_panel(PATH, PRICES, RETURNS, W, VALUE)
-    st.caption(f"Historical crisis paths at NAV {usd(VALUE)}. 'As run' is the strategy path, including its month-end rebalances, from "
-               "the scenario start close. 'Today's target, held' applies the current target buy-and-hold to the same days.")
+    st.caption(f"Historical crisis paths at NAV {usd(VALUE)}. 'As run' is the strategy path (v6, with its month-end rebalances and "
+               "the recession overlay) from the scenario start close. 'Today's target, held' applies the current target "
+               "buy-and-hold to the same days. Profit is positive and loss negative throughout this page.")
+    rows, hyp, _ = F.stress_panel(PATH, PRICES, RETURNS, W, VALUE)
+    o = overlay(EV["data_hash"]); core = None if "error" in o else o["core"]
+    _, tot = F.risk_contributions(RETURNS, W, .99, VALUE); es99 = tot["es_usd"]
+
     table = []
     for s in rows:
         p, h = s.get("path"), s["today_buy_hold"]
-        table.append({"Scenario": s["scenario"], "Dates": f"{s['start']} to {s['end']}",
-                      "As run: return": pct(p["return"]) if p else "n/a", "As run: USD": usd(-p["loss_usd"]) if p else "n/a",
+        c = F.scenario_pnl(core, RETURNS, s["start"], s["end"], VALUE) if core is not None and p else None
+        rec = s.get("recovery") or {}
+        table.append({"Scenario": s["scenario"], "Dates": f"{s['start']} to {s['end']}", "Trading days": s.get("days"),
+                      "As run (v6): return": pct(p["return"]) if p else "n/a", "As run: USD P&L": usd(-p["loss_usd"]) if p else "n/a",
                       "As run: largest fall": pct(-p["max_fall"]) if p else "n/a",
+                      "Largest fall in days of 99% ES": f"{p['max_fall']*VALUE/es99:.1f}" if p else "n/a",
+                      "Without overlay (v5 core): return": pct(c["return"]) if c else "n/a",
+                      "v5 core: largest fall": pct(-c["max_fall"]) if c else "n/a",
+                      "Back to the pre-crisis peak": ("above it at the end" if rec.get("days") == 0 else f"{rec['days']} trading days after the end ({rec['date']})" if rec.get("days") is not None
+                                                      else "not yet" if rec else "n/a"),
                       "Worst day": f"{p['worst_day']} ({pct(p['worst_day_return'])})" if p else "n/a",
                       "Today's target, held": pct(h["return"]) if h and h.get("status") == "ok" else "n/a",
                       "Held: largest fall": pct(-h["drawdown"]) if h and h.get("status") == "ok" else "n/a"})
     st.dataframe(pd.DataFrame(table), hide_index=True, width="stretch")
+    st.caption(f"'Days of 99% ES' divides the largest fall in USD by today's 1-day historical 99% ES ({usd(es99)}): how many "
+               "average bad days the crisis was worth. 'Back to the pre-crisis peak' counts from the scenario end.")
     over = [s for s in rows if s.get("path") and s["today_buy_hold"] and s["today_buy_hold"].get("status") == "ok"
             and -s["today_buy_hold"]["drawdown"] > s["path"]["max_fall"]]
     if over:
@@ -1137,48 +1164,93 @@ def page_stress():
                    "a crash that arrives before the next month-end meets today's weights.")
 
     st.subheader("Which ETFs did the damage (as run, USD)")
+    ran = [s for s in rows if s.get("path")]
+    labels = [f"{s['scenario']}<br>{s['start']} to {s['end']} ({s['days']} days)" for s in ran]
     fig = go.Figure()
     for t in F.UNIVERSE:
-        fig.add_trace(go.Bar(x=[s["scenario"] for s in rows], y=[s["path"]["pnl_usd"][t] for s in rows], name=t,
+        fig.add_trace(go.Bar(x=labels, y=[s["path"]["pnl_usd"][t] for s in ran], name=t,
                              marker=dict(color=COLOR[t], cornerradius=4), hovertemplate=f"{t} %{{y:$,.0f}}<extra></extra>"))
-    style(fig, 360, "USD profit (+) or loss (−)").update_layout(barmode="group", hovermode="closest")
+    fig.add_trace(go.Scatter(x=labels, y=[-s["path"]["loss_usd"] for s in ran], name="Portfolio (net)", mode="markers+text",
+                             marker=dict(symbol="diamond", size=14, color=INK, line=dict(color="white", width=1)),
+                             text=[usd(-s["path"]["loss_usd"]) for s in ran], textposition="top center",
+                             hovertemplate="Portfolio %{y:$,.0f}<extra></extra>"))
+    style(fig, 400, "USD profit (+) or loss (−)").update_layout(barmode="group", hovermode="closest")
     st.plotly_chart(fig.update_yaxes(tickformat="$,.0f"), width="stretch")
-    gfc, covid, rates = (next(s["path"] for s in rows if s["scenario"] == n) for n in ("GFC", "COVID", "Rates 2022"))
-    st.markdown(
-        f"- **GFC:** bonds and gold offset most of the equity loss (AGG {usd(gfc['pnl_usd']['AGG'])}, GLD {usd(gfc['pnl_usd']['GLD'])}).\n"
-        f"- **COVID:** every ETF lost money in the liquidity weeks; nothing diversified (AGG {usd(covid['pnl_usd']['AGG'])}).\n"
-        f"- **2022:** bonds were the largest loss ({usd(rates['pnl_usd']['AGG'])}) and only energy gained ({usd(rates['pnl_usd']['XLE'])}). "
-        "Bonds and gold diversify some crises, not all.")
+    st.markdown("\n".join("- " + line for line in F.stress_findings(rows)))
+    st.caption("Generated from the numbers above. The windows differ in length (5 weeks to 17 months), so compare returns, "
+               "not dollar sizes alone.")
+
+    with st.expander("Other historical episodes since 2005 (as run)"):
+        ep = F.episodes(PATH, RETURNS, VALUE)
+        st.dataframe(pd.DataFrame([{"Episode": e["scenario"], "Dates": f"{e['start']} to {e['end']}", "Return": pct(e["return"]),
+                                    "USD P&L": usd(e["pnl_usd"]), "Largest fall": pct(-e["max_fall"]),
+                                    "Largest loss": f"{e['worst']} {usd(e['worst_usd'])}", "Largest gain": f"{e['best']} {usd(e['best_usd'])}",
+                                    "Back to the pre-crisis peak": ("above it at the end" if e["recovery"]["days"] == 0 else f"{e['recovery']['days']} days" if e["recovery"]["days"] is not None else "not yet")}
+                                   for e in ep]), hide_index=True, width="stretch")
+        st.caption("Windows from the deepest ETF drawdowns since 2005 (results/crisis-methods-r1). They hit gold and energy, the "
+                   "portfolio's most specific risks, which the three required crises do not.")
 
     st.subheader("Hypothetical scenario: joint equity-bond shock")
     if hyp.get("status") == "ok":
+        pnl = {t: -hyp["contributions_usd"][t] for t in F.UNIVERSE}
         shocks = pd.DataFrame({"ETF": F.UNIVERSE, "Shock": [pct(hyp["shocks"][t]) for t in F.UNIVERSE],
-                               "Weight": [pct(W[t]) for t in F.UNIVERSE], "USD loss": [usd(hyp["contributions_usd"][t]) for t in F.UNIVERSE]})
+                               "Weight": [pct(W[t]) for t in F.UNIVERSE], "USD P&L": [usd(pnl[t]) for t in F.UNIVERSE]})
         c1, c2 = st.columns([2, 1])
         c1.dataframe(shocks, hide_index=True, width="stretch")
-        c2.metric("Portfolio loss", usd(hyp["loss_usd"]), pct(hyp["return"]), delta_color="off")
+        c2.metric("Portfolio P&L", usd(-hyp["loss_usd"]), pct(hyp["return"]), delta_color="off")
+        c2.caption(f"{hyp['loss_usd']/es99:.1f} days of today's 99% ES.")
         st.caption("SPY −25% and AGG −10% at once, gold unchanged; XLE's shock is the conditional mean given those, from the "
-                   "covariance of SPY's worst 10% of days from the data start to 2016. Deterministic: it has no estimated probability.")
+                   "covariance of SPY's worst 10% of days from the data start to 2016. Deterministic: it has no estimated probability. "
+                   f"Note: that covariance makes XLE fall with stocks ({pct(hyp['shocks']['XLE'])}), so this is an equity-led "
+                   "crash, not an energy-led inflation shock; the stagflation preset below covers that case.")
     else:
         st.warning(f"Hypothetical scenario unavailable: {hyp.get('status')}")
 
     st.subheader("Design your own shock")
     presets = {"Frozen hypothetical": {t: hyp["shocks"][t] for t in F.UNIVERSE} if hyp.get("status") == "ok" else {t: 0. for t in F.UNIVERSE},
+               "Stagflation, worse than 2022 (illustrative)": {"SPY": -.20, "AGG": -.12, "GLD": .05, "XLE": .15},
                "Energy collapse (illustrative)": {"SPY": -.10, "AGG": .03, "GLD": 0., "XLE": -.45},
                "Rate shock, worse than 2022 (illustrative)": {"SPY": -.25, "AGG": -.20, "GLD": -.10, "XLE": .10}}
-    preset = st.selectbox("Start from", list(presets))
+    notes = {"Stagflation, worse than 2022 (illustrative)": "Inflation with slowing growth: stocks and bonds fall together "
+             "(2022: SPY −18%, AGG −13% over the year), energy earns from the supply shock (XLE +49% in 2022), gold holds value.",
+             "Energy collapse (illustrative)": "Oil demand or price-war shock (XLE fell 71% from 2014 to 2020); bonds rally on lower inflation.",
+             "Rate shock, worse than 2022 (illustrative)": "A faster tightening than 2022; gold falls as real yields rise."}
+
+    def reset():
+        for t in F.UNIVERSE:
+            st.session_state[f"shock-{t}"] = int(round(100*presets[st.session_state["shock-preset"]][t]))
+    preset = st.selectbox("Start from", list(presets), key="shock-preset", on_change=reset)
+    if notes.get(preset):
+        st.caption(notes[preset])
+    for t in F.UNIVERSE:
+        st.session_state.setdefault(f"shock-{t}", int(round(100*presets[preset][t])))
     cols = st.columns(4)
-    shocks = {t: cols[i].slider(f"{t} shock %", -60, 60, int(round(100*presets[preset][t])), key=f"{preset}-{t}")/100
-              for i, t in enumerate(F.UNIVERSE)}
+    shocks = {t: cols[i].slider(f"{t} shock %", -60, 60, key=f"shock-{t}")/100 for i, t in enumerate(F.UNIVERSE)}
     res = F.custom_shock(W, shocks, VALUE)
-    st.metric("Portfolio result", usd(-res["loss_usd"]), pct(res["return"]), delta_color="off")
-    st.caption("Computed in the app for the current target; an illustration, not part of the frozen evidence.")
+    c1, c2 = st.columns([2, 1])
+    f = go.Figure(go.Bar(x=F.UNIVERSE, y=[res["pnl_usd"][t] for t in F.UNIVERSE],
+                         marker=dict(color=[COLOR[t] for t in F.UNIVERSE], cornerradius=4),
+                         hovertemplate="%{x} %{y:$,.0f}<extra></extra>"))
+    c1.plotly_chart(style(f, 260, "USD profit (+) or loss (−)").update_yaxes(tickformat="$,.0f"), width="stretch")
+    c2.metric("Portfolio P&L", usd(-res["loss_usd"]), pct(res["return"]), delta_color="off")
+    c2.caption(f"{max(res['loss_usd'], 0)/es99:.1f} days of today's 99% ES. Computed in the app for the current target; "
+               "an illustration, not part of the frozen evidence.")
 
     st.subheader("Reverse stress test")
+    target = st.slider("Loss to explain (% of NAV, in one step)", 5, 30, 20) / 100
+    _, _, rev = F.stress_panel(PATH, PRICES, RETURNS, W, VALUE, reverse_loss=target)
     if rev["status"] == "ok":
-        st.markdown(f"The smallest one-step joint shock (in covariance distance) that costs {pct(rev['loss_fraction'], 0)} of NAV: "
-                    + " · ".join(f"{t} {pct(rev['shocks'][t])}" for t in F.UNIVERSE) +
-                    f". Squared distance {rev['distance_squared']:.0f}; this is not a probability.")
+        d = np.sqrt(rev["distance_squared"])
+        month = (1 + RETURNS[F.UNIVERSE]).rolling(21).apply(np.prod, raw=True) - 1
+        st.markdown(f"The most plausible joint move that costs {pct(rev['loss_fraction'], 0)} of NAV ({usd(rev['loss_fraction']*VALUE)}) "
+                    f"is about **{d:.1f} standard deviations** from a normal day, counting all ETFs together "
+                    "(Mahalanobis distance on the 2005-2016 daily covariance). It is not a probability.")
+        st.dataframe(pd.DataFrame({"ETF": F.UNIVERSE, "Required move": [pct(rev["shocks"][t]) for t in F.UNIVERSE],
+                                   "Worst 1-day move since 2005": [pct(RETURNS[t].min()) for t in F.UNIVERSE],
+                                   "Worst 1-month move since 2005": [pct(month[t].min()) for t in F.UNIVERSE]}),
+                     hide_index=True, width="stretch")
+        st.caption("If the required moves exceed anything seen in a month, the loss needs a crash beyond the data; "
+                   "if not, history has already produced such moves.")
     else:
         st.warning("Reverse stress optimisation did not converge.")
 
@@ -1186,34 +1258,136 @@ def page_stress():
 def page_contributions():
     alpha, method, start, end = SETTINGS
     st.title("Risk contributions and position sizing")
-    contrib, tot = F.risk_contributions(RETURNS, W, alpha, VALUE)
-    st.caption(f"Source: historical attribution, joint daily rows of the four ETFs {DATA_SPAN}, current target, {alpha:.0%} ES, "
-               f"NAV {usd(VALUE)}. Volatility shares use the EWMA covariance the allocation rule uses. Portfolio-only models "
-               "(FHS, GARCH-EVT) cannot split risk by ETF: attribution unavailable for them.")
+    A = attribution_set(EV["data_hash"], SH, WKEY, alpha, RISK_KEY)
+    contrib, tot, cvar = A["contrib"], A["tot"], A["cvar"]
+    lvl = f"{alpha:.0%}"
+    st.caption(f"Today's target (from the {PATH.index[-1]:%d %b %Y} close), NAV {usd(VALUE)}, one-day {lvl} loss, "
+               f"joint daily rows of the four ETFs {DATA_SPAN} ({len(RETURNS):,} days).")
+    note = (f" The sidebar model, {LABEL[method]}, is fitted to the portfolio's returns only, so it cannot split risk by ETF;"
+            " the split below is not that model's decomposition." if method in ("fhs", "garch_evt") else "")
+    st.info(f"**Source of this split: historical attribution.** Every ETF's share comes from the same worst portfolio days "
+            f"(shared tail weights), so the parts add up exactly to the portfolio's historical ES.{note}")
+    top = contrib.es_share.idxmax()
+    c = st.columns(4)
+    c[0].metric(f"Historical {lvl} VaR", money(cvar["var_usd"]))
+    c[1].metric(f"Historical {lvl} ES", money(tot["es_usd"]))
+    c[2].metric("Diversification benefit", money(tot["diversification_benefit_usd"]),
+                help="Sum of each ETF's stand-alone ES minus the portfolio ES.")
+    c[3].metric("Largest ES share", f"{top} {pct(contrib.es_share[top])}", help=f"with {pct(W[top])} of the capital")
+
+    st.subheader("Capital, everyday risk and tail risk")
     fig = go.Figure()
-    for col, label, color in (("weight", "Share of money", "#c3c2b7"), ("vol_contribution", "Share of volatility", "#9ec3ef"),
-                              ("es_share", f"Share of {alpha:.0%} ES", ACCENT)):
+    for col, label, color in (("weight", "Capital weight", "#c3c2b7"),
+                              ("vol_contribution", "Volatility share (EWMA, last 750 days)", "#9ec3ef"),
+                              ("es_share", f"{lvl} ES share (full sample)", ACCENT)):
         fig.add_trace(go.Bar(x=F.UNIVERSE, y=contrib[col], name=label, marker=dict(color=color, cornerradius=4),
                              hovertemplate="%{x} %{y:.1%}<extra>" + label + "</extra>"))
-    style(fig, 360).update_layout(barmode="group", hovermode="closest")
+    fig.add_hline(y=.25, line=dict(color=MUTED, dash="dot"), annotation_text="equal share 25%", annotation_position="top left")
+    style(fig, 360, y="Share of total").update_layout(barmode="group", hovermode="closest")
     st.plotly_chart(fig.update_yaxes(tickformat=".0%"), width="stretch")
-    st.dataframe(pd.DataFrame({"ETF": F.UNIVERSE, "Weight": [pct(contrib.weight[t]) for t in F.UNIVERSE],
-                               "ES contribution": [usd(contrib.es_usd[t]) for t in F.UNIVERSE],
-                               "Share of ES": [pct(contrib.es_share[t]) for t in F.UNIVERSE],
-                               "Marginal ES per USD 1m more": [usd(1e6*contrib.marginal_es_per_usd[t]) for t in F.UNIVERSE]}),
-                 hide_index=True, width="stretch")
-    st.markdown(f"Portfolio ES {usd(tot['es_usd'])}; contributions add up to it (residual {usd(tot['residual_usd'], 2)}). "
-                f"Holding the four ETFs separately would give ES {usd(tot['es_usd']+tot['diversification_benefit_usd'])}: the "
-                f"diversification benefit is {usd(tot['diversification_benefit_usd'])}.")
-    top = contrib.es_share.idxmax()
-    st.info(f"**Reading.** Risk parity equalises *volatility* (each about 25%), not *tail loss*. On the worst days {top} carries "
-            f"{pct(contrib.es_share[top])} of the ES with {pct(W[top])} of the money, because energy and equities crash together. "
-            "Moving money from XLE or SPY to AGG lowers ES the most per dollar moved.")
-    st.subheader("Position sizing")
-    m = contrib.marginal_es_per_usd
-    st.markdown(f"Moving USD 1m from {m.idxmax()} to {m.idxmin()} changes 99% ES by about "
-                f"{usd(-1e6*(m.max()-m.min()))} (first-order estimate from the marginal ES column; the rule's monthly reset "
-                "would undo a manual change unless the rule itself is altered).")
+    st.caption("The volatility shares are about 25% each by construction: that is what risk parity sets. They use the "
+               "recent EWMA covariance the rule uses; the ES shares use the whole history. The window effect is shown below.")
+
+    table = pd.DataFrame({"ETF": F.UNIVERSE, "Weight": [pct(W[t]) for t in F.UNIVERSE],
+                          f"Component VaR {lvl}": [usd(cvar["components"][t]) for t in F.UNIVERSE],
+                          f"Component ES {lvl}": [usd(contrib.es_usd[t]) for t in F.UNIVERSE],
+                          "Share of ES": [pct(contrib.es_share[t]) for t in F.UNIVERSE],
+                          "95% interval of share": [f"{pct(A['boot'].lo[t])} to {pct(A['boot'].hi[t])}" for t in F.UNIVERSE],
+                          "Marginal ES per extra USD 1m": [usd(1e6*contrib.marginal_es_per_usd[t]) for t in F.UNIVERSE]})
+    st.dataframe(table, hide_index=True, width="stretch")
+    raw = pd.DataFrame({"weight": contrib.weight, "component_var_usd": pd.Series(cvar["components"]),
+                        "component_es_usd": contrib.es_usd, "es_share": contrib.es_share,
+                        "es_share_lo": A["boot"].lo, "es_share_hi": A["boot"].hi,
+                        "marginal_es_per_usd": contrib.marginal_es_per_usd, "vol_share": contrib.vol_contribution})
+    st.download_button("Download contributions (CSV)", raw.to_csv().encode(), f"risk_contributions_{alpha:.2f}.csv", "text/csv")
+    st.caption(f"Component ES adds up to portfolio ES exactly (residual {usd(tot['residual_usd'], 2)}). Component VaR averages "
+               f"each ETF's loss on the {cvar['scenarios']} days ranked around the VaR day, an estimate: its parts differ from "
+               f"VaR by {usd(cvar['residual_usd'])}. Share intervals: 500 circular 20-day block resamples of whole rows. "
+               "Marginal ES adds USD 1m to one ETF without selling another, so the fund grows; see position sizing for funded moves. "
+               "A negative contribution would mean the ETF gained on the portfolio's worst days; none is clipped.")
+
+    st.subheader("Position sizing: moving USD 1m between ETFs")
+    sw = A["swaps"]
+    grid = sw.pivot(index="from", columns="to", values="exact_usd").reindex(index=F.UNIVERSE, columns=F.UNIVERSE)
+    for _, r in sw[~sw.feasible].iterrows():
+        grid.loc[r["from"], r["to"]] = np.nan
+    st.dataframe(grid.map(lambda v: "" if pd.isna(v) else usd(v)).rename_axis("Sell (row), buy (column)"), width="stretch")
+    best = sw[sw.feasible].sort_values("exact_usd").iloc[0]
+    gap = (sw.exact_usd - sw.first_order_usd).abs()[sw.feasible].max()
+    st.caption(f"Exact change in historical {lvl} ES, recomputed after each move with the NAV unchanged. Blank: the ETF "
+               f"holds less than USD 1m, or the same ETF. The best single move is {best['from']} to {best['to']} "
+               f"({usd(best['exact_usd'])}). The marginal-ES shortcut differs from the exact figure by at most {usd(gap)}, "
+               "because the worst days change as the weights change.")
+
+    st.subheader(f"Risk budget: XLE's tail share and what reducing it would cost")
+    tilt = A["tilt"]
+    fig = go.Figure(go.Scatter(x=tilt.mean_annual, y=tilt.es_usd, mode="lines+markers+text",
+                               text=[f"{m:.0%}" for m in tilt.moved], textposition="top right", marker=dict(color=ACCENT),
+                               customdata=tilt.share, hovertemplate="moved %{text}<br>mean return %{x:.2%}<br>ES USD %{y:,.0f}"
+                               "<br>XLE share %{customdata:.1%}<extra></extra>"))
+    style(fig, 300, y=f"Historical {lvl} ES (USD)", legend=False).update_xaxes(title="Historical mean annual return", tickformat=".1%")
+    st.plotly_chart(fig, width="stretch")
+    st.caption("What-if, not part of the strategy: XLE weight moved to AGG in 2-point steps (labels), today's target, full "
+               "history. Mean return is the arithmetic historical average of these fixed weights, hindsight. The monthly rule "
+               "would reset any manual change unless the rule itself were changed.")
+    st.dataframe(pd.DataFrame({"XLE moved to AGG": [pct(m, 0) for m in tilt.moved], f"ES {lvl}": [usd(v) for v in tilt.es_usd],
+                               "XLE share of ES": [pct(v) for v in tilt.share],
+                               "Mean annual return": [pct(v, 2) for v in tilt.mean_annual]}), hide_index=True, width="stretch")
+
+    st.subheader("How stable are the shares?")
+    mc_share, mc_es = A["mc"]
+    rob = A["robust"].copy()
+    rob.loc[f"Multivariate-t Monte Carlo, {lvl}"] = mc_share
+    st.dataframe(rob.map(pct), width="stretch")
+    st.caption(f"Each row splits ES by ETF for today's target. Last 750 days: the same window as the volatility shares. "
+               f"Monte Carlo check: 200,000 joint draws of daily log returns from a multivariate t with 5 degrees of freedom "
+               f"(fixed, not fitted) and the sample covariance; its portfolio ES is {usd(mc_es)}. A symmetric t cannot copy "
+               "the joint energy-equity crashes, so its shares are flatter than history's.")
+
+    hist = A["history"]
+    st.subheader(f"{lvl} ES share of each month's target since {hist.index[0]:%Y}")
+    fig = go.Figure()
+    for t, color in zip(F.UNIVERSE, ("#2a78d6", "#9ec3ef", "#c9a227", "#c0504d")):
+        fig.add_trace(go.Scatter(x=hist.index, y=hist[t], name=t, line=dict(color=color, width=2),
+                                 hovertemplate="%{y:.1%}<extra>" + t + "</extra>"))
+    style(fig, 320, y="Share of ES").update_yaxes(tickformat=".0%")
+    shade_crises(fig)
+    st.plotly_chart(fig, width="stretch")
+    st.caption("Each point: the target set at that month-end (half of SPY and XLE in cash when the overlay was on), with ES "
+               "measured on data up to that date only.")
+
+    st.subheader("Who did the damage in the required crises")
+    cr = A["crisis"]
+    if cr.empty:
+        st.write("The strategy path starts after these crises.")
+    else:
+        fig = go.Figure()
+        for t, color in zip(F.UNIVERSE, ("#2a78d6", "#9ec3ef", "#c9a227", "#c0504d")):
+            s = cr[cr.etf == t]
+            fig.add_trace(go.Bar(x=s.scenario, y=s.pnl_usd, name=t, marker=dict(color=color, cornerradius=3),
+                                 customdata=np.c_[s.etf_return, s.weight_at_start],
+                                 hovertemplate="%{x}: USD %{y:,.0f}<br>ETF return %{customdata[0]:.1%}, weight at start "
+                                 "%{customdata[1]:.1%}<extra>" + t + "</extra>"))
+        style(fig, 320, y="P&L (USD)").update_layout(barmode="group", hovermode="closest")
+        st.plotly_chart(fig, width="stretch")
+        lines = []
+        for name, g in cr.groupby("scenario", sort=False):
+            worst_ret = g.loc[g.etf_return.idxmin()]; worst_pnl = g.loc[g.pnl_usd.idxmin()]
+            lines.append(f"- **{name}:** largest fall {worst_ret.etf} ({pct(worst_ret.etf_return)}); largest dollar loss "
+                         f"{worst_pnl.etf} ({usd(worst_pnl.pnl_usd)}).")
+        st.markdown("\n".join(lines))
+        st.caption("Strategy path as run, with monthly rebalancing and the overlay. The biggest faller and the biggest dollar "
+                   "loss differ when the weights differ.")
+
+    cut = tilt[tilt.share <= .25 + 1e-9]
+    st.info(f"**Reading.** Risk parity spreads everyday volatility evenly, not crash losses. On the worst {100*(1-alpha):.0f}% of "
+            f"days {top} carries {pct(contrib.es_share[top])} of ES with {pct(W[top])} of the capital (95% interval "
+            f"{pct(A['boot'].lo[top])} to {pct(A['boot'].hi[top])}), because energy and US equities crash together. "
+            f"Moving USD 1m from {best['from']} to {best['to']} cuts ES by {usd(-best['exact_usd'])}. "
+            + (f"Bringing XLE to a 25% share would need about {pct(cut.moved.iloc[0], 0)} of NAV moved to AGG, "
+               f"at {pct(tilt.mean_annual.iloc[0]-cut.mean_annual.iloc[0], 2)} a year of historical return. "
+               if len(cut) else "")
+            + "Monitoring: report the XLE share of ES each month, beside its weight.")
 
 
 def page_limits():

@@ -422,3 +422,76 @@ def test_finding_text_wording():
     assert not rej and "cannot be tested" in text
     for t in (text,):
         assert "pass" not in t.lower() and "acceptable" not in t.lower()
+
+
+def _row(name, pnl):
+    total = sum(pnl.values())
+    return {"scenario": name, "path": {"pnl_usd": pnl, "loss_usd": -total, "return": total/1e7}}
+
+
+def test_stress_findings_follow_the_net_sign():
+    gain, part, none = F.stress_findings([_row("A", {"SPY": -500., "AGG": 400., "GLD": 300., "XLE": -100.}),
+                                          _row("B", {"SPY": -500., "AGG": 100., "GLD": 0., "XLE": -100.}),
+                                          _row("C", {"SPY": -5., "AGG": -1., "GLD": -1., "XLE": -1.})])
+    assert "net gain" in gain and "more than offset" in gain
+    assert "net loss" in part and "offset 17% of the losses" in part
+    assert "nothing diversified" in none
+
+
+def test_stress_rows_reconcile_and_recovery(evidence, market):
+    prices, returns = market[0], market[1]
+    path = evidence["path"]; w = F.current_target(path)
+    rows, _, _ = F.stress_panel(path, prices, returns, w, 9.6e6)
+    for s in rows:
+        assert abs(sum(s["path"]["pnl_usd"].values()) + s["path"]["loss_usd"]) < 1e-3
+        assert s["days"] > 0
+    idx = pd.bdate_range("2020-01-01", periods=6)
+    toy = pd.DataFrame({"return": [0., -.1, 0., .05, .06, 0.]}, index=idx)
+    r = F.recovery(toy, idx[0], idx[2])
+    assert r["days"] == 2 and r["date"] == str(idx[4].date())
+    assert F.recovery(toy.assign(**{"return": [0., -.1, 0., 0., 0., 0.]}), idx[0], idx[2])["days"] is None
+
+
+def test_reverse_stress_hits_requested_loss(evidence, market):
+    prices, returns = market[0], market[1]
+    path = evidence["path"]; w = F.current_target(path)
+    small, big = (F.stress_panel(path, prices, returns, w, 9.6e6, reverse_loss=x)[2] for x in (.1, .25))
+    assert abs(small["loss_fraction"] - .1) < 1e-3 and abs(big["loss_fraction"] - .25) < 1e-3     # SLSQP tolerance
+    assert big["distance_squared"] > small["distance_squared"]
+
+
+# APP-022: risk contributions page.
+def _toy(n=2000, seed=3):
+    rng = np.random.default_rng(seed)
+    return pd.DataFrame(rng.standard_t(4, (n, 4))*.01, columns=F.UNIVERSE)
+
+
+def test_funded_swap_exact_and_first_order_agree_for_small_moves():
+    r = _toy(); w = {"SPY": .3, "AGG": .4, "GLD": .1, "XLE": .2}
+    s = F.funded_swap(r, w, "XLE", "AGG", 1e3, .99, 1e7)
+    assert np.isclose(s["exact_usd"], s["first_order_usd"], rtol=.05, atol=5)
+    w2 = dict(w); w2["XLE"] -= 1e-4; w2["AGG"] += 1e-4
+    assert np.isclose(s["exact_usd"], F.es_usd(r, w2, .99, 1e7)-F.es_usd(r, w, .99, 1e7))
+
+
+def test_es_shares_sum_to_one_at_each_level_and_bootstrap_is_seeded():
+    r = _toy(); w = {"SPY": .3, "AGG": .4, "GLD": .1, "XLE": .2}
+    rob = F.share_robustness(r, w, 1e7, recent_days=750)
+    assert np.allclose(rob.sum(axis=1), 1)
+    a, b = F.share_bootstrap(r, w, .99, 1e7, reps=20, seed=1), F.share_bootstrap(r, w, .99, 1e7, reps=20, seed=1)
+    assert a.equals(b) and (a.lo <= a.hi).all()
+
+
+def test_component_var_is_close_to_var_and_mc_shares_sum_to_one():
+    r = _toy(); w = {"SPY": .3, "AGG": .4, "GLD": .1, "XLE": .2}
+    c = F.component_var(r, w, .99, 1e7)
+    assert abs(c["residual_usd"]) < .1*c["var_usd"]
+    shares, es = F.mc_t_shares(r, w, .99, 1e7, n=20_000, seed=0)
+    assert np.isclose(shares.sum(), 1) and es > 0
+
+
+def test_crisis_attribution_reconciles_with_scenario_pnl(evidence, market):
+    cr = F.crisis_attribution(evidence["path"], market[1], 9.6e6)
+    for name, g in cr.groupby("scenario"):
+        a, b = F.SCENARIOS[name]
+        assert np.isclose(g.pnl_usd.sum(), -F.scenario_pnl(evidence["path"], market[1], a, b, 9.6e6)["loss_usd"])
