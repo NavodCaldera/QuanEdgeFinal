@@ -76,6 +76,16 @@ def risk(data_hash, start, end, weights_key):
     return F.risk_now(RETURNS, weights, VALUE, start, end)
 
 
+@st.cache_resource(show_spinner="Bootstrapping the risk estimates")
+def intervals(data_hash, weights_key):
+    return F.bootstrap(RETURNS, dict(weights_key), VALUE)
+
+
+@st.cache_resource(show_spinner="Simulating 25 years of cash reserves")
+def reserve(data_hash):
+    return F.reserve_test(PATH), F.reserve_history(PATH, CPI)
+
+
 try:
     EV, PRICES, RETURNS, RF, CPI = load()
 except (F.EvidenceError, FileNotFoundError, KeyError) as err:
@@ -162,20 +172,33 @@ def page_decision():
               ("99% VaR backtest, FHS", f"{fhs['breaches']} breaches vs {fhs['expected_breaches']:.1f}, cond. coverage p "
                f"{fhs['conditional_coverage_p']:.3f}: breaches cluster"),
               ("Hypothetical equity-bond shock", f"{usd(hyp['loss_usd'])} ({pct(-hyp['return'])})")]
+        test, _ = reserve(EV["data_hash"]); r25 = test["results"][-1]
+        ev.append((f"{r25['year']}-year cash-reserve test", f"every reserve paid in {pct(r25['all_payments_funded'])} of resampled paths; "
+                   f"USD 10m kept in real terms in {pct(r25['real_capital_preserved'])}"))
         st.markdown("\n".join(f"- **{k}:** {v}" for k, v in ev))
         st.caption("Backtests 2017-01-03 to 2026-09-30 on the strategy's own forecasts; returns are a retrospective evaluation.")
 
+    latest = F.latest_forecast(FC, CFG["challenger"], .99, VALUE)
     st.subheader("Recommendation to the committee")
     st.markdown(
         "**Accept the mandate with this portfolio**, monitored as follows. This is the team's proposal for the owner's and "
         "committee's review.\n\n"
         f"1. **Hold** the current target and reset it at every month-end close by the rule on the Portfolio page.\n"
-        f"2. **Daily limit:** measure 99% one-day risk with GARCH-EVT (today {usd(row('garch_evt').var_usd)} VaR, "
-        f"{usd(row('garch_evt').es_usd)} ES); it passed the backtest. FHS stays as a second view because its breaches cluster.\n"
+        f"2. **Daily limit:** measure 99% one-day risk with GARCH-EVT refitted as in its backtest (latest forecast, for "
+        f"{latest['date']}: VaR {usd(latest['var_usd'])}); it passed the backtest. FHS stays as a second view because its breaches "
+        "cluster.\n"
         f"3. **Review triggers:** an extra committee review if the fall from the previous high passes 15% (the largest so far "
-        f"was {pct(-perf['maximum_drawdown'])}), or if 99% VaR breaches exceed 9 in any 250 days (Basel red zone).\n"
+        f"was {pct(-perf['maximum_drawdown'])}), if 99% VaR breaches exceed 9 in any 250 days (Basel red zone), or if a month-end "
+        f"target's historical ES exceeds {usd(CFG['es_budget']*VALUE)} ({CFG['es_budget']:.0%} of NAV).\n"
         f"4. **Expectation setting:** the real return has been about {pct(perf['real_cagr'], 1)} a year after US CPI inflation. "
         "That is history, chosen after the fact; plan spending on a lower figure.")
+
+    over = [(s["scenario"], -s["today_buy_hold"]["drawdown"]) for s in stress
+            if s.get("today_buy_hold") and -s["today_buy_hold"]["drawdown"] > CFG["drawdown_limit"]]
+    if over:
+        st.caption("**Main risk accepted:** a crash that arrives before the next month-end meets today's weights. Bought at the start of "
+                   + " and ".join(f"{n} ({pct(x)})" for n, x in over) + f" and left to drift, they would have fallen beyond the "
+                   f"{CFG['drawdown_limit']:.0%} limit; the strategy as run stayed inside it. See the technical report, section 7.")
 
     st.subheader("The committee's three questions")
     q = st.columns(3)
@@ -334,8 +357,17 @@ def page_risk():
         tb = tb[np.isclose(tb.alpha, alpha)].set_index("method")
         rows.append({"Window": label, **{f"{LABEL[m]} ES": usd(tb.es_usd[m]) for m in ("historical", "normal", "evt", "garch_evt")}})
     st.dataframe(pd.DataFrame(rows), hide_index=True, width="stretch")
-    st.caption("Bootstrap confidence intervals have not been computed for this portfolio; the window comparison and the EVT "
-               "parameter standard error are the uncertainty evidence shown here.")
+
+    st.subheader("Bootstrap intervals")
+    b = intervals(EV["data_hash"], WKEY)
+    b = b[np.isclose(b.alpha, alpha)].set_index("method")
+    st.dataframe(pd.DataFrame({"Model": [LABEL[m] for m in b.index],
+                               f"VaR {alpha:.0%}, 95% interval": [f"{usd(r.var_usd_lo)} to {usd(r.var_usd_hi)}" for r in b.itertuples()],
+                               f"ES {alpha:.0%}, 95% interval": [f"{usd(r.es_usd_lo)} to {usd(r.es_usd_hi)}" for r in b.itertuples()],
+                               "Resamples": b.reps_ok.to_numpy()}), hide_index=True, width="stretch")
+    st.caption(f"{CFG['bootstrap_reps']} resamples of {CFG['bootstrap_block']}-day blocks of whole daily rows (circular), current target, "
+               "full sample. They cover estimation noise only: the EVT threshold percentile is held fixed (see the EVT page for "
+               "threshold sensitivity), and the choice of model is not covered.")
 
 
 def page_evt():
@@ -496,8 +528,14 @@ def page_stress():
                       "As run: largest fall": pct(-p["max_fall"]) if p else "n/a",
                       "Worst day": f"{p['worst_day']} ({pct(p['worst_day_return'])})" if p else "n/a",
                       "Today's target, held": pct(h["return"]) if h and h.get("status") == "ok" else "n/a",
+                      "Held: largest fall": pct(-h["drawdown"]) if h and h.get("status") == "ok" else "n/a",
                       f"Within {CFG['drawdown_limit']:.0%} limit": tick(p["max_fall"] <= CFG["drawdown_limit"]) if p else "n/a"})
     st.dataframe(pd.DataFrame(table), hide_index=True, width="stretch")
+    over = [s["scenario"] for s in rows if s["today_buy_hold"] and -s["today_buy_hold"]["drawdown"] > CFG["drawdown_limit"]]
+    if over:
+        st.warning(f"Bought at the start of {' and '.join(over)} and left to drift, today's target would have fallen more than the "
+                   f"{CFG['drawdown_limit']:.0%} limit. The monthly rule stayed inside it by cutting risk as volatility rose; a crash "
+                   "that arrives before the next month-end meets today's weights.")
 
     st.subheader("Which ETFs did the damage (as run, USD)")
     fig = go.Figure()
@@ -582,11 +620,16 @@ def page_contributions():
 def page_limits():
     st.title("Assumptions & Limitations")
     st.caption("What this analysis does not capture, in plain language.")
+    test, _ = reserve(EV["data_hash"]); r25 = test["results"][-1]
+    reserve_line = (f"In a {r25['year']}-year test that resamples the strategy's own monthly returns, every cash reserve was paid in "
+                    f"{pct(r25['all_payments_funded'])} of paths, but the USD 10m was kept in real terms in only "
+                    f"{pct(r25['real_capital_preserved'])}: the reserve grows {pct(CFG['reserve_growth'], 2)} a year, faster than US CPI. "
+                    "These are illustrations from one history, not forecasts.")
     st.markdown("""
 **About the choice of portfolio**
 - This strategy was chosen after many alternatives had been tried on the same 2005-2026 data. Every number here is hindsight:
   there is no untouched test period. Good past results may partly reflect that search.
-- The 25-year cash-reserve survival test has not been run for this strategy.
+- RESERVE_LINE
 
 **About the risk numbers**
 - VaR is not the most we can lose. It is a loss level that is exceeded about once in 100 days at 99%. Bigger losses happen.
@@ -621,7 +664,7 @@ def page_limits():
 **About human review**
 - AI tools (Claude Code, Codex, Antigravity) helped write the code and documents. Independent human review of the calculations and the
   investment judgement is still pending, and solo entry eligibility has not been confirmed by the organisers.
-""")
+""".replace("RESERVE_LINE", reserve_line))
 
 
 def page_data():
@@ -637,6 +680,8 @@ def page_data():
 - **Settings:** EWMA λ = {meta['settings']['ewma_lambda']}, window {meta['settings']['window']} days, first target after
   {meta['settings']['min_history']} days, month-end decisions, universe {', '.join(meta['settings']['universe'])}.
 - **Settings read from** `config/final.yaml`: NAV, seed, Monte Carlo size, rolling window and refit interval.
+- **Technical report:** `results/final-report-r1/technical_report.pdf`, built by `python -m quanedge.final_report` from the same
+  evidence and calculations as this dashboard.
 """)
     a = F.adf(PATH)
     st.subheader("Stationarity of the returns used for modelling")
@@ -644,7 +689,7 @@ def page_data():
              f"{a['lags']} lags, {a['observations']:,} observations. A unit root is rejected. That does not prove the distribution is "
              "constant over time; volatility clearly changes.")
     st.subheader("Reproduce")
-    st.code("python -m pip install -r requirements.txt\npython -m quanedge.data.run --check-only\n"
+    st.code("python -m pip install -r requirements.lock.txt\npython -m quanedge.data.run --check-only\n"
             "python -m quanedge.dynamic_parity_eval   # rebuilds results/dynamic-parity-r1\npython -m streamlit run dashboard.py")
     st.download_button("Download the daily strategy path (CSV)", PATH.to_csv().encode(), "final_portfolio_path.csv", "text/csv")
     st.download_button("Download the risk forecasts (CSV)", FC.to_csv().encode(), "final_portfolio_forecasts.csv", "text/csv")

@@ -19,6 +19,14 @@ python -m streamlit run dashboard.py
 
 The earlier multi-portfolio viewer, `python -m streamlit run app.py`, still reads the run named by `results/latest.txt`.
 
+### Technical report
+
+```powershell
+python -m quanedge.final_report     # writes results/final-report-r1/ (about a minute)
+```
+
+The [technical report and investment memorandum](results/final-report-r1/technical_report.pdf) (14 pages; [Markdown text](results/final-report-r1/technical_report.md)) covers the investment policy, data sources and cleaning steps, the portfolio rule, the risk methods, results, stress tests, the 25-year spending test, assumptions and limitations, and the recommendation. It is built from the same evidence and functions as the dashboard (`quanedge/final_portfolio.py`), so the two quote the same numbers. `numbers.json` lists every figure quoted, and `manifest.json` hashes the inputs and outputs.
+
 ## Reproduce the analysis
 
 ```powershell

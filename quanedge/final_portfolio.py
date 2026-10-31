@@ -222,3 +222,156 @@ def adf(path):
     stat, p, lags, n, *_ = adfuller(r, autolag="AIC")
     return {"statistic": float(stat), "p_value": float(p), "lags": int(lags), "observations": int(n)}
 
+
+# ---------------------------------------------------------------- evidence added for the technical report
+# Shared with dashboard.py so the report and the dashboard quote the same numbers.
+
+FIXED_COMPARISONS = {"40/60 SPY/AGG": {"SPY": .4, "AGG": .6}, "60/40 SPY/AGG": {"SPY": .6, "AGG": .4},
+                     "Equal weight": {t: .25 for t in UNIVERSE}, "Permanent 25/50/25": {"SPY": .25, "AGG": .5, "GLD": .25},
+                     "Balanced 35/50/15": {"SPY": .35, "AGG": .5, "GLD": .15}}
+
+
+def latest_forecast(forecasts, method, alpha, value):
+    """The newest sequential forecast of the validated specification (750-day rolling refit on the strategy's
+    own path). VaR converts exactly; the saved ES is in log units, so its dollar value is approximate."""
+    row = forecasts.iloc[-1]; tag = f"{method}_{alpha*100:g}"
+    return {"date": str(forecasts.index[-1].date()), "data_through": str(pd.Timestamp(row["train_end"]).date()),
+            "var_usd": float(value*(1-np.exp(-row["var_"+tag]))), "es_usd_approx": float(value*(1-np.exp(-row["es_"+tag])))}
+
+
+def distribution_yield(weights, root=None):
+    """Trailing 12-month cash distributions over the latest unadjusted close (as the pipeline's evidence step)."""
+    root = root or config.ROOT; end = pd.Timestamp(policy()["snapshot_end"])
+    d = pd.read_csv(root/"data/raw/distributions.csv", parse_dates=["date"]); d = d[d.date <= end]
+    per = {t: float(g[g.date > end-pd.Timedelta(days=365)].dividend.sum()/g.sort_values("date").close.iloc[-1])
+           for t, g in d.groupby("ticker") if t in UNIVERSE}
+    return {"by_etf": per, "portfolio": float(sum(weights[t]*per[t] for t in UNIVERSE))}
+
+
+def mc_error(returns, weights, value, seeds=(1, 2, 3, 4, 5)):
+    """Monte Carlo simulation error: the 99% VaR and ES of today's target under different seeds."""
+    from .risk import fit_models, risk_table
+    cfg = policy(); rows = []
+    for seed in seeds:
+        t = risk_table(fit_models(np.log1p(returns[UNIVERSE]), weights, ["mc_normal", "mc_t"], n_sim=cfg["n_sim"], seed=seed), value=value)
+        rows.append(t[np.isclose(t.alpha, .99)].assign(seed=seed))
+    out = pd.concat(rows)
+    return out.groupby("method").agg(var_min=("var_usd", "min"), var_max=("var_usd", "max"), es_min=("es_usd", "min"),
+                                      es_max=("es_usd", "max")).reset_index()
+
+
+def frontier(returns, points=40):
+    """Ex-ante long-only efficient frontier of the four ETFs under the frozen estimator (means shrunk 50% toward
+    the seven-ETF average, Ledoit-Wolf covariance, full sample): the inputs of the Markowitz comparisons."""
+    from scipy.optimize import minimize
+    from .portfolio import estimates
+    cfg = policy(); mu7, cov7 = estimates(returns[TICKERS], cfg); idx = [TICKERS.index(t) for t in UNIVERSE]
+    mu, cov = mu7[idx], cov7[np.ix_(idx, idx)]; k = len(UNIVERSE); rows = []
+    w0 = np.full(k, 1/k); bounds = [(0, 1)]*k
+    low = minimize(lambda w: w@cov@w, w0, bounds=bounds, constraints=[{"type": "eq", "fun": lambda w: w.sum()-1}], method="SLSQP").x
+    for target in np.linspace(float(low@mu), float(mu.max()), points):
+        s = minimize(lambda w: w@cov@w, w0, bounds=bounds, method="SLSQP",
+                     constraints=[{"type": "eq", "fun": lambda w: w.sum()-1}, {"type": "ineq", "fun": lambda w, t=target: w@mu-t}])
+        if s.success:
+            rows.append({"volatility": float(np.sqrt(s.x@cov@s.x)), "expected": float(s.x@mu)})
+    point = lambda w: (float(np.sqrt(np.array([w.get(t, 0) for t in UNIVERSE])@cov@np.array([w.get(t, 0) for t in UNIVERSE]))),
+                       float(np.array([w.get(t, 0) for t in UNIVERSE])@mu))
+    return pd.DataFrame(rows), {"mu": dict(zip(UNIVERSE, mu.tolist())), "vol": dict(zip(UNIVERSE, np.sqrt(np.diag(cov)).tolist()))}, point
+OPTIMISED_COMPARISONS = {"Static risk parity": "near_parity", "Minimum variance": "min_variance", "Maximum Sharpe": "max_sharpe"}
+
+
+def window_return(wealth, start, end):
+    """Return from the scenario start close to its end close (the stress-test convention)."""
+    return float(wealth.loc[:end].iloc[-1]/wealth.loc[start:].iloc[0]-1)
+
+
+def comparison(path, returns, rf, cpi):
+    """The strategy beside fixed-weight alternatives over the strategy's own dates.
+
+    Optimised weights (Markowitz minimum variance and maximum Sharpe, static risk parity) use the
+    whole 2005-2026 sample, so they are hindsight comparisons; all fixed weights rebalance quarterly
+    or on a 5-point drift at zero cost. Retrospective portfolio evaluation."""
+    from .portfolio import construct, replay, tail_weights
+    cfg = policy(); start = path.index[0]; x = returns.loc[start:]
+    candidates = {"Final portfolio (monthly dynamic risk parity)": None}
+    for label, kind in OPTIMISED_COMPARISONS.items():
+        fit = construct(returns, cfg, kind)
+        if fit.get("weights"):
+            candidates[label] = {t: fit["weights"][t] for t in UNIVERSE}
+    candidates.update(FIXED_COMPARISONS)
+    bench = benchmark_returns(returns)
+    rows = []
+    for label, w in candidates.items():
+        r = path["return"] if w is None else replay(x[list(w)], w, cost=cfg["cost"], drift=cfg["drift"])["return"]
+        k = kpis(r, rf, returns.SPY, bench); wealth = (1+r).cumprod(); loss = -r.to_numpy()
+        row = {"portfolio": label, "weights": None if w is None else {t: float(w.get(t, 0.)) for t in UNIVERSE},
+               "cagr": k["cagr"], "real_cagr": cpi_real(r, cpi)[2], "volatility": k["annual_volatility"],
+               "max_drawdown": -k["maximum_drawdown"], "sharpe": k["sharpe"],
+               "es99_daily": float(tail_weights(loss)@loss)}
+        for name, (a, b) in SCENARIOS.items():
+            row[name] = window_return(wealth, a, b)
+        rows.append(row)
+    return pd.DataFrame(rows)
+
+
+def expected_returns(returns, weights, cfg=None):
+    """Expected nominal and real geometric return of fixed weights under the frozen estimator
+    (50% mean shrinkage, Ledoit-Wolf) and raw historical means, on three look-back windows."""
+    from .portfolio import estimates
+    cfg = cfg or policy(); end = returns.index[-1]
+    v = np.array([canonical_weights(weights)[t] for t in TICKERS]); rows = []
+    for label, years in (("Full sample", None), ("Last 10 years", 10), ("Last 5 years", 5)):
+        x = returns if years is None else returns.loc[returns.index > end-pd.DateOffset(years=years)]
+        for estimator, shrink in (("Raw historical means", 0.), (f"{cfg['mean_shrinkage']:.0%} shrinkage (frozen)", cfg["mean_shrinkage"])):
+            mu, cov = estimates(x[TICKERS], dict(cfg, mean_shrinkage=shrink))
+            arithmetic = float(v@mu); geometric = float(np.expm1(np.log1p(arithmetic)-v@cov@v/2))
+            rows.append({"window": label, "start": str(x.index[0].date()), "estimator": estimator,
+                         "arithmetic": arithmetic, "geometric": geometric,
+                         "real": (1+geometric)/(1+cfg["inflation"])-1})
+    return pd.DataFrame(rows)
+
+
+def reserve_test(path, cfg=None):
+    """25-year cash-reserve survival on the strategy's own monthly returns: joint non-circular
+    12-month blocks, the 1 January reserve paid first, real values deflated by the policy CPI
+    rate. Identical to the mandate v5 run's calculation (pipeline.survival_of)."""
+    from .stress import reserve_survival
+    cfg = cfg or policy()
+    m = ((1+path["return"]).resample("ME").prod()-1).iloc[1:]       # the first month is partial
+    frame = pd.DataFrame(0., index=m.index, columns=TICKERS); frame["SPY"] = m
+    out = reserve_survival(frame, canonical_weights({"SPY": 1.}), cfg)
+    out.update(sample=f"{m.index[0]:%Y-%m} to {m.index[-1]:%Y-%m}", months=len(m))
+    return out
+
+
+def reserve_history(path, cpi, cfg=None):
+    """The USD 10m fund on the strategy's actual path from its first full calendar year, paying
+    the 1 January reserve before that day's return; real value deflated by actual US CPI."""
+    cfg = cfg or policy(); r = path["return"]
+    r = r.loc[r.index[r.index.year > r.index[0].year][0]:]
+    nav = 1.; year = -1; paid = []
+    for i, (date, x) in enumerate(r.items()):
+        if i == 0 or r.index[i-1].year != date.year:
+            year += 1; draw = min(nav, cfg["reserve_initial"]/cfg["fund_value"]*(1+cfg["reserve_growth"])**year)
+            nav -= draw; paid.append(draw)
+        nav *= 1+x
+    base = cpi.loc[:r.index[0]-pd.Timedelta(days=1)].iloc[-1]; ratio = float(cpi.loc[:r.index[-1]].iloc[-1]/base)
+    fund = cfg["fund_value"]
+    return {"start": str(r.index[0].date()), "end": str(r.index[-1].date()), "payments": len(paid),
+            "paid_usd": fund*sum(paid), "end_usd": fund*nav, "cpi_ratio": ratio, "end_real_usd": fund*nav/ratio,
+            "first_payment_usd": fund*paid[0], "last_payment_usd": fund*paid[-1]}
+
+
+def bootstrap(returns, weights, value, cfg=None):
+    """95% moving-block bootstrap intervals for the current target held fixed (500 resamples of
+    circular 20-day blocks of whole asset rows). Same call and inputs as the mandate v5 run, so its
+    intervals are reproduced exactly; USD columns convert log VaR and exact fractional ES."""
+    from .risk.uncertainty import bootstrap_intervals
+    cfg = cfg or policy()
+    out = bootstrap_intervals(np.log1p(returns[TICKERS]), canonical_weights(weights), methods=["historical", "normal", "evt"],
+                              reps=cfg["bootstrap_reps"], block=cfg["bootstrap_block"], seed=cfg["seed"])
+    for side in ("lo", "hi"):
+        out[f"var_usd_{side}"] = value*(1-np.exp(-out[f"var_{side}"]))
+        out[f"es_usd_{side}"] = value*out[f"es_frac_{side}"]
+    return out
+
