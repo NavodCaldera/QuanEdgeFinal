@@ -1,0 +1,50 @@
+{
+  "created_utc": "2026-10-31T06:35:51+00:00",
+  "code_rev": "9be9794c44b9",
+  "pages": 14,
+  "evaluation_label": "retrospective portfolio evaluation; backtests are sequential risk-forecast evaluation",
+  "inputs": {
+    "data/clean/prices_clean.csv": "76bac76cbc98b5ce62291bd6257600047cc20857943d363edd1f807f743d4d0d",
+    "data/clean/macro_clean.csv": "082d2010e99c1e2e1c98e1e509137fb4204bbf37edc9d7b54a9b05431f0187b1",
+    "config/final.yaml": "88f91940c2b460fdeeec27c0d3a161d6e2a02a4ed4f6ca128cb54a88a24f7859",
+    "results/dynamic-parity-r1/v4d_monthly_forecasts.csv": "b25cf384b9a898a540a8ade08ba9bddfce3111b8930735d14fa412cf305189a2",
+    "results/dynamic-parity-r1/v4d_monthly_path.csv": "d2a283238136a093f45b815539a281f1d0085ed4cacb8445f461361cf50d4f09",
+    "results/dynamic-parity-r1/summary.json": "19585605fb9b2f5734a22b3d4c1608ae5022a126d35cbd12dd83457df3412c25",
+    "results/dynamic-parity-r1/metadata.json": "d7881809793bccacbc08fa1f809d2b6ed1598aa75198e0a980f68b1e1cdda659"
+  },
+  "sources_lf_normalised": {
+    "quanedge/final_portfolio.py": "e81608818c2d83b96cd621f21b744fc408a5823de7ac56fc243a91268c84f534",
+    "quanedge/final_report.py": "2b13c6c18a796badb57a784cedad4a23b8c01d0e1f9db486fbb839aebc6718c7",
+    "dashboard.py": "842c54b8c6609ff8b0471ee52208dd005c1edd2b2f2356d2c77fb3c1792807f9"
+  },
+  "outputs": {
+    "figures/fig1_targets.png": "2d8ecae5d6165db3446fac26db9e38e46185eb8162cfa8224007709a59d37f48",
+    "figures/fig2_wealth_drawdown.png": "92529ac63d0fffc0159d1f598f00a2051a418115d88e1af752d26279d58bac02",
+    "figures/fig3_return_vs_fall.png": "0ef2abff987a7ce2c8f1373563873d845023872d33c6558f58e2e18ff5c5855c",
+    "figures/fig4_var_es_models.png": "57ceae82ee4238d34f55d0f6b55657716ccce37e8e1ac6053ec49cd170dbbb02",
+    "figures/fig5_evt.png": "0c875429c74964f7f7ffdffd87b99111dece8ba4b06f9fdebdf2e973d9a1f232",
+    "figures/fig6_backtest.png": "4081a655923890edbec4613ee70f842eb5c7e92585a68824ba5b03e53235283c",
+    "figures/fig7_stress_pnl.png": "f945746076a0c2895e5890218907094fdee7956b4249db4c64181c981bc10dcb",
+    "figures/fig8_contributions.png": "fd52fe25ef8fe7f31ff84feddf40e4415d595b31ca0d935ea0a01d6d29c95d15",
+    "numbers.json": "40bccf0184fa89a03c5627bcefdd4cbd6cc1809e944fb31229812035cf01aec1",
+    "tables/backtests.csv": "157ca888fc31a4f7848fb4016653e9a8fec6ac09c6714272b663ee2d0e0accb8",
+    "tables/bootstrap.csv": "acbfb5ab78a5fe7679e9b6db70ddaeb2f83be53ecf765a343037fc6c469d82a3",
+    "tables/breaches_by_year.csv": "36527c8620889698c6e22693f33ec67d9a5a932e47237d0fcec7fab4091756c6",
+    "tables/comparison.csv": "1f353d0907a2b6cad734af3c77e8888f9ca589db6888bd661d23616074b127e6",
+    "tables/correlations.csv": "554e29d73faa3d0b45145eb71d96ec00971e527bce5b761d786ca29307a39511",
+    "tables/evt_scan.csv": "ba0af282c667ee5107fd6e1e906117f347743215b6c9e257db37c90427c9d1a0",
+    "tables/evt_thresholds.csv": "fdf38c545eaa2b9a6fd087210f93c71f120a5c00c27f97fe78edc4bff642282e",
+    "tables/expected_returns.csv": "f802aabb0eae6b787e8c01818f2f46050465e1ded12f2aabd5ea0f3a8d464523",
+    "tables/frontier.csv": "723b47ba366b2d19b1dd69f0ca4280bfadd97339569603c57142760013d00bf0",
+    "tables/mc_error.csv": "26c2c3962f0df779df6a5e142d657fae8e33cd0419d97c61cad0a54d052f6c8f",
+    "tables/rebalancing_frequency.csv": "368ce900058e3292798927d0580a6888249fcde55b30ca04587c726cedacd7b5",
+    "tables/risk_contributions.csv": "27513bb496ec9c5fa29a9eecbd339f7054c4ce5abeec0ca8b1c8b9517caa5239",
+    "tables/risk_models.csv": "d5e885f663b75c55939f3e02bd0dc39298bcbca91c9f725f26576d4fa5b90dba",
+    "tables/stress.csv": "3701b8d936421502fd0a842764946ec9426dcd6b630747dcbc7e6e4b1fce1f23",
+    "tables/target_history.csv": "32788f1aa4d88866cb78eb794e38d1ded6601f956f568e8bdc29766bcbef0681",
+    "tables/window_sensitivity.csv": "7e8419ba98df8558ef898792508526606bdb04c6876d24bbd4aa93c230b848a9",
+    "technical_report.md": "c607e1837339e1147e39404eeb8b0bc6f66dfb168335de62a7184d8094465b1d",
+    "technical_report.pdf": "17c3e2904fcf85d4014abe075b34de394c20f4c683a5277f69d628fbf64c842c"
+  },
+  "human_review": "pending"
+}

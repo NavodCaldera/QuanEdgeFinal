@@ -1,0 +1,713 @@
+{
+  "value": 9600000.0,
+  "fund": 10000000.0,
+  "weights": {
+    "SPY": 0.208027,
+    "AGG": 0.517218,
+    "GLD": 0.08361,
+    "XLE": 0.191145
+  },
+  "strategy_hash": "b7661d21e49b31370ebc5c1e3e8295a1f0157408518696d571b32040581dd37d",
+  "data_hash": "76bac76cbc98b5ce62291bd6257600047cc20857943d363edd1f807f743d4d0d",
+  "evidence_run": "dynamic-parity-r1",
+  "prereg_tag": "prereg-v4de",
+  "settings": {
+    "type": "dynamic_ewma_risk_parity",
+    "ewma_lambda": 0.97,
+    "window": 750,
+    "min_history": 500,
+    "risk_parity": "Spinu convex form, equal volatility contributions",
+    "universe": [
+      "SPY",
+      "AGG",
+      "GLD",
+      "XLE"
+    ]
+  },
+  "policy": {
+    "schema_version": 3,
+    "mandate": "v5",
+    "prereg_tag": "prereg-v5",
+    "universe": [
+      "SPY",
+      "AGG",
+      "GLD",
+      "XLE"
+    ],
+    "snapshot_end": "2026-09-30",
+    "training_end": "2016-12-31",
+    "evaluation_start": "2017-01-01",
+    "fund_value": 10000000,
+    "value": 9600000,
+    "reserve_initial": 400000,
+    "reserve_growth": 0.0364,
+    "reserve_rate": 0.0,
+    "inflation": 0.0259,
+    "inflation_source": "FRED CPIAUCSL as published, 2005-01-03 to 2026-09-30 (191.700 to 334.131)",
+    "real_return_floor": 0.01,
+    "es_budget": 0.03,
+    "drawdown_limit": 0.2,
+    "gold_cap": 1.0,
+    "equity_cap": 1.0,
+    "agg_min": 0.0,
+    "agg_max": 1.0,
+    "single_cap": 1.0,
+    "sector_cap": 1.0,
+    "cost": 0.0,
+    "expected_annual_turnover": 0.0,
+    "drift": 0.05,
+    "strategy": {
+      "type": "dynamic_ewma_risk_parity",
+      "rebalance": "M",
+      "ewma_lambda": 0.97,
+      "window": 750,
+      "min_history": 500
+    },
+    "seed": 20261026,
+    "mean_shrinkage": 0.5,
+    "covariance": "LedoitWolf",
+    "return_basis": "historical_etf_net",
+    "primary": "fhs",
+    "challenger": "garch_evt",
+    "window": 750,
+    "refit": 21,
+    "n_sim": 100000,
+    "bootstrap_reps": 500,
+    "bootstrap_block": 20,
+    "survival_paths": 10000,
+    "survival_years": 25,
+    "policy_accepted": true,
+    "human_validation": "pending",
+    "solo_eligibility": "pending",
+    "deadline": "unknown"
+  },
+  "start": "2006-12-28",
+  "end": "2026-09-30",
+  "performance": {
+    "cagr": 0.06160348340671806,
+    "cumulative_return": 2.257770520059795,
+    "annual_volatility": 0.065578213225388,
+    "sharpe": 0.7076382256211576,
+    "sortino": 1.3493598135057427,
+    "beta": 0.20684845658803327,
+    "treynor": 0.22431723333098477,
+    "jensen_alpha": 0.024307343154763177,
+    "information_ratio": -0.06992715542960964,
+    "maximum_drawdown": -0.1847749976518578,
+    "calmar": 0.33339728962025333,
+    "max_underwater_days": 346,
+    "recovered_at_end": false,
+    "observations": 4969,
+    "cpi_inflation": 0.02580085352362338,
+    "real_cagr": 0.034902125261558004,
+    "rebalances": 238,
+    "turnover_per_year": 0.9529429718195725
+  },
+  "benchmark": {
+    "cagr": 0.06396856827195418,
+    "cumulative_return": 2.404193662607614,
+    "annual_volatility": 0.083727362623137,
+    "sharpe": 0.596898652659193,
+    "sortino": 1.1173393348780063,
+    "beta": 0.3949573840909486,
+    "treynor": 0.12654516865687832,
+    "jensen_alpha": 0.007796752708009459,
+    "information_ratio": null,
+    "maximum_drawdown": -0.23342184346356987,
+    "calmar": 0.27404705284978076,
+    "max_underwater_days": 564,
+    "recovered_at_end": false,
+    "observations": 4969,
+    "real_cagr": 0.03720772371871672
+  },
+  "end_value": 31274596.992574032,
+  "bench_end_value": 32680259.161033094,
+  "current_drawdown": -0.02925148242428166,
+  "targets": 239,
+  "target_range": {
+    "SPY": [
+      0.05766695605,
+      0.2563731748
+    ],
+    "AGG": [
+      0.3436884249,
+      0.8403637023
+    ],
+    "GLD": [
+      0.03464961918,
+      0.3240747181
+    ],
+    "XLE": [
+      0.04256306908,
+      0.1911445903
+    ]
+  },
+  "xle_at_maximum": true,
+  "contributions_total": {
+    "portfolio_vol_annual": 0.05656215607323279,
+    "es_usd": 249994.629751626,
+    "residual_usd": -2.9103830456733704e-11,
+    "diversification_benefit_usd": 92451.55060299794
+  },
+  "reserve_test": {
+    "status": "illustrative",
+    "paths": 10000,
+    "block": "non-circular joint 12 months",
+    "horizon_years": 25,
+    "schedule": "USD reserve_initial x (1+reserve_growth)^(t-1) withdrawn each 1 January; cash earns 0",
+    "results": [
+      {
+        "year": 10,
+        "all_payments_funded": 1.0,
+        "mc_se": 0.0,
+        "real_capital_preserved": 0.3406,
+        "median_real_balance_usd": 9139143.276642678,
+        "p10_real_balance_usd": 6788799.74889717,
+        "median_depletion_year": null
+      },
+      {
+        "year": 25,
+        "all_payments_funded": 0.9656,
+        "mc_se": 0.001822543277949799,
+        "real_capital_preserved": 0.1814,
+        "median_real_balance_usd": 5846142.733718595,
+        "p10_real_balance_usd": 1493310.298121145,
+        "median_depletion_year": 24.0
+      }
+    ],
+    "sample": "2007-01 to 2026-09",
+    "months": 237
+  },
+  "reserve_history": {
+    "start": "2007-01-03",
+    "end": "2026-09-30",
+    "payments": 20,
+    "paid_usd": 11476003.03049052,
+    "end_usd": 10766961.621490268,
+    "cpi_ratio": 1.6541138613861386,
+    "end_real_usd": 6509202.221706559,
+    "first_payment_usd": 400000.0,
+    "last_payment_usd": 789006.6676088911
+  },
+  "adf": {
+    "statistic": -13.61622666099798,
+    "p_value": 1.8328999624859313e-25,
+    "lags": 32,
+    "observations": 4936
+  },
+  "backtest_challenger_99": {
+    "status": "ok",
+    "days": 2449,
+    "breaches": 26,
+    "expected_breaches": 24.490000000000023,
+    "kupiec_lr": 0.09218731973197691,
+    "kupiec_p": 0.761414632978989,
+    "transitions": [
+      2398,
+      24,
+      24,
+      2
+    ],
+    "independence_lr": 4.709836375089594,
+    "independence_p": 0.02999050593843396,
+    "conditional_coverage_p": 0.09062620698772152,
+    "binomial_p": 0.7598720413614197,
+    "coverage": 1.0,
+    "missing_days": 0,
+    "zone": "green",
+    "red_window_share": 0.0,
+    "weight_hash": "b7661d21e49b31370ebc5c1e3e8295a1f0157408518696d571b32040581dd37d",
+    "method": "garch_evt",
+    "alpha": 0.99,
+    "passes_gate": true
+  },
+  "data": {
+    "dates": 5470,
+    "start": "2005-01-03",
+    "end": "2026-09-30",
+    "weekdays": 5673,
+    "retrieved": "2026-10-27T07:56:54.510089+00:00",
+    "yfinance": "1.7.0",
+    "auto_adjust": true,
+    "missing_price_rows": 0,
+    "dropped_rows": 0,
+    "calendar": {
+      "STANDARD_HOLIDAY": 198,
+      "NON_STANDARD_CLOSURE": 5
+    },
+    "closures": [
+      [
+        "2007-01-02",
+        "National Day of Mourning for President Gerald R. Ford"
+      ],
+      [
+        "2012-10-29",
+        "Hurricane Sandy: Emergency weather closure of NYSE and Nasdaq"
+      ],
+      [
+        "2012-10-30",
+        "Hurricane Sandy: Day 2 weather closure (first consecutive 2-day storm closure since 1888)"
+      ],
+      [
+        "2018-12-05",
+        "National Day of Mourning for President George H.W. Bush"
+      ],
+      [
+        "2025-01-09",
+        "National Day of Mourning for President Jimmy Carter"
+      ]
+    ],
+    "flags": 242,
+    "flags_by_ticker": {
+      "SPY": 40,
+      "AGG": 29,
+      "GLD": 22,
+      "XLE": 30
+    },
+    "flags_2008": 122,
+    "flags_2020": 56,
+    "flags_corroborated": 219,
+    "flags_review": 23,
+    "flags_review_by_ticker": {
+      "GLD": 11,
+      "AGG": 11,
+      "XLE": 1
+    },
+    "flags_labelled": 116,
+    "stale": 0,
+    "reversals": 29,
+    "reversals_by_ticker": {
+      "SPY": 2,
+      "AGG": 0,
+      "GLD": 0,
+      "XLE": 8
+    },
+    "variance_breaks": {
+      "SPY": {
+        "date": "2011-12-20",
+        "before": 0.231,
+        "after": 0.165
+      },
+      "AGG": {
+        "date": "2009-08-11",
+        "before": 0.068,
+        "after": 0.047
+      },
+      "GLD": {
+        "date": "2013-10-17",
+        "before": 0.21,
+        "after": 0.162
+      },
+      "XLE": {
+        "date": "2009-06-22",
+        "before": 0.385,
+        "after": 0.271
+      }
+    },
+    "ffill_rows": 78,
+    "ffill_by_series": {
+      "DTB3": 39,
+      "DGS10": 39
+    },
+    "ffill_months": [
+      10,
+      11
+    ],
+    "cpi_gaps": [
+      {
+        "month": "October 2025",
+        "carried": "September 2025",
+        "sessions": 43,
+        "first": "2025-10-21",
+        "last": "2025-12-19",
+        "typical": 21.0
+      }
+    ],
+    "rf_annual": 0.018000292348131053,
+    "dtb3_negative_days": 8,
+    "dtb3_min": -0.0005,
+    "stationarity": {
+      "SPY|Log Price Levels ln(P_t)": {
+        "asset": "SPY",
+        "series_type": "Log Price Levels ln(P_t)",
+        "adf_stat": 0.6438,
+        "adf_p_value": 0.9886,
+        "adf_lags": 20,
+        "adf_crit_5pct": -2.8621,
+        "adf_stat_lag5": 0.6602,
+        "adf_p_value_lag5": 0.989,
+        "kpss_stat": null,
+        "kpss_p_value": null,
+        "kpss_p_capped": false,
+        "arch_lm_p_value": null,
+        "verdict": "Non-Stationary I(1)"
+      },
+      "AGG|Log Price Levels ln(P_t)": {
+        "asset": "AGG",
+        "series_type": "Log Price Levels ln(P_t)",
+        "adf_stat": -1.9054,
+        "adf_p_value": 0.3295,
+        "adf_lags": 22,
+        "adf_crit_5pct": -2.8621,
+        "adf_stat_lag5": -1.957,
+        "adf_p_value_lag5": 0.3057,
+        "kpss_stat": null,
+        "kpss_p_value": null,
+        "kpss_p_capped": false,
+        "arch_lm_p_value": null,
+        "verdict": "Non-Stationary I(1)"
+      },
+      "GLD|Log Price Levels ln(P_t)": {
+        "asset": "GLD",
+        "series_type": "Log Price Levels ln(P_t)",
+        "adf_stat": -0.9736,
+        "adf_p_value": 0.7628,
+        "adf_lags": 0,
+        "adf_crit_5pct": -2.8621,
+        "adf_stat_lag5": -1.0381,
+        "adf_p_value_lag5": 0.7391,
+        "kpss_stat": null,
+        "kpss_p_value": null,
+        "kpss_p_capped": false,
+        "arch_lm_p_value": null,
+        "verdict": "Non-Stationary I(1)"
+      },
+      "XLE|Log Price Levels ln(P_t)": {
+        "asset": "XLE",
+        "series_type": "Log Price Levels ln(P_t)",
+        "adf_stat": -1.2277,
+        "adf_p_value": 0.6616,
+        "adf_lags": 29,
+        "adf_crit_5pct": -2.8621,
+        "adf_stat_lag5": -1.5573,
+        "adf_p_value_lag5": 0.505,
+        "kpss_stat": null,
+        "kpss_p_value": null,
+        "kpss_p_capped": false,
+        "arch_lm_p_value": null,
+        "verdict": "Non-Stationary I(1)"
+      },
+      "SPY|Daily Log Returns r_t": {
+        "asset": "SPY",
+        "series_type": "Daily Log Returns r_t",
+        "adf_stat": -16.6255,
+        "adf_p_value": 1.68e-29,
+        "adf_lags": 19,
+        "adf_crit_5pct": -2.8621,
+        "adf_stat_lag5": -32.9557,
+        "adf_p_value_lag5": 0.0,
+        "kpss_stat": 0.1989,
+        "kpss_p_value": 0.1,
+        "kpss_p_capped": true,
+        "arch_lm_p_value": 0.0,
+        "verdict": "Stationary I(0)"
+      },
+      "AGG|Daily Log Returns r_t": {
+        "asset": "AGG",
+        "series_type": "Daily Log Returns r_t",
+        "adf_stat": -15.6546,
+        "adf_p_value": 1.58e-28,
+        "adf_lags": 21,
+        "adf_crit_5pct": -2.8621,
+        "adf_stat_lag5": -31.666,
+        "adf_p_value_lag5": 0.0,
+        "kpss_stat": 0.3102,
+        "kpss_p_value": 0.1,
+        "kpss_p_capped": true,
+        "arch_lm_p_value": 2.99e-145,
+        "verdict": "Stationary I(0)"
+      },
+      "GLD|Daily Log Returns r_t": {
+        "asset": "GLD",
+        "series_type": "Daily Log Returns r_t",
+        "adf_stat": -75.0381,
+        "adf_p_value": 0.0,
+        "adf_lags": 0,
+        "adf_crit_5pct": -2.8621,
+        "adf_stat_lag5": -31.2263,
+        "adf_p_value_lag5": 0.0,
+        "kpss_stat": 0.1604,
+        "kpss_p_value": 0.1,
+        "kpss_p_capped": true,
+        "arch_lm_p_value": 1.4199999999999999e-74,
+        "verdict": "Stationary I(0)"
+      },
+      "XLE|Daily Log Returns r_t": {
+        "asset": "XLE",
+        "series_type": "Daily Log Returns r_t",
+        "adf_stat": -14.4164,
+        "adf_p_value": 8.05e-27,
+        "adf_lags": 28,
+        "adf_crit_5pct": -2.8621,
+        "adf_stat_lag5": -30.7093,
+        "adf_p_value_lag5": 0.0,
+        "kpss_stat": 0.0696,
+        "kpss_p_value": 0.1,
+        "kpss_p_capped": true,
+        "arch_lm_p_value": 8.210000000000001e-271,
+        "verdict": "Stationary I(0)"
+      },
+      "SPY|Daily Simple Returns R_t": {
+        "asset": "SPY",
+        "series_type": "Daily Simple Returns R_t",
+        "adf_stat": -18.487,
+        "adf_p_value": 2.13e-30,
+        "adf_lags": 17,
+        "adf_crit_5pct": -2.8621,
+        "adf_stat_lag5": -33.377,
+        "adf_p_value_lag5": 0.0,
+        "kpss_stat": null,
+        "kpss_p_value": null,
+        "kpss_p_capped": false,
+        "arch_lm_p_value": 2.94e-295,
+        "verdict": "Stationary I(0)"
+      },
+      "AGG|Daily Simple Returns R_t": {
+        "asset": "AGG",
+        "series_type": "Daily Simple Returns R_t",
+        "adf_stat": -15.6327,
+        "adf_p_value": 1.68e-28,
+        "adf_lags": 21,
+        "adf_crit_5pct": -2.8621,
+        "adf_stat_lag5": -31.6639,
+        "adf_p_value_lag5": 0.0,
+        "kpss_stat": null,
+        "kpss_p_value": null,
+        "kpss_p_capped": false,
+        "arch_lm_p_value": 1.0300000000000001e-163,
+        "verdict": "Stationary I(0)"
+      },
+      "GLD|Daily Simple Returns R_t": {
+        "asset": "GLD",
+        "series_type": "Daily Simple Returns R_t",
+        "adf_stat": -75.1313,
+        "adf_p_value": 0.0,
+        "adf_lags": 0,
+        "adf_crit_5pct": -2.8621,
+        "adf_stat_lag5": -31.1989,
+        "adf_p_value_lag5": 0.0,
+        "kpss_stat": null,
+        "kpss_p_value": null,
+        "kpss_p_capped": false,
+        "arch_lm_p_value": 3.86e-76,
+        "verdict": "Stationary I(0)"
+      },
+      "XLE|Daily Simple Returns R_t": {
+        "asset": "XLE",
+        "series_type": "Daily Simple Returns R_t",
+        "adf_stat": -54.7752,
+        "adf_p_value": 0.0,
+        "adf_lags": 1,
+        "adf_crit_5pct": -2.8621,
+        "adf_stat_lag5": -31.0182,
+        "adf_p_value_lag5": 0.0,
+        "kpss_stat": null,
+        "kpss_p_value": null,
+        "kpss_p_capped": false,
+        "arch_lm_p_value": 6.57e-272,
+        "verdict": "Stationary I(0)"
+      }
+    },
+    "manifest_files": 18,
+    "manifest_created": "2026-10-27T07:57:38.789785+00:00",
+    "environment": {
+      "python_version": "3.12.10 (tags/v3.12.10:0cc8128, Apr  8 2025, 12:21:36) [MSC v.1943 64 bit (AMD64)]",
+      "platform": "Windows-11-10.0.26200-SP0",
+      "pandas_version": "3.0.2",
+      "numpy_version": "2.4.4",
+      "yfinance_version": "1.7.0",
+      "statsmodels_version": "0.14.6"
+    }
+  },
+  "vol_next_day_annual": 0.07511255339033959,
+  "vol_average_annual": 0.09609590592067055,
+  "latest_forecast_99": {
+    "garch_evt": {
+      "date": "2026-09-30",
+      "data_through": "2026-09-29",
+      "var_usd": 115785.26166753918,
+      "es_usd_approx": 155299.64897562252
+    },
+    "fhs": {
+      "date": "2026-09-30",
+      "data_through": "2026-09-29",
+      "var_usd": 123123.08562013143,
+      "es_usd_approx": 155448.51629916395
+    }
+  },
+  "distribution_yield": {
+    "by_etf": {
+      "AGG": 0.04185529893886534,
+      "GLD": 0.0,
+      "SPY": 0.009943222731139751,
+      "XLE": 0.024764227642276426
+    },
+    "portfolio": 0.028450331094335788
+  },
+  "liquidity_days": {
+    "GFC": {
+      "day": "2008-10-10",
+      "SPY": -0.02425567652198468,
+      "AGG": -0.06839542650737296,
+      "GLD": -0.07430478522575834,
+      "XLE": -0.04088387562517559
+    },
+    "COVID": {
+      "day": "2020-03-12",
+      "SPY": -0.09567752378304173,
+      "AGG": -0.04001037050859102,
+      "GLD": -0.0398882588306293,
+      "XLE": -0.12474003359130736
+    },
+    "Rates 2022": {
+      "day": "2022-06-13",
+      "SPY": -0.03796786908147487,
+      "AGG": -0.01639304815182363,
+      "GLD": -0.026412288230091452,
+      "XLE": -0.05219260308092499
+    }
+  },
+  "covid_agg_worst": {
+    "2020-03-12": -0.04001037050859102,
+    "2020-03-18": -0.03808998014707621
+  },
+  "v5_run_checks": {
+    "selected": {
+      "C1": true,
+      "C2": true,
+      "C3": true,
+      "C4": true,
+      "C5": true
+    },
+    "min_cvar": {
+      "C1": true,
+      "C2": true,
+      "C3": true,
+      "C4": false,
+      "C5": true
+    },
+    "min_variance": {
+      "C1": true,
+      "C2": true,
+      "C3": true,
+      "C4": false,
+      "C5": true
+    },
+    "near_parity": {
+      "C1": true,
+      "C2": true,
+      "C3": true,
+      "C4": false,
+      "C5": true
+    },
+    "max_sharpe": {
+      "C1": true,
+      "C2": true,
+      "C3": true,
+      "C4": false,
+      "C5": true
+    },
+    "max_return": {
+      "C1": true,
+      "C2": true,
+      "C3": true,
+      "C4": false,
+      "C5": false
+    },
+    "40_60": {
+      "C1": true,
+      "C2": true,
+      "C3": true,
+      "C4": true,
+      "C5": false
+    },
+    "60_40": {
+      "C1": true,
+      "C2": false,
+      "C3": true,
+      "C4": true,
+      "C5": false
+    },
+    "equal_weight": {
+      "C1": true,
+      "C2": false,
+      "C3": true,
+      "C4": false,
+      "C5": false
+    },
+    "permanent": {
+      "C1": true,
+      "C2": true,
+      "C3": true,
+      "C4": true,
+      "C5": true
+    },
+    "balanced_35_50_15": {
+      "C1": true,
+      "C2": true,
+      "C3": true,
+      "C4": true,
+      "C5": true
+    },
+    "unconstrained_parity": {
+      "C1": true,
+      "C2": true,
+      "C3": true,
+      "C4": false,
+      "C5": true
+    },
+    "A1_min_cvar": {
+      "C1": true,
+      "C2": true,
+      "C3": true,
+      "C4": false,
+      "C5": true
+    },
+    "A1_min_variance": {
+      "C1": true,
+      "C2": true,
+      "C3": true,
+      "C4": false,
+      "C5": true
+    },
+    "A1_max_sharpe": {
+      "C1": true,
+      "C2": true,
+      "C3": true,
+      "C4": false,
+      "C5": true
+    },
+    "A1_near_parity": {
+      "C1": true,
+      "C2": true,
+      "C3": true,
+      "C4": false,
+      "C5": true
+    }
+  },
+  "v5_run_same_strategy": {
+    "strategy_hash": "25361fcf3e3274b320bbc2e7a73d3e72064e9d9a90699622116cff89b8a3b8e6",
+    "real_cagr": 0.034802108787681085,
+    "path_max_diff": 7.839210010296416e-11,
+    "forecast_max_diff": 1.142862199706579e-06
+  },
+  "stationarity_strategy": {
+    "asset": "Strategy",
+    "series_type": "Daily Log Returns r_t",
+    "adf_stat": -13.6162,
+    "adf_p_value": 1.83e-25,
+    "adf_lags": 32,
+    "adf_crit_5pct": -2.8621,
+    "adf_stat_lag5": -30.2123,
+    "adf_p_value_lag5": 0.0,
+    "kpss_stat": 0.0826,
+    "kpss_p_value": 0.1,
+    "kpss_p_capped": true,
+    "arch_lm_p_value": 7.72e-174,
+    "verdict": "Stationary I(0)"
+  },
+  "cpi_policy": 0.0259,
+  "nominal_floor": 0.03615900000000005,
+  "code_rev": "9be9794c44b9",
+  "pages": 14
+}
