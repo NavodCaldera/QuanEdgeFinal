@@ -371,6 +371,8 @@ The owner asked for protection against long, fundamental downturns (dot-com, GFC
 
 **Disclosure before the tag:** the overlay was designed in the session that produced sections 19-19c and the 31 October exploratory tables. Its scratch backtest had been seen: CAGR 6.55% vs 6.43% for the v5 core (April 2005 start), maximum drawdown 13.9% vs 18.5%, ES99 1.47% vs 1.64%, GFC fall 13.9% vs 18.5%, COVID 11.5% vs 13.5%; an 18-month warning window was seen to miss part of 2008 before 24 months was chosen from the literature range. No risk forecast or C4 backtest of the overlay path had been computed. The run is a retrospective portfolio evaluation; the defence rests on the 60-year signal record and the stated reasons, not on the backtest.
 
+**Owner decision, 31 October 2026 (after the run):** v6 is adopted as the final model, replacing the v5 recommendation, although the pre-registered rule records it as evaluation incomplete (C4: breach counts matched the 99% level for FHS and GARCH-EVT, but breaches clustered, conditional coverage p 0.009 and 0.011). Reason: lower drawdowns for the client's first priority (maximum decline 13.9% vs 18.5%, GFC +1.8%, COVID -7.3%) with every rule economically defended. Safeguard: in any month the overlay switches, daily risk limits use the higher of the GARCH-EVT and FHS forecasts. The C4 result is disclosed in the dashboard, report and pitch; v5 stays available as the comparison.
+
 ## 14. Work plan
 
 Fix phase timeboxes as shares of the time left once the deadline is known. Two milestones are hard: the **thin slice** at about 15% of the time and the **minimum viable submission** at about 60%.
