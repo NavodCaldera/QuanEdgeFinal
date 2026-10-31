@@ -973,6 +973,24 @@ def page_backtest():
     st.title("Backtesting the risk forecasts")
     st.caption("Sequential risk-forecast evaluation: each day's VaR uses only returns up to the day before, on the strategy's own "
                f"daily path (strategy hash {SH[:8]}). Forecasts exist from {FIRST_FC}. Breach = loss larger than VaR.")
+    fixed = (start == pd.Timestamp(CFG["evaluation_start"]) or start.date() == FIRST_FC) and end.date() == LAST_FC
+    ref = {m: next(x for x in SUMMARY["validation"] if x["method"] == m and x["alpha"] == .99) for m in ("garch_evt", "fhs")}
+
+    with st.expander("What this backtest does and does not show", expanded=False):
+        st.markdown(
+            f"- **Does:** each forecast is made from the previous {CFG['window']} trading days only (slow models refitted every "
+            f"{CFG['refit']} days, volatility updated daily), then compared with the next day's loss. Breach counts and their timing "
+            "are tested with Kupiec (frequency) and Christoffersen (do breaches follow breaches).\n"
+            f"- **Does not give an untouched test.** The strategy, the recession overlay and the risk models were chosen after the "
+            f"{DATA_SPAN} history had been seen. Sequential forecasting avoids look-ahead inside each forecast, but the choices "
+            "around it were informed by the same history.\n"
+            "- **Tests the strategy's own return path.** That path mixes changing monthly weights and overlay switches. It is "
+            "not a direct test of tomorrow's risk for today's exact holdings.\n"
+            "- **Validates VaR only.** Breach tests say nothing about how large losses are beyond VaR; Expected Shortfall is not "
+            "validated here (the size of breaches is shown below as a description).\n"
+            "- **A high p-value means \"not rejected\", not \"correct\".** With about 25 expected breaches at 99% the tests have "
+            "limited power, especially over short ranges.")
+
     if method not in F.BACKTEST_METHODS:
         st.warning(f"**{LABEL[method]}** has no saved sequential forecasts for this strategy, so it cannot be backtested here. "
                    "It is not replaced by another model. Choose Historical, Parametric (normal), EVT, Filtered HS or GARCH-EVT "
@@ -983,43 +1001,84 @@ def page_backtest():
             st.warning(f"Not enough forecast days in this range ({res.get('days', 0)}). Choose a range of at least two "
                        f"trading days between {FIRST_FC} and {LAST_FC}.")
         else:
+            label = "Fixed evaluation period" if fixed else "Exploratory range (sidebar)"
+            st.markdown(f"**{label}: {LABEL[method]}, {alpha:.0%} VaR, {start.date()} to {end.date()}**")
+            sentence, rejected = F.finding_text(res, alpha)
+            (st.warning if rejected else st.info)(sentence)
             if res["independence_p"] is None:
                 why = ("there were no breaches" if res["breaches"] == 0 else
                        "every day was a breach" if res["breaches"] == res["days"] else "there are too few transitions")
-                st.info(f"The Christoffersen independence and conditional-coverage tests need breaches and non-breaches to "
-                        f"follow each other; in this range {why}, so they cannot be computed. The Kupiec test still applies.")
+                st.caption(f"The Christoffersen tests need breaches and non-breaches to follow each other; in this range {why}, "
+                           "so they cannot be computed. The Kupiec test still applies.")
             if res["days"] < 250:
-                st.info(f"Short range: {res['days']} forecast days, so about {res['expected_breaches']:.1f} breaches are expected "
-                        f"at {alpha:.0%}. The tests have little power here; a range of a year or more (250+ days) is more informative.")
+                st.caption(f"Short range: {res['days']} forecast days, so about {res['expected_breaches']:.1f} breaches are expected "
+                           f"at {alpha:.0%}. The tests have little power here; a range of a year or more (250+ days) is more informative.")
+
             c = st.columns(5)
-            c[0].metric("Days tested", f"{res['days']:,}", help=f"Coverage {res['coverage']:.1%}; missing forecasts {res['missing_days']}")
-            c[1].metric("Breaches", f"{res['breaches']}", f"{res['breaches']-res['expected_breaches']:+.1f} vs {res['expected_breaches']:.1f} expected",
-                        delta_color="inverse")
-            c[2].metric("Kupiec p-value", p_text(res["kupiec_p"]), help="Is the breach frequency consistent with the confidence level?")
-            c[3].metric("Christoffersen independence p", p_text(res["independence_p"]), help="Do breaches cluster on consecutive days?")
-            c[4].metric("Conditional coverage p", p_text(res["conditional_coverage_p"]), help="Frequency and independence together")
+            c[0].metric("Days tested", f"{res['days']:,}")
+            c[1].metric("Breaches", f"{res['breaches']}", f"expected {res['expected_breaches']:.1f}", delta_color="off",
+                        help="Observed breaches are whole days; the expected number is days × (1 − confidence level), so it can be fractional.")
+            c[2].metric("Breach rate", f"{res['breaches']/res['days']:.2%}", f"target {1-alpha:.2%}", delta_color="off")
+            c[3].metric("Kupiec p", p_text(res["kupiec_p"]),
+                        help="Tests whether the breach frequency is consistent with the confidence level. At or below 0.05: rejected.")
+            c[4].metric("Independence p", p_text(res["independence_p"]),
+                        help="Christoffersen test: is a breach more likely the day after a breach? At or below 0.05: breaches cluster.")
+            st.caption(f"Conditional coverage p (frequency and independence together): {p_text(res['conditional_coverage_p'])}. "
+                       f"Forecast coverage {res['coverage']:.1%}, missing forecast days {res['missing_days']} (missing days are "
+                       "left out of the counts, not treated as safe days).")
+
+            cl = F.clustering_summary(res, frame)
             zone = res["zone"]
-            light = {"green": ("🟢", "Green zone"), "yellow": ("🟡", "Yellow zone"), "red": ("🔴", "Red zone")}
-            if zone in light:
-                st.markdown(f"### {light[zone][0]} Basel traffic light: {light[zone][1]}")
-                st.caption("Basel calibration: 99% one-day VaR, last 250 days of the chosen range; green 0-4 breaches, yellow 5-9, red 10+.")
+            dot = {"green": "🟢", "yellow": "🟡", "red": "🔴"}.get(zone, "⚪")
+            if zone in ("green", "yellow", "red"):
+                st.markdown(f"{dot} **Basel zone, last 250 days only ({cl['window_start']} to {cl['window_end']}): {zone}, "
+                            f"{cl['window_breaches']} breaches.**")
+                st.caption("Basel calibration for 99% one-day VaR over 250 days: green 0-4, yellow 5-9, red 10+. It describes only "
+                           "the most recent year of the range, a different window from the tests above"
+                           + (f"; {res['red_window_share']:.0%} of all rolling 250-day windows in the range were red."
+                              if res.get("red_window_share") is not None else "."))
             else:
-                st.markdown("### ⚪ Basel traffic light unavailable")
-                st.caption(f"The Basel zones are calibrated for 99% VaR over 250 days. Binomial reading instead: "
-                           f"{F.binomial_zone(res, alpha)} (p = {p_text(res['binomial_p'])}).")
-            words = []
-            words.append("too many breaches" if res["kupiec_p"] <= .05 and res["breaches"] > res["expected_breaches"] else
-                         "too few breaches (conservative)" if res["kupiec_p"] <= .05 else "breach frequency acceptable")
-            words.append("clustering not testable" if res["independence_p"] is None else
-                         "breaches cluster" if res["independence_p"] <= .05 else "no evidence of clustering")
-            st.markdown(f"**Reading:** {', '.join(words)} for this range and level (p-values at or below 0.05 reject the "
-                        "hypothesis tested).")
+                st.markdown(f"{dot} **Basel zone unavailable** for {alpha:.0%} VaR or ranges shorter than 250 days.")
+                st.caption(f"Binomial reading instead: {F.binomial_zone(res, alpha)} (p = {p_text(res['binomial_p'])}).")
+
+            if cl["after_breach"] is not None and cl["after_calm"] is not None:
+                st.markdown("**What clustering means here**")
+                yr = (f" {cl['worst_year_breaches']} of the {cl['breaches']} breaches fell in {cl['worst_year']}."
+                      if cl["worst_year"] else "")
+                st.markdown(
+                    f"The day after a breach, another breach followed {cl['after_breach']:.1%} of the time "
+                    f"({cl['back_to_back']} back-to-back pairs); after a normal day, only {cl['after_calm']:.1%}.{yr} "
+                    + ("So the total count can look right while misses bunch together in sudden shocks, which is when "
+                       "protection matters most: the model reacts a few days late when volatility jumps."
+                       if res["independence_p"] is not None and res["independence_p"] <= .05 else
+                       "In this range that difference is not statistically significant."))
+
+            sev = F.breach_severity(frame, VALUE)
+            st.markdown("**How large the breaches were**")
+            s = st.columns(3)
+            s[0].metric("Largest daily loss", pct(sev["largest_loss"], 2) if sev["largest_loss"] is not None else "n/a",
+                        str(sev["largest_loss_date"] or ""), delta_color="off", help="Log loss; close to the percentage loss for small moves.")
+            if "largest_excess" in sev:
+                s[1].metric("Largest excess over VaR", money(sev["largest_excess_usd"]), str(sev["largest_excess_date"]),
+                            delta_color="off", help=f"{usd(sev['largest_excess_usd'])} beyond the forecast VaR at NAV {usd(VALUE)}.")
+                s[2].metric("Average excess over VaR", money(sev["mean_excess_usd"]),
+                            help=f"Mean of loss minus VaR over the breach days, in USD at NAV {usd(VALUE)}; descriptive, not an ES test.")
 
             fig = go.Figure([go.Scatter(x=frame.index, y=frame.loss, name="Daily loss", line=dict(color=MUTED, width=1)),
                              go.Scatter(x=frame.index, y=frame["var"], name=f"{LABEL[method]} VaR {alpha:.0%}", line=dict(color=ACCENT, width=2)),
                              go.Scatter(x=frame.index[frame.breach], y=frame.loss[frame.breach], mode="markers", name="Breach",
                                         marker=dict(size=8, color="#e34948", line=dict(color="white", width=2)))])
             st.plotly_chart(style(fig, 380, "Log loss").update_yaxes(tickformat=".1%"), width="stretch")
+            st.caption("Log loss = −log(1 + return); for daily moves it is close to the percentage loss "
+                       "(a 5% log loss is a 4.9% fall). Positive values are losses.")
+            if len(sev["table"]):
+                with st.expander(f"Breach dates ({len(sev['table'])})"):
+                    t = sev["table"]
+                    shown = pd.DataFrame({"Date": t.index.date, "Loss": t.loss.map(lambda x: pct(x, 2)),
+                                          "VaR": t["var"].map(lambda x: pct(x, 2)), "Excess": t.excess.map(lambda x: pct(x, 2)),
+                                          "Loss USD": t.loss_usd.map(usd), "Excess USD": t.excess_usd.map(usd)})
+                    st.dataframe(shown, hide_index=True, width="stretch")
+                    st.download_button("Download breaches (CSV)", t.to_csv().encode(), f"breaches_{method}_{alpha:.0%}.csv", "text/csv")
             by_year = frame.groupby(frame.index.year).breach.agg(["sum", "count"])
             fig = go.Figure([go.Bar(x=by_year.index, y=by_year["sum"], name="Breaches", marker=dict(color=ACCENT, cornerradius=4)),
                              go.Scatter(x=by_year.index, y=by_year["count"]*(1-alpha), name="Expected", mode="markers",
@@ -1027,18 +1086,20 @@ def page_backtest():
             st.markdown("**Breaches by year**")
             st.plotly_chart(style(fig, 260).update_layout(hovermode="closest"), width="stretch")
 
-    st.subheader("Reference test, fixed whatever the sidebar says")
+    st.subheader(f"Fixed evaluation period, whatever the sidebar says: 99% VaR, {CFG['evaluation_start']} to {CFG['snapshot_end']}")
     rows = []
-    for m in ("garch_evt", "fhs"):
-        v = next(x for x in SUMMARY["validation"] if x["method"] == m and x["alpha"] == .99)
-        rows.append({"Model": LABEL[m], "Breaches": v["breaches"], "Expected": round(v["expected_breaches"], 1),
+    for m, v in ref.items():
+        n00, n01, n10, n11 = v.get("transitions") or (0, 0, 0, 0)
+        rows.append({"Model": LABEL[m], "Breaches": v["breaches"], "Expected": f"{v['expected_breaches']:.1f}",
                      "Kupiec p": p_text(v["kupiec_p"]), "Independence p": p_text(v["independence_p"]),
-                     "Cond. coverage p": p_text(v["conditional_coverage_p"]), "Zone": v["zone"]})
+                     "Cond. coverage p": p_text(v["conditional_coverage_p"]), "Back-to-back": n11,
+                     "Coverage": f"{v.get('coverage', 1):.1%}", "Basel zone (last 250 days)": v["zone"]})
     st.dataframe(pd.DataFrame(rows), hide_index=True, width="stretch")
-    st.caption(f"99% VaR, {CFG['evaluation_start']} to {CFG['snapshot_end']}, on the strategy's own sequential forecasts. "
-               "Kupiec tests the breach frequency, Christoffersen independence tests clustering, conditional coverage tests "
-               "both; a p-value at or below 0.05 rejects that hypothesis. " + monitoring_note(
-                   *(next(x for x in SUMMARY["validation"] if x["method"] == m and x["alpha"] == .99) for m in ("garch_evt", "fhs"))))
+    st.caption("Both conditional models, on the strategy's own sequential forecasts. Kupiec tests the breach frequency, "
+               "Christoffersen independence tests whether breaches follow breaches, conditional coverage tests both; a p-value "
+               "at or below 0.05 rejects that hypothesis. " + monitoring_note(ref["garch_evt"], ref["fhs"]))
+    if not fixed:
+        st.caption("The sidebar range above is exploratory; this table is the fixed reference period.")
 
     with st.expander("All saved models and levels for the chosen dates"):
         rows = []
@@ -1335,6 +1396,160 @@ def page_overlay():
                    "Files supplied by the owner from FRED (context/fred, hashed).")
 
 
+TRIED = [
+    # (group, model, what it is, mathematical result, economic reason, decision)
+    ("Fixed weights", "Maximum-return CVaR LP (original v1 selection)",
+     "Highest expected return with a historical CVaR99 budget, fixed weights.",
+     "GFC path drawdown 23.4%; expected return rests on estimated means, which are noisy.",
+     "Return-chasing tilts towards equities, which all fall together in a crisis; a conservative endowment cannot absorb that.",
+     "Removed"),
+    ("Fixed weights", "Minimum CVaR (SPY 15 / AGG 70 / GLD 15; later SPY 6 / AGG 88 / GLD 6)",
+     "Lowest historical 99% tail loss.",
+     "Smallest crisis losses, but realised real CAGR about 0.3% (2005-2026); its own FHS forecasts breached 41 vs 24.5 expected (Kupiec p 0.002). "
+     "Expected return clears inflation only under 50% mean shrinkage.",
+     "Almost all bonds: protects in equity crashes but lost 11-16% in the 2020-22 bond bear and does not grow real capital for scholarships.",
+     "Removed (previous recommendation)"),
+    ("Fixed weights", "Minimum variance", "Lowest volatility from the covariance matrix.",
+     "Same bond concentration as minimum CVaR; real CAGR about 0.1%; risk forecasts failed coverage.",
+     "Variance treats bonds as riskless; 2022 showed rates risk is real.", "Removed"),
+    ("Fixed weights", "Maximum Sharpe (Markowitz tangency)", "Best return per unit of volatility on estimated means.",
+     "Very sensitive to small changes in expected returns; forecasts failed coverage.",
+     "Estimated means are the least reliable input; the optimiser maximises estimation error.", "Removed"),
+    ("Fixed weights", "Inverse variance / inverse volatility",
+     "Weights proportional to 1/variance or 1/volatility; ignores correlation.",
+     "Inverse variance ~83% AGG, real CAGR 0.7%; inverse volatility GFC drawdown 19.2% and clustered breaches (conditional coverage p 0.011).",
+     "Ignores that SPY and XLE move together, so equity risk is double-counted less than it should be.", "Removed"),
+    ("Fixed weights", "Static risk parity (equal risk contribution, full sample)",
+     "Each ETF contributes 25% of volatility, weights fixed.",
+     "CAGR 6.5%, but GFC drawdown 18-19% and buy-and-hold drift to 43% equity (GFC fall 21.4%); breaches clustered.",
+     "Right idea (balance risk, not dollars), but a fixed covariance does not react when volatility regimes change.",
+     "Replaced by the dynamic version"),
+    ("Fixed weights", "Benchmarks: 60/40, 40/60, permanent 25/50/25, balanced 35/50/15, equal weight",
+     "Simple policy mixes for comparison.",
+     "60/40 max fall 35%; equal weight high return but large crisis losses; permanent and balanced reasonable but not risk-based.",
+     "Fixed dollar mixes do not adjust to which asset is risky now.", "Kept as comparisons only"),
+    ("Fixed weights", "Minimum CVaR with a 4% real return target (SPY 28 / AGG 42 / GLD 30)",
+     "Lowest tail loss subject to earning the 4% real needed to fund the reserve.",
+     "Only allocation that earned it historically (4.2% real vs 4.17% break-even), but GFC fall 19.9%; under shrunk means the same "
+     "target picks SPY 12 / AGG 77 / GLD 11, which earned 1.2% real. No backtest of its own forecasts.",
+     "A 4% real return and a conservative loss limit barely coexist with these assets; the answer depends on unreliable mean estimates.",
+     "Not adopted"),
+    ("Fixed weights", "Return-maximising CVaR LP with stress-loss caps (15% / 12%)",
+     "Original selection rule plus a cap on buy-and-hold loss in each named crisis.",
+     "12% cap: max decline 18.8%, CAGR 6.86%.",
+     "The caps are fitted to crises already observed; the next crisis will differ.", "Removed"),
+    ("Fixed weights", "Rebalancing rules: daily, monthly, quarterly, annual, 5/10-point bands, never",
+     "Same weights, different trading schedule.",
+     "Any rule trading at least yearly or on a band keeps ES99 near target; never rebalancing lifts risk-parity ES99 from USD 165k to "
+     "209k and its GFC fall to 21.4%. Daily is not safer.",
+     "Without rebalancing the winners (equities) grow into a larger risk share; too frequent trading only adds cost.",
+     "Quarterly + 5-point band kept for fixed mixes"),
+    ("Hedges", "XLE 5% / 10% funded from SPY",
+     "Energy as a long-only inflation hedge.",
+     "On the min-CVaR mix: 2022 path -15.3% to -8.8%, worst year -11.9% to -4.8%; but COVID -6.5% to -8.8%, ES99 1.43% to 1.53%.",
+     "Energy earns in supply-driven inflation (2022) and falls in demand crashes (2008, 2020). Kept as an idea: risk parity holds XLE anyway.",
+     "Absorbed into the final model"),
+    ("Hedges", "Pairs trading and market-neutral investing",
+     "Long one ETF, short another.",
+     "Not tested: no stable cointegrated pair among the seven ETFs.",
+     "Shorting adds borrowing cost, margin and unlimited loss; market-neutral earns roughly cash, below the spending need.",
+     "Rejected before testing"),
+    ("Hedges", "Cash sleeve and expected-shortfall caps",
+     "Hold part of the fund in cash, or cut weights whenever ES99 exceeds a cap.",
+     "Scratch tests in the v6 session (not saved): cash permanently lowers return; ES caps act only after volatility has risen.",
+     "Permanent cash fails the growth objective; the recession overlay uses cash only when an economic signal says so.",
+     "Removed (overlay kept instead)"),
+    ("Universe", "All seven ETFs (with EFA, EEM, XLK)", "Risk parity or optimisers over the full list.",
+     "EFA/EEM/XLK correlate 0.82-0.91 with SPY; they add only 0.18 independent bets; seven-ETF risk parity puts 71% of risk in equities "
+     "and breaches a 22% fall.",
+     "Foreign and tech equity are the same global equity factor in a crisis; more tickers is not more diversification.",
+     "Reduced to SPY, AGG, GLD, XLE"),
+    ("Timing rules", "Drawdown bands and CPPI risk budgets",
+     "Cut risk as the portfolio falls from its peak.",
+     "Max decline 27.0% to 21-23% on the risky mix; almost no effect on the defensive mix; lower CAGR, more turnover.",
+     "Sells after losses and buys back late; in October 2008 even bonds fell, so de-risking could not avoid the drop.", "Removed"),
+    ("Timing rules", "EWMA volatility overlay on the original selection (PORT-005)",
+     "Scale equity to its long-run volatility each week; freed weight to AGG then GLD.",
+     "GFC drawdown 23.4% to 19.4% (0.6 pt inside the limit), Kupiec p 0.068; walk-forward 2017-2026 CAGR 9.0% vs 10.5% static. "
+     "Turnover 0.67x vs 0.16x.",
+     "Most of the benefit came from 2008, which the design had already seen; thin margins.", "Removed"),
+    ("Timing rules", "EWMA volatility-target overlay (v4c with risk parity)",
+     "Scale equity down when short-run volatility is high.",
+     "Lower drawdown but breaches strongly clustered (conditional coverage p 0.0005); CAGR 6.3% vs 6.9%.",
+     "Volatility reacts after a shock starts; it was idle in slow crises (2018, oil, 2022 bond bear).", "Removed"),
+    ("Timing rules", "Winner-to-loser rebalancing (sell after +10%, buy the faller)",
+     "Contrarian switching between ETFs.",
+     "No reversal signal; best variant broke concentration (52% gold).",
+     "Asset momentum persists over months; selling winners fights it.", "Rejected"),
+    ("Timing rules", "Correlation triggers (SPY-AGG > +0.3, < -0.25, any pair < -0.5)",
+     "Shift SPY to GLD or rebalance when correlation crosses a threshold.",
+     "2022 signal fired only in Sep 2022, after the losses; gains within +/-0.3 pt CAGR across settings; thresholds chosen with hindsight.",
+     "Correlation measures co-movement, not the size of moves; risk parity's covariance already reacts to it.", "Removed"),
+    ("Timing rules", "Relative bands and capped dip-buying ladder",
+     "Buy SPY/GLD/XLE after 30-45% falls from the 3-year high.",
+     "+0.2 pt CAGR but ES99 +0.28 pt and deeper GFC/COVID losses; XLE re-triggered repeatedly while falling.",
+     "Buying falling assets catches crashes early (XLE fell 71% 2014-2020); unsuitable for a conservative client.", "Removed"),
+    ("Timing rules", "Trend filters, GARCH panic rule, momentum for XLE, Markov regimes",
+     "Exit risky assets on trend breaks or volatility spikes.",
+     "XLE momentum not significant (t = -0.22); trend filters cut drawdown but lowered CAGR with high turnover.",
+     "Price-only signals are noisy and whipsaw; no economic reason for them to work in advance.", "Removed"),
+    ("Recession signals", "Sahm rule (unemployment) and credit spread",
+     "Macro signals for recessions.",
+     "Sahm confirmed 6 of 8 recessions 2-9 months late; credit spread above its 12-month mean on in 143 non-recession months.",
+     "Unemployment is a lagging indicator; spreads react to many non-recession shocks.", "Not used in the rule"),
+    ("Dynamic optimisers", "Dynamic minimum variance and minimum CVaR (monthly)",
+     "Re-optimised each month-end on data to date.",
+     "CAGR 3.8% and 4.3% (2007-2026); stay 55-100% AGG.",
+     "Updating the inputs does not change the optimiser's preference for bonds.", "Removed"),
+    ("Dynamic optimisers", "Walk-forward yearly re-selection",
+     "Re-run the selection rule each January on prior data only.",
+     "Used to check the procedure, not as a portfolio: 2017-2026 CAGR 10.5% static, max decline 19.6%.",
+     "Shows how a rule would have behaved without seeing the future; it is a validation, not a strategy.",
+     "Validation only"),
+    ("Dynamic risk parity", "Risk parity on 1-year, 3-year and full-history covariance",
+     "Same equal-risk rule, different look-back window.",
+     "Shorter windows hold more equity (ES99 1.72% full history to 2.04% one year); no window predicted next year's risk shares well "
+     "(16-18 point miss). 1-year version: CAGR 6.06%, max decline 18.1%.",
+     "Short windows chase calm periods; the EWMA keeps the long window but weights recent data more.", "Replaced by EWMA"),
+    ("Dynamic risk parity", "Weekly and quarterly EWMA risk parity",
+     "Same as final model, different rebalancing frequency.",
+     "Weekly: GFC drawdown 20.7%, turnover 1.7x; quarterly: COVID -12.9%, too slow.",
+     "Volatility half-lives are 1-2 months (SPY 34 days); weekly chases noise, quarterly misses shocks.", "Removed"),
+    ("Final", "Monthly EWMA risk parity (v5 core)",
+     "Equal risk contributions from an EWMA covariance (lambda 0.97), re-estimated each month-end.",
+     "CAGR 6.16% since 2006, max decline 18.5%, GARCH-EVT backtest 26 vs 24.5 breaches (Kupiec p 0.76).",
+     "Balances risk across equity, bonds, gold and energy and updates at the pace macro data arrives.", "Kept as the core"),
+    ("Final", "Same strategy on data from 18 Nov 2004 with 2.62% CPI (v7)",
+     "v5 core with two more months of data and a matching inflation figure.",
+     "The dashboard was built on it (branch backup/local-v7-20261031); no full run of it is recorded.",
+     "Same economics as v5; the change was the data start, not the model.", "Not carried forward (main reset to v6)"),
+    ("Final", "v5 core + yield-curve recession overlay (v6)",
+     "Half of SPY and XLE to cash when the curve inverted in the last 24 months and SPY is below its 12-month average.",
+     "CAGR 6.30%, max decline 13.9%; breach count matched but breaches clustered (disclosed).",
+     "Yield-curve inversion preceded all 8 US recessions since 1969; the price check filters false alarms.", "Final model"),
+]
+
+
+def page_tried():
+    st.title("Models we tried")
+    st.caption("Every portfolio approach tested before the final model, and why it was kept or removed. All results are "
+               "retrospective on the same 2005-2026 data (hindsight; no untouched test period). Figures are from the "
+               "project's recorded studies; see AGENTS.md section 17 and PLAN.md sections 13 and 19.")
+    df = pd.DataFrame(TRIED, columns=["Group", "Model", "What it does", "Mathematical evidence", "Economic reason", "Decision"])
+    group = st.multiselect("Show groups", list(dict.fromkeys(df.Group)), default=list(dict.fromkeys(df.Group)))
+    df = df[df.Group.isin(group)]
+    st.dataframe(df[["Group", "Model", "Decision"]].set_index("Model"), use_container_width=True)
+    for _, r in df.iterrows():
+        with st.expander(f"{r.Model} — {r.Decision}"):
+            st.markdown(f"**What it does.** {r['What it does']}\n\n**Mathematical evidence.** {r['Mathematical evidence']}"
+                        f"\n\n**Economic reason.** {r['Economic reason']}")
+    st.subheader("What the search taught us")
+    st.markdown("- Optimisers that rely on expected returns are unstable; risk-based weights are more robust.\n"
+                "- The seven ETFs hold one big equity factor; real diversifiers are bonds, gold and, partly, energy.\n"
+                "- Price-based timing rules react after losses; only an economic leading signal (the yield curve) acted in advance.\n"
+                "- Monthly updating matches how fast volatility decays and how often macro data arrives.")
+
+
 SETTINGS = None
 pages = [st.Page(page_decision, title="Decision", default=True, url_path="decision"),
          st.Page(page_portfolio, title="Portfolio", url_path="portfolio"),
@@ -1345,7 +1560,8 @@ pages = [st.Page(page_decision, title="Decision", default=True, url_path="decisi
          st.Page(page_contributions, title="Risk contributions", url_path="contributions"),
          st.Page(page_overlay, title="Recession overlay", url_path="overlay"),
          st.Page(page_limits, title="Assumptions & Limitations", url_path="limitations"),
-         st.Page(page_data, title="Data & provenance", url_path="data")]
+         st.Page(page_data, title="Data & provenance", url_path="data"),
+         st.Page(page_tried, title="Models we tried", url_path="tried")]
 nav = st.navigation(pages)
 SETTINGS = sidebar()
 nav.run()

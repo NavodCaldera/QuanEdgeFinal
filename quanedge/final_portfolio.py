@@ -355,6 +355,65 @@ def binomial_zone(result, alpha):
     return "consistent with the confidence level" if p > .05 else "inconsistent with the confidence level"
 
 
+def clustering_summary(result, frame):
+    """How breaches follow each other, from the Christoffersen transition counts [n00, n01, n10, n11].
+
+    after_breach = n11/(n10+n11) and after_calm = n01/(n00+n01) are the empirical probabilities of a
+    breach the day after a breach and the day after a non-breach; None where the denominator is zero.
+    Also the calendar year with most breaches and the Basel window (last 250 rows of the range)."""
+    n00, n01, n10, n11 = result.get("transitions") or (0, 0, 0, 0)
+    hits = frame.breach[frame["var"].notna()]
+    by_year = hits.groupby(hits.index.year).sum()
+    last = hits.iloc[-250:]
+    return {"after_breach": n11/(n10+n11) if n10+n11 else None, "after_calm": n01/(n00+n01) if n00+n01 else None,
+            "back_to_back": int(n11), "worst_year": int(by_year.idxmax()) if len(by_year) and by_year.max() else None,
+            "worst_year_breaches": int(by_year.max()) if len(by_year) else 0, "breaches": int(hits.sum()),
+            "window_start": last.index[0].date() if len(last) else None, "window_end": last.index[-1].date() if len(last) else None,
+            "window_breaches": int(last.sum()), "window_days": len(last)}
+
+
+def breach_severity(frame, value):
+    """Size of each breach: realised loss, VaR and the excess, in log units and USD at NAV `value`.
+
+    USD amounts use the simple-loss transform value*(1-exp(-L)) for both the loss and the VaR."""
+    b = frame.loc[frame.breach, ["loss", "var"]].copy()
+    b["excess"] = b.loss - b["var"]
+    b["loss_usd"] = value*(1-np.exp(-b.loss)); b["var_usd"] = value*(1-np.exp(-b["var"]))
+    b["excess_usd"] = b.loss_usd - b.var_usd
+    valid = frame["var"].notna()
+    out = {"table": b, "largest_loss": float(frame.loss[valid].max()) if valid.any() else None,
+           "largest_loss_date": frame.loss[valid].idxmax().date() if valid.any() else None}
+    if len(b):
+        out.update(largest_excess=float(b.excess.max()), largest_excess_usd=float(b.excess_usd.max()),
+                   largest_excess_date=b.excess_usd.idxmax().date(), mean_excess=float(b.excess.mean()),
+                   mean_excess_usd=float(b.excess_usd.mean()))
+    return out
+
+
+def finding_text(result, alpha):
+    """One plain sentence stating what the tests show; never 'pass' or 'acceptable'.
+
+    Returns (sentence, rejected) where rejected is True if any test rejects at the 5% level."""
+    n, k = result["days"], result["breaches"]
+    head = f"{k} breaches in {n:,} days ({k/n:.2%} observed vs {1-alpha:.2%} expected at {alpha:.0%})"
+    kp, ip = result.get("kupiec_p"), result.get("independence_p")
+    if kp <= .05:
+        freq = ("the frequency test rejects the confidence level: too many breaches" if k > result["expected_breaches"]
+                else "the frequency test rejects the confidence level: fewer breaches than expected (conservative)")
+    else:
+        freq = f"the frequency test does not reject the {alpha:.0%} level (Kupiec p {kp:.3f})"
+    if ip is None:
+        clus = "clustering cannot be tested in this range"
+    elif ip <= .05:
+        clus = f"breaches cluster: independence is rejected (p {ip:.3f})"
+    else:
+        clus = f"no evidence that breaches cluster (independence p {ip:.3f})"
+    clustered = ip is not None and ip <= .05
+    joiner = ", but " if ip is not None and (kp <= .05) != clustered else "; "     # contrast only when the tests disagree
+    rejected = kp <= .05 or clustered
+    return f"{head}: {freq}{joiner}{clus}.", rejected
+
+
 def scenario_pnl(path, asset_returns, start, end, value):
     """Path return, maximum fall and per-ETF dollar P&L from the scenario start close to its
     end close (the convention of the frozen scenario evaluation).

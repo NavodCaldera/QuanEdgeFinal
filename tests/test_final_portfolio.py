@@ -280,7 +280,7 @@ def test_all_dashboard_pages(tmp_path):
     source = (ROOT/'dashboard.py').read_text(encoding='utf-8')
     import re
     titles = re.findall(r'st.Page\(page_\w+, title="([^"]+)"', source)
-    assert len(titles) == 10
+    assert len(titles) == 11
     for i, title in enumerate(titles):
         src = source.replace('title="Decision", default=True', 'title="Decision"')
         src = src.replace(f'title="{title}",', f'title="{title}", default=True,')
@@ -385,3 +385,40 @@ def test_evt_page_all_confidence_levels(tmp_path):
         assert table.iloc[0][f'ES {alpha:.0%}'] in text
         assert 'Sequential evidence' in text and 'not this full-sample fit' in text
         assert 'absolute mean' not in ' '.join(c.value for c in app.caption)
+
+
+def _frame(hits, var=.02):
+    idx = pd.bdate_range("2020-01-01", periods=len(hits))
+    loss = np.where(hits, var + .01, var - .01)
+    return pd.DataFrame({"loss": loss, "var": var, "breach": np.asarray(hits, bool)}, index=idx)
+
+
+def test_clustering_summary_conditional_rates():
+    from quanedge.backtest import exception_tests
+    hits = [0]*10 + [1, 1, 0] + [0]*10 + [1, 0] + [0]*5
+    res = exception_tests(hits)
+    c = F.clustering_summary(res, _frame(hits))
+    n00, n01, n10, n11 = res["transitions"]
+    assert (n01, n10, n11) == (2, 2, 1)
+    assert c["after_breach"] == pytest.approx(1/3) and c["after_calm"] == pytest.approx(2/(n00+2))
+    assert c["back_to_back"] == 1 and c["breaches"] == 3 and c["window_days"] == len(hits)
+
+
+def test_breach_severity_excess_and_usd():
+    f = _frame([0, 1, 0, 1])
+    s = F.breach_severity(f, 1e6)
+    assert len(s["table"]) == 2 and np.allclose(s["table"].excess, .01)
+    assert s["largest_excess_usd"] == pytest.approx(1e6*(np.exp(-.02) - np.exp(-.03)))
+    assert "largest_excess" not in F.breach_severity(_frame([0, 0, 0]), 1e6)
+
+
+def test_finding_text_wording():
+    base = {"days": 1000, "breaches": 12, "expected_breaches": 10.}
+    text, rej = F.finding_text({**base, "kupiec_p": .5, "independence_p": .004}, .99)
+    assert rej and ", but breaches cluster" in text and "does not reject" in text
+    text, rej = F.finding_text({**base, "kupiec_p": .5, "independence_p": .6}, .99)
+    assert not rej and "no evidence" in text
+    text, rej = F.finding_text({**base, "kupiec_p": .5, "independence_p": None}, .99)
+    assert not rej and "cannot be tested" in text
+    for t in (text,):
+        assert "pass" not in t.lower() and "acceptable" not in t.lower()
