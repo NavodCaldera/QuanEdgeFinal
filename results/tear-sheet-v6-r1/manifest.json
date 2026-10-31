@@ -1,6 +1,6 @@
 {
-  "created_utc": "2026-10-31T17:16:14+00:00",
-  "code_rev": "84d474ff6d17",
+  "created_utc": "2026-10-31T18:03:53+00:00",
+  "code_rev": "14d1dbb4451f",
   "pages": 1,
   "model": "v6",
   "inputs": {
@@ -14,12 +14,12 @@
   },
   "sources_lf_normalised": {
     "quanedge/tear_sheet.py": "f6eab19818521c19dc02a40af47218244217c079074e3e2a475c010eba4a1457",
-    "quanedge/final_portfolio.py": "dbd66da17dbaa398f5e96e00754f282f7e28e4576dae6fe414d1ba4421f5f86f"
+    "quanedge/final_portfolio.py": "a39cdcf57df2fd5426e3c192dda6669993a66cb6120eedee70fb0e03bc0e0a05"
   },
   "outputs": {
-    "executive_tear_sheet.pdf": "b0fd28f4e31f3a00b721640c2960613656f2c8744494fec706168697133d249b",
+    "executive_tear_sheet.pdf": "b044405234a2a19f1588b4e83fafeaf115cf5d49e303b5e2ae06c50e7d81377b",
     "wealth_drawdown.png": "56043f4b48ae44ba9cb5fa173c58ffea4a27fd6201b083246ce230167e8f1a96",
-    "numbers.json": "4d4a6b09ae1ba03ba562db99a5eb8e3efe4d2b2b5773a7415d3de620f4f3b0ad"
+    "numbers.json": "622dad4c2b8cab1597b6ab7191654b60ea1b2055a699cd6cb362c37b845f019d"
   },
   "evaluation_label": "retrospective portfolio evaluation; backtests are sequential risk-forecast evaluation",
   "human_review": "pending"
