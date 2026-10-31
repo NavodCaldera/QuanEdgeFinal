@@ -1,0 +1,2 @@
+asset,series_type,adf_stat,adf_p_value,adf_lags,adf_crit_5pct,adf_stat_lag5,adf_p_value_lag5,kpss_stat,kpss_p_value,kpss_p_capped,arch_lm_p_value,verdict
+W_rec,Portfolio Daily Log Returns,-18.7112,2.03e-30,17,-2.8621,-32.1531,0.0,0.0433,0.1,True,1.02e-267,Stationary I(0)

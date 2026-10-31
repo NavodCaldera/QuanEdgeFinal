@@ -26,7 +26,7 @@ python -m quanedge.pipeline --stage training --config config/final.yaml
 python -m quanedge.pipeline --config config/final.yaml
 ```
 
-The data pipeline rebuilds offline from frozen raw/cache snapshots. `--refresh` deliberately changes inputs; never use it just to edit documents. The final pipeline requires the policy config to match the tag named in it (`prereg_tag`, currently `prereg-v2`) and refuses prices after or short of 2026-09-30. The training command uses only 2005-2016 returns. A new final run is staged before publication to a new local folder; failed runs do not replace completed evidence. Final analysis may take several minutes because every distinct allocation receives its own forecasts.
+The data pipeline rebuilds offline from frozen raw/cache snapshots. `--refresh` deliberately changes inputs; never use it just to edit documents. The final pipeline requires the policy config to match the tag named in it (`prereg_tag`, currently `prereg-v5`) and refuses prices after or short of 2026-09-30. The training command uses only 2005-2016 returns. A new final run is staged before publication to a new local folder; failed runs do not replace completed evidence. Final analysis may take several minutes because every distinct allocation receives its own forecasts.
 
 `requirements.txt` lists direct dependencies; `requirements.lock.txt` pins the tested clean-environment dependency set. Editable pitch contents and speaker notes are included with each delivered deck. Regenerating the PPTX uses `scripts/build_pitch.mjs` and the Codex bundled Artifact Tool runtime, configured with `QUANTEDGE_RUNTIME` and `QUANTEDGE_PRESENTATION_SKILL`; this is separate from the portable Python analytics/app workflow.
 
@@ -44,7 +44,15 @@ Risk values distinguish log loss, simple percentage points and USD. Dollar ES av
 
 ## Decision and governance
 
-### Current mandate (v3)
+### Current mandate (v5)
+
+Mandate v5 (tag `prereg-v5`, PLAN.md section 13g) recommends a method rather than fixed weights: dynamic EWMA risk parity over SPY, AGG, GLD and XLE, re-estimated at each month-end close (lambda 0.97, last 750 days, equal volatility risk contributions), on data from 2005. The ES99 budget is 3% of invested NAV, C3 requires at least 1% expected real return over US CPI (FRED, 2.59% a year), and FHS/GARCH-EVT remain primary/challenger.
+
+Run `final-v5-20261031` returns **Accept**. The target from 1 October 2026 is **SPY 20.8%, AGG 51.7%, GLD 8.4%, XLE 19.1%**, changing monthly. The strategy realised 6.16% a year (3.48% real) from 2006-12-28 with an 18.5% maximum drawdown. C4 passes through the GARCH-EVT challenger; FHS fails on breach clustering. The rules were set after these results had been seen, so Accept reproduces known results rather than testing them independently.
+
+Review the [investment memorandum](results/final-v5-20261031/documents/investment_memorandum.pdf), [executive tear sheet](results/final-v5-20261031/documents/executive_tear_sheet.pdf), [committee memo](results/final-v5-20261031/documents/committee_memo.pdf) and [speaker/Q&A notes](results/final-v5-20261031/documents/speaker_qa_notes.md); verify with `python -m quanedge.verify results/final-v5-20261031`.
+
+### Mandate v3 (superseded, kept as recorded)
 
 Mandate v3 (tag `prereg-v3`, PLAN.md section 13c) keeps every v2 rule below and limits holdings to SPY, AGG, GLD and XLE, because EFA, EEM and XLK move almost in step with SPY (daily correlation 0.82-0.91). SPY and XLE are still 0.70 correlated; AGG and GLD are the diversifiers.
 

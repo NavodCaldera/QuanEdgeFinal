@@ -1,0 +1,155 @@
+# Investment memorandum
+
+## Investment memorandum
+
+Serendib University Endowment Fund. USD 10,000,000. Data: 3 January 2005 through 2026-09-30. Run final-v5-20261031.
+
+Recommendation: Accept. Invest by the dynamic EWMA risk parity over SPY, AGG, GLD, XLE: equal volatility risk contributions from an exponentially weighted covariance (lambda 0.97, last 750 days), re-estimated at each month-end close from data through that close. Holdings drift between month-ends. The target in force from 1 October 2026 is SPY 20.80%, AGG 51.72%, GLD 8.36%, XLE 19.11% (weight hash 3044f8908ff6). What is recommended is the method (strategy hash 25361fcf3e32), not a fixed weight vector.
+
+Algorithmic recommendation: Accept. Implement the proposed allocation subject to owner review and monitoring. Reported allocation and numbers: selected, weight hash 3044f8908ff6.
+
+The original allocation is reported; its outcome follows the frozen checks rather than a discretionary override.
+
+Illustrative 25-year reserve sustainability: 10 years: all payments funded in 100.00% of paths, initial real capital preserved in 34.06%, median real balance $9,139,143; 25 years: all payments funded in 96.56% of paths, initial real capital preserved in 18.14%, median real balance $5,846,143. The reserve grows 3.64% a year, faster than US CPI, and the 1% real floor is below the 4% initial draw, so real capital is expected to decline; these resampled-history outcomes do not gate the verdict.
+
+Mandate v5 (owner change, 31 October 2026, tagged prereg-v5): the recommendation is the dynamic risk-parity method above (pre-registered as candidate v4d before its backtest). Risk budget: historical one-day ES99 of 3.00% of invested NAV ($288,000). Real returns are measured against US CPI (2.59% a year, FRED CPIAUCSL 2005-2026), and C3 requires at least 1% expected real return. The universe (SPY, AGG, GLD, XLE), cash reserve, zero cost, 20% stress limit and FHS/GARCH-EVT model order carry over from mandates v2-v4, whose runs and verdicts remain as recorded.
+
+Disclosure: mandate v5 was written after the strategy's results had been seen. Under v4 its 30 September 2026 target failed the 2.5% budget (ES99 2.60%); the owner then raised the budget to 3% and moved the inflation basis to CPI. The Accept outcome was therefore expected before this run. The run confirms that the result reproduces under the frozen rules; it is not an independent test. The method was chosen after about twenty allocation rules had been compared on the same history.
+
+This is a solo submission prepared with AI assistance. The owner approved the policy assumptions and FHS/GARCH-EVT model order; independent review of implementation and the investment judgement is pending.
+
+Capital preservation takes priority over maximising gains. A perpetual endowment must fund today's scholarship obligations while protecting future purchasing power. The strategic review period is five years; daily risk measurement serves monitoring rather than defining the investment horizon.
+
+What can go wrong: equities can fall together, bonds can lose with equities during inflation shocks, and gold can fail to protect over the committee's chosen period. Spending and inflation can overwhelm returns even when daily risk looks modest.
+
+How bad: the stress section reports conditional dollar losses, not a worst possible outcome. How confident: forecast coverage, failure counts and bootstrap intervals qualify each point estimate.
+
+## Policy and allocation
+
+Cash reserve: USD 400,000 in year 1, growing 3.64% a year (year 2 USD 414,560), withdrawn from the portfolio on the first trading day of each year and paid to the university. The reserve earns nothing and is not an investment; it is not part of the seven-ETF universe. Year 1 invests USD 9,600,000 of the USD 10,000,000 fund.
+
+Return objective: at least 1% real a year (C3), measured against US CPI inflation of 2.59% a year (FRED CPIAUCSL as published, 3 January 2005 to 30 September 2026; index ratios, not levels). The nominal floor is 3.62%. The reserve still grows 3.64% a year, a conservative spending assumption above CPI, so the reserve rises faster than prices and real capital is expected to decline.
+
+25-year spending baseline (owner's framing): USD 10,000,000 / USD 400,000 = 25 payments. If net returns equalled the 3.64% reserve growth every year, beginning-of-year withdrawals would exhaust the fund with the 25th payment. The question is whether the strategy funds the same payments and leaves capital. Three outcomes are kept apart: all payments funded, capital left, and the initial USD 10 million preserved in real terms. The endowment remains perpetual; 25 years is an evaluation window, not the end of the mandate.
+
+Universe: SPY, AGG, GLD, XLE only; EFA, EEM and XLK are held at zero because they move almost in step with SPY (daily correlation 0.82-0.91). Long-only and fully invested, with no per-ETF percentage limits. Risk budget: historical one-day ES99 of at most 3.00% of invested NAV ($288,000), on both the strategy's own daily path and the latest target over 2005-2026. Stress and drawdown limit: 20%.
+
+Trading: re-estimate at each month-end close and trade to the new target; between month-ends the holdings drift with prices. Historical turnover was 0.95 times NAV a year over 238 monthly decisions. Trading cost is assumed to be zero (owner assumption), so spreads and market impact are not modelled. ETF expense ratios are embedded in adjusted prices.
+
+## Data and provenance
+
+Yahoo Finance via yfinance supplies dividend/split-adjusted ETF closes. Their total-return interpretation assumes distribution reinvestment; distributions must not be added to adjusted-close returns again. Separate unadjusted closes and distributions support income yield.
+
+The fresh snapshot has 5,470 common price dates and 5,469 returns. All 242 flagged price-return moves remain. The pipeline records stale prices, sharp reversals, calendar closures, volatility shifts and missing observations. Event labels are analyst-compiled date associations rather than verified per-asset causal explanations.
+
+FRED DTB3 discount quotes are converted to bond-equivalent yield and daily rates. CPI inflation is computed from index ratios. Monthly release-lag approximations and daily forward fills are logged; revised contemporary data is not a point-in-time vintage archive.
+
+ADF checks address unit roots; fixed-lag ADF, KPSS and ARCH-LM checks provide complementary diagnostics. Rejection does not establish stable parameters or validate any tail distribution. The selected allocation has its own return-series stationarity report.
+
+Clean price file SHA-256: 76bac76cbc98b5ce62291bd6257600047cc20857943d363edd1f807f743d4d0d. Weight SHA-256: 3044f8908ff62e8f5529b47b71cd04ff9ecc9b4fc6698d811c501d7b1ed4994c. Configuration SHA-256: 280c9f068b661c6834d6f0cd2d975bb3d0e96db7f83f1f747aee2bc38e7c6157. File identity does not prove economic correctness.
+
+Source retrieval metadata accompanies prices and distributions. Legacy source ingestion records macro snapshot write times rather than exact HTTP retrieval timestamps; that limitation is explicit.
+
+## Construction and alternatives
+
+Method: at each month-end close, estimate the covariance of daily simple returns of SPY, AGG, GLD, XLE with exponential weights 0.97^k on the last 750 days (half-life about 23 trading days, effective sample about 66 days). Then choose long-only, fully invested weights whose volatility risk contributions w_i (Sigma w)_i / (w' Sigma w) are equal (25% each), by the convex Spinu (2013) programme: minimise 0.5 y' Sigma y - (1/4) sum log y_i, then w = y / sum y.
+
+Why risk parity: it needs no expected returns. Under mandates v2-v4 the return estimator decided the outcome (50% mean shrinkage pushed the selection to about 88% AGG, which on raw means expects about 0.25% real). Risk parity spreads risk rather than capital, so no single ETF dominates the portfolio's bad days.
+
+Why EWMA and monthly: volatility shocks fade with half-lives of about 34 (SPY), 49 (AGG), 68 (XLE) and 219 (GLD) trading days, so a 23-day half-life tracks the current regime. After a month, 47% of the estimator's information is new. Weekly re-estimation traded noise (1.7x turnover a year) and breached the 20% limit in the GFC; quarterly held stale weights through COVID. No calendar rule catches day-scale crashes.
+
+Range of monthly targets since 2006: SPY 6-26%, AGG 34-84%, GLD 3-32%, XLE 4-19%. The equity share rises when equity volatility is low relative to bonds and gold, and falls when it spikes. Expected return of the current target under the frozen estimator (50% shrinkage, Ledoit-Wolf): 8.70% nominal, 5.96% real.
+
+Fixed-weight comparisons (minimum CVaR, minimum variance, static risk parity, maximum Sharpe, the v1 max-return rule, 60/40, 40/60, equal weight, permanent 25/50/25 and balanced 35/50/15) are evaluated in the same run with their own forecasts. Minimum CVaR is the precomputed de-risk allocation for governance. SPY is the CAPM market proxy; 40/60 SPY/AGG is the active-return benchmark.
+
+Settings (lambda 0.97, 750 days, 500-day start, monthly) were registered before the strategy's risk backtest and were not tuned afterwards. The choice of method still followed retrospective comparisons on the same 2005-2026 history.
+
+## Performance and accounting
+
+The strategy's path starts on 2006-12-28: the first 500 return days (from 4 January 2005) estimate the first target, so its KPIs cover a shorter period than the fixed-weight candidates. Every target uses data through its decision close only, so the path is walk-forward by construction; the method choice is not.
+
+All historical allocation evaluations are retrospective. Fixed-weight candidates are estimated through the snapshot end, so their replays include the crises their estimates saw; the strategy's targets do not, but its design does.
+
+Wealth compounds simple portfolio returns; asset simple returns aggregate before conversion to log. The strategy's path and its risk forecasts use the same daily returns (monthly targets, drift between, zero cost), so there is no implementation mismatch for W_rec; fixed-weight candidates' forecasts replay daily constant weights.
+
+Sharpe uses daily excess return and sample volatility; Sortino uses a zero target and downside deviation over all days. Treynor is unavailable for near-zero beta. Jensen alpha uses SPY excess returns. Information ratio uses 40/60 active returns and tracking error. Calmar uses CAGR and drawdown over the same dates.
+
+The cash reserve is withdrawn before the first trading day's return each year; a fund that cannot pay the full reserve is depleted and stays at zero. Real values deflate by US CPI (2.59% a year), below the 3.64% reserve growth.
+
+## VaR, Expected Shortfall and EVT
+
+All estimates use one trading day and the same allocation/NAV. VaR is a quantile, not maximum loss. ES averages the worst 1-alpha probability mass. Historical VaR uses NumPy linear interpolation; empirical ES uses the step-distribution quantile integral with fractional boundary mass.
+
+Monetary VaR transforms the log-loss quantile. Monetary ES averages transformed tail losses; transforming mean log ES is generally wrong. Historical ES cannot extrapolate past the worst observed scenario. Normal assumptions can miss skew, clustering and tails.
+
+Monte Carlo simulates joint normal and covariance-matched Student-t asset log returns and aggregates simple returns. A common t scale shock preserves joint tail dependence. The normal asset simulation and fitted portfolio-normal distribution are different models; analytical convergence is checked in a matching one-asset case.
+
+EVT fits GPD loss exceedances. Its threshold scan uses mean excess, shape/modified-scale stability, counts and goodness of fit, with visible failures. The rule is a heuristic. Lower-confidence estimates below the threshold use an empirical-body hybrid. Shape >=1 implies infinite log ES, distinct from bounded monetary losses under positive wealth.
+
+Block-bootstrap intervals resample whole asset rows in circular 20-day blocks. The default is 500 replicates. Fixed threshold percentile bootstrap omits full threshold-selection uncertainty; intervals do not protect against model misspecification.
+
+## Sequential forecast validation
+
+The recommended strategy is validated on its own daily path, with monthly target changes and drift, not on fixed weights. Its forecast file carries the strategy hash on every row, and no other allocation's results are reused. C4 result: model used garch_evt. A pass through the challenger after a primary failure is a weaker result and is disclosed.
+
+Each forecast uses only observations through the previous day. Historical/normal models refit daily; slower models refit every 21 observations on a 750-observation window. Conditional volatility updates daily between refits. Forecast files preserve training cutoffs, parameters' refit date, failures and portfolio hashes.
+
+FHS is the preregistered primary model; GARCH-EVT is the challenger. Earlier equal-weight development forecasts were seen: FHS had 65 versus 47.2 expected breaches and Kupiec p about 0.014; GARCH-EVT had 52 and p about 0.49. The choice was therefore not historically blind.
+
+Kupiec tests exception frequency; Christoffersen independence tests clustering and conditional coverage combines them. Degenerate transitions are inconclusive. Missing forecasts are disclosed and excluded from numerical denominators without connecting transitions across gaps.
+
+Traditional Basel colours apply to the final 250 complete observations at 99%: 0-4 green, 5-9 yellow, 10+ red. Other levels receive binomial assessments. These supervisory categories are a monitoring analogy, not a regulatory capital calculation for the fund.
+
+C4 requires at least 95% coverage, a non-red final zone, and Kupiec/conditional-coverage p-values above 0.05 for 2017 onward. The challenger is used once if the primary fails. If both fail the investment evaluation is incomplete, rather than rejected on economic grounds.
+
+## Stress, attribution and governance
+
+Historical stress windows run from SPY peak to trough: 9 October 2007-9 March 2009; 19 February-23 March 2020; 3 January-12 October 2022. The recommended strategy is stressed on its own path from the start-day close, with its monthly re-estimates and drift; dollar losses by ETF are holdings at each prior close times that day's return. Fixed-weight candidates are held buy-and-hold.
+
+The hypothetical inflation shock sets SPY -25%, AGG -10% and GLD 0%. Other equity shocks use conditional means under the covariance of training-period SPY worst-decile days. This extrapolation is uncertain and has no calibrated probability. Reverse stress measures covariance distance to a 20% one-step loss, not a path probability.
+
+Historical dollar ES components use the same joint scenarios and shared normalised portfolio tail weights, including proportional sharing at tied boundaries. Negative contributions remain visible and sum to that scenario-based ES. Portfolio-only FHS cannot supply asset attribution.
+
+Bonds and gold may diversify some equity losses and fail during other shocks. Stock-bond rolling correlation and Treasury-rate sensitivity contextualise that instability. Risk budgets must distinguish capital weights from contributions to the portfolio's bad days.
+
+At 10% drawdown or a yellow zone, review the portfolio and model. At 15% drawdown or a red zone, consider the independently evaluated minimum-CVaR allocation. No automatic trade or guarantee is implied. Each USD 50,000 less in the first-year reserve reduces the whole inflation-linked schedule by 12.5%.
+
+## Decision, limitations and disclosure
+
+Frozen-rule outcome: Accept. Implement the proposed allocation subject to owner review and monitoring. Checks: {"C1": true, "C2": true, "C3": true, "C4": true, "C5": true}.
+
+Mandate v5 checks: C1 every monthly target long-only, fully invested and in the universe; C2 the path's ES99 (1.69%) and the current target's 2005-2026 ES99 (2.60%) both at most 3.00%; C3 expected real return at least 1% under the frozen estimator; C4 FHS or, if it fails, GARCH-EVT passes on the strategy's own forecasts; C5 the strategy path loses at most 20% in each scenario and its GFC drawdown stays within 20%. If the strategy failed, A1 would try the fixed-weight candidates in training ES order; no limit is relaxable further. Missing evidence blocks a final verdict.
+
+Historical dependence, estimated means/covariances, sparse extremes, threshold uncertainty, changing regimes and conditional-filter specification limit inference. The analysis omits tax, detailed liquidity/price impact and Sri Lankan FX/spending risk. Revised macro data limits historical information claims.
+
+The reserve simulation resamples the strategy's own monthly returns (2007-2026) in non-circular 12-month blocks for 25 years, pays the 3.64%-growing reserve each January and deflates by US CPI. It reports full-payment success, depletion timing and real balances. These are illustrative paths from a limited sample, not reliable forward probabilities.
+
+AI disclosure: Codex assisted restoration, portfolio/validation/stress implementation, integration, tests, application and document generation. Earlier source records identify Claude Code and Antigravity assistance; Claude Code implemented the mandate v2-v5 rule changes, cash-reserve accounting, the dynamic risk-parity strategy evaluation and reruns. Automated independent numerical examples are software checks, not an independent human audit. Human reviewer/date: pending. The owner remains responsible for understanding, revising and defending every material result.
+
+Submission dependencies: written acceptance of a solo entry and the deadline remain unconfirmed. Repository access, publication and deployment require separate authorisation. This local package is prepared for review, not represented as submitted.
+
+## Evidence and references
+
+Evidence files include canonical weights, risk tables, per-allocation forecasts, formal tests, scenario attribution, uncertainty, walk-forward allocations, source manifests and environment versions. The Streamlit app reads this same run and invalidates expensive results for changed weights.
+
+Policy and procedure were frozen before current post-training portfolio evaluation. All historical data through the snapshot had been seen in earlier development, so the freeze documents the current procedure rather than manufacturing an untouched holdout.
+
+Competition brief: Quant edge 1.0 Final Challenge 1.pdf, sections 3, 5-10
+
+Basel calibration: https://www.bis.org/committees/bcbs/basel-framework/standard/mar/99/inforce/2019-12-15/published/2019-12-15
+
+CVaR optimisation: https://uryasev.github.io/publications/
+
+Approved prices: https://finance.yahoo.com/
+
+Risk-free series: https://fred.stlouisfed.org/series/DTB3
+
+Inflation series: https://fred.stlouisfed.org/series/CPIAUCSL
+
+Academic foundations retained in the implementation: Markowitz mean-variance construction; CAPM excess-return beta; Rockafellar-Uryasev CVaR optimisation; peaks-over-threshold GPD; Kupiec frequency and Christoffersen independence likelihood-ratio tests. The local teaching decks use synthetic illustrations and do not supply empirical estimates.
+
+## Historical wealth and drawdown
+
+Portfolio selected, strategy 25361fcf3e32, path from 2006-12-28. Retrospective daily-return path through 2026-09-30, with monthly re-estimates, zero cost and before reserve withdrawals.
+
+These paths describe historical behaviour. The annual walk-forward procedure and daily risk forecasts answer different questions and are exported separately.

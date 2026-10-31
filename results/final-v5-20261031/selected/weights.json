@@ -1,0 +1,30 @@
+{
+  "weights": {
+    "SPY": 0.208027,
+    "EFA": 0.0,
+    "EEM": 0.0,
+    "AGG": 0.517218,
+    "GLD": 0.08361,
+    "XLE": 0.191145,
+    "XLK": 0.0
+  },
+  "weight_hash": "3044f8908ff62e8f5529b47b71cd04ff9ecc9b4fc6698d811c501d7b1ed4994c",
+  "strategy_hash": "25361fcf3e3274b320bbc2e7a73d3e72064e9d9a90699622116cff89b8a3b8e6",
+  "strategy": {
+    "type": "dynamic_ewma_risk_parity",
+    "rebalance": "M",
+    "ewma_lambda": 0.97,
+    "window": 750,
+    "min_history": 500,
+    "universe": [
+      "SPY",
+      "AGG",
+      "GLD",
+      "XLE"
+    ],
+    "risk_parity": "Spinu convex form, equal volatility contributions"
+  },
+  "effective_date": "2026-09-30",
+  "estimation_end": "2026-09-30",
+  "note": "latest monthly target; the method re-estimates it each month-end"
+}

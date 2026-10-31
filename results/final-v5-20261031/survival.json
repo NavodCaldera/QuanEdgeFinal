@@ -1,0 +1,84 @@
+{
+  "selected": {
+    "status": "illustrative",
+    "paths": 10000,
+    "block": "non-circular joint 12 months",
+    "horizon_years": 25,
+    "schedule": "USD reserve_initial x (1+reserve_growth)^(t-1) withdrawn each 1 January; cash earns 0",
+    "results": [
+      {
+        "year": 10,
+        "all_payments_funded": 1.0,
+        "mc_se": 0.0,
+        "real_capital_preserved": 0.3406,
+        "median_real_balance_usd": 9139143.278037276,
+        "p10_real_balance_usd": 6788799.748823288,
+        "median_depletion_year": null
+      },
+      {
+        "year": 25,
+        "all_payments_funded": 0.9656,
+        "mc_se": 0.001822543277949799,
+        "real_capital_preserved": 0.1814,
+        "median_real_balance_usd": 5846142.733281588,
+        "p10_real_balance_usd": 1493310.2914267161,
+        "median_depletion_year": 24.0
+      }
+    ],
+    "sample": "strategy's own monthly returns 2007-01 to 2026-09"
+  },
+  "40_60": {
+    "status": "illustrative",
+    "paths": 10000,
+    "block": "non-circular joint 12 months",
+    "horizon_years": 25,
+    "schedule": "USD reserve_initial x (1+reserve_growth)^(t-1) withdrawn each 1 January; cash earns 0",
+    "results": [
+      {
+        "year": 10,
+        "all_payments_funded": 1.0,
+        "mc_se": 0.0,
+        "real_capital_preserved": 0.4338,
+        "median_real_balance_usd": 9549071.749340963,
+        "p10_real_balance_usd": 6333174.153388192,
+        "median_depletion_year": null
+      },
+      {
+        "year": 25,
+        "all_payments_funded": 0.9327,
+        "mc_se": 0.0025054083499501637,
+        "real_capital_preserved": 0.292,
+        "median_real_balance_usd": 6643012.435071183,
+        "p10_real_balance_usd": 774047.0542770093,
+        "median_depletion_year": 23.0
+      }
+    ]
+  },
+  "permanent": {
+    "status": "illustrative",
+    "paths": 10000,
+    "block": "non-circular joint 12 months",
+    "horizon_years": 25,
+    "schedule": "USD reserve_initial x (1+reserve_growth)^(t-1) withdrawn each 1 January; cash earns 0",
+    "results": [
+      {
+        "year": 10,
+        "all_payments_funded": 1.0,
+        "mc_se": 0.0,
+        "real_capital_preserved": 0.5852,
+        "median_real_balance_usd": 10602591.556962352,
+        "p10_real_balance_usd": 7218881.178395284,
+        "median_depletion_year": null
+      },
+      {
+        "year": 25,
+        "all_payments_funded": 0.9795,
+        "mc_se": 0.001417030345476058,
+        "real_capital_preserved": 0.5241,
+        "median_real_balance_usd": 10456931.121342508,
+        "p10_real_balance_usd": 3109825.4735883316,
+        "median_depletion_year": 24.0
+      }
+    ]
+  }
+}
