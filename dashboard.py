@@ -1263,7 +1263,7 @@ def page_limits():
 
 **About implementation**
 - Trading costs are assumed to be zero. Real costs, bid-ask spreads and market impact in a stressed month would
-  lower returns a little (turnover is about 0.95× NAV a year).
+  lower returns a little (turnover is about TURNOVER× NAV a year on this model's own path).
 - Adjusted closing prices from Yahoo Finance are used: dividends are reinvested, and fund fees are already in the prices.
 - No taxes, currency effects, cash yield on the reserve or new contributions are modelled. The reserve itself is assumed paid out.
 - Real returns use one inflation rate, INFLATION_LINE That is US consumer inflation; a university's own
@@ -1278,7 +1278,7 @@ def page_limits():
 **About human review**
 - AI tools (Claude Code, Codex, Antigravity) helped write the code and documents. Independent human review of the calculations and the
   investment judgement is still pending, and solo entry eligibility has not been confirmed by the organisers.
-""".replace("RESERVE_LINE", reserve_line).replace("DATA_FIRST", f"{DATA_START:%d %B %Y}").replace("DATA_SPAN", DATA_SPAN).replace("BACKTEST_LINE", backtest_line)
+""".replace("TURNOVER", f"{PATH.turnover.sum()/((PATH.index[-1] - PATH.index[0]).days/365.25):.2f}").replace("RESERVE_LINE", reserve_line).replace("DATA_FIRST", f"{DATA_START:%d %B %Y}").replace("DATA_SPAN", DATA_SPAN).replace("BACKTEST_LINE", backtest_line)
        .replace("INFLATION_LINE", inflation_line))
 
 
@@ -1300,7 +1300,8 @@ def page_data():
 - **Settings:** EWMA λ = {ST['ewma_lambda']}, window {ST['window']} days, first target after
   {ST['min_history']} days, month-end decisions, universe SPY, AGG, GLD, XLE.{OV}
 - **Settings read from** `config/final.yaml`: NAV, seed, Monte Carlo size, rolling window and refit interval.
-- **Technical report:** `results/final-report-r1/technical_report.pdf`, built by `python -m quanedge.final_report` from the same
+- **Model shown:** {F.MODELS[MODEL]}. {"The v5 core is the same strategy without the overlay and is kept for comparison." if V6 else "v5 is the earlier recommendation; the final model is v6."}
+- **Technical report (v5 wording, not yet regenerated for v6):** `results/final-report-r1/technical_report.pdf`, built by `python -m quanedge.final_report` from the same
   evidence and calculations as this dashboard.
 """)
     a = F.adf(PATH)
