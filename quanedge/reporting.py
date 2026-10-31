@@ -57,6 +57,7 @@ def generate(run):
     checks=rec.get("checks",{});from .portfolio import hurdle
     allocation=[(t,fmt(v,"pct"),fmt(v*cfg["value"],"usd")) for t,v in w.items()]
     chart_paths={}
+    v2="reserve_initial" in cfg;v5="strategy" in cfg
     if w:
         series=pd.read_csv(run/chosen/"performance.csv",index_col=0,parse_dates=True)
         for name,values,ylabel in [("wealth",series.wealth,"Wealth per initial USD, net of trading costs"),
@@ -79,14 +80,13 @@ def generate(run):
         incomplete_note=("" if decision["outcome"]!="evaluation incomplete" else " The outcome is incomplete, so no allocation is committed until the failed evidence is resolved.")
     original=bundle["portfolios"]["selected"]
     capital=rec.get("real_capital_survival",{}).get("results",[])
-    v2="reserve_initial" in cfg;v5="strategy" in cfg
     if v2:
         from .portfolio import nominal_target
         goal=nominal_target(cfg["inflation"],cfg.get("real_return_target",cfg["real_return_floor"]));floor=nominal_target(cfg["inflation"],cfg["real_return_floor"])
         schedule=f"USD {cfg['reserve_initial']:,.0f} in year 1, growing {fmt(cfg['reserve_growth'],'pct')} a year (year 2 USD {cfg['reserve_initial']*(1+cfg['reserve_growth']):,.0f})"
     sustainability=("Illustrative 25-year reserve sustainability: "+"; ".join(
         f"{row['year']} years: all payments funded in {fmt(row['all_payments_funded'],'pct')} of paths, initial real capital preserved in {fmt(row['real_capital_preserved'],'pct')}, median real balance {fmt(row['median_real_balance_usd'],'usd')}" for row in capital)+
-        ". A fixed real reserve of 4% of the initial fund exceeds the 1-3% real return objective, so real capital is expected to decline by design; these resampled-history outcomes do not gate the verdict.") if v2 and capital else ("Illustrative after-spending real-capital shortfall probabilities: "+"; ".join(
+        (". The reserve grows 3.64% a year, faster than US CPI, and the 1% real floor is below the 4% initial draw, so real capital is expected to decline;" if v5 else ". A fixed real reserve of 4% of the initial fund exceeds the 1-3% real return objective, so real capital is expected to decline by design;")+" these resampled-history outcomes do not gate the verdict.") if v2 and capital else ("Illustrative after-spending real-capital shortfall probabilities: "+"; ".join(
         f"{row['year']} years {fmt(row['shortfall_probability'],'pct')} (Monte Carlo SE {fmt(row['mc_se'],'pct')})" for row in capital)+
         ". These resampled-history outcomes do not gate the frozen verdict, but they are a material spending-sustainability concern for owner review.") if capital else "Spending-sustainability evidence is exported separately; it does not gate the frozen verdict."
     tradeoff=""
@@ -181,10 +181,12 @@ def generate(run):
     performance_rows=[[k,fmt(v,"pct" if k in ["cagr","maximum_drawdown","annual_volatility","jensen_alpha","cumulative_return"] else "number")] for k,v in perf.items() if isinstance(v,(float,int)) and not isinstance(v,bool)]
     page("Performance and accounting",[
         *([f"The strategy's path starts on {perf.get('period_start','?')}: the first {st.get('min_history')} return days (from 4 January 2005) estimate the first target, so its KPIs cover a shorter period than the fixed-weight candidates. Every target uses data through its decision close only, so the path is walk-forward by construction; the method choice is not."] if v5 else []),
-        "All historical allocation evaluations are retrospective. W_train is estimated through 2016, W_rec through the snapshot end, and neither erases prior exposure to the crises used when writing the policy. The annual walk-forward procedure uses only earlier data for each year's weights; policy design remains historically informed.",
-        "Wealth compounds simple portfolio returns; asset simple returns aggregate before conversion to log. Implementation performance includes quarterly/drift turnover costs. Risk forecasts instead replay daily constant weights without costs, a disclosed implementation mismatch.",
+        ("All historical allocation evaluations are retrospective. Fixed-weight candidates are estimated through the snapshot end, so their replays include the crises their estimates saw; the strategy's targets do not, but its design does." if v5 else
+         "All historical allocation evaluations are retrospective. W_train is estimated through 2016, W_rec through the snapshot end, and neither erases prior exposure to the crises used when writing the policy. The annual walk-forward procedure uses only earlier data for each year's weights; policy design remains historically informed."),
+        ("Wealth compounds simple portfolio returns; asset simple returns aggregate before conversion to log. The strategy's path and its risk forecasts use the same daily returns (monthly targets, drift between, zero cost), so there is no implementation mismatch for W_rec; fixed-weight candidates' forecasts replay daily constant weights." if v5 else
+         "Wealth compounds simple portfolio returns; asset simple returns aggregate before conversion to log. Implementation performance includes quarterly/drift turnover costs. Risk forecasts instead replay daily constant weights without costs, a disclosed implementation mismatch."),
         "Sharpe uses daily excess return and sample volatility; Sortino uses a zero target and downside deviation over all days. Treynor is unavailable for near-zero beta. Jensen alpha uses SPY excess returns. Information ratio uses 40/60 active returns and tracking error. Calmar uses CAGR and drawdown over the same dates.",
-        ("The cash reserve is withdrawn before the first trading day's return each year; a fund that cannot pay the full reserve is depleted and stays at zero. Real values deflate by the policy inflation assumption, the same rate that grows the reserve." if v2 else
+        ("The cash reserve is withdrawn before the first trading day's return each year; a fund that cannot pay the full reserve is depleted and stays at zero. "+("Real values deflate by US CPI (2.59% a year), below the 3.64% reserve growth." if v5 else "Real values deflate by the policy inflation assumption, the same rate that grows the reserve.") if v2 else
         "Annual spending is deducted once after net returns. The real-capital target is initial NAV multiplied by the CPI ratio; spending is not added to this target. Money-weighted return includes distributions as investor cash flows and remaining NAV, while time-weighted CAGR measures the investment path.")
     ],[table(["Metric","Value"],performance_rows[:13],[300,210])])
     risk_rows=[[r.method,f"{r.alpha:.0%}",f"${r.var_usd:,.0f}",f"${r.es_usd:,.0f}"] for r in risk.itertuples() if r.alpha in [.95,.99] and r.method in ["historical","normal","mc_t","evt"]]
@@ -222,7 +224,8 @@ def generate(run):
          "The mandate passes only if feasibility (C1), the ES budget (C2), "+(f"a realised real CAGR of at least {cfg['real_cagr_floor']:.0%} on the 2005-2026 replay (C3)" if "real_cagr_floor" in cfg else "an expected real return of at least 1% (C3)")+", a validated risk model (C4) and the stress limits (C5) all pass. Otherwise evaluate A1, the alternative candidates in training ES order, then A2, the ES budget raised to the frozen training-sample value. The reserve schedule and the 1% real floor are client needs and are not relaxed. Missing evidence blocks a final verdict." if v2 else
         "The original mandate passes only if feasibility, ES budget, expected geometric hurdle, validated risk model and stress checks all pass. Otherwise evaluate A1 alternative in-policy candidates in training ES order, A2 gold cap 20%, A3 spending 3.5%, A4 the frozen capped risk-budget increase, then A5 their combination. Missing evidence blocks a final verdict."),
         "Historical dependence, estimated means/covariances, sparse extremes, threshold uncertainty, changing regimes and conditional-filter specification limit inference. The analysis omits tax, detailed liquidity/price impact and Sri Lankan FX/spending risk. Revised macro data limits historical information claims.",
-        ("The reserve simulation resamples joint monthly asset returns in non-circular 12-month blocks for 25 years, pays the inflation-linked reserve each January, rebalances quarterly or on drift and reports full-payment success, depletion timing and real balances. These are illustrative paths from a limited sample, not reliable forward probabilities." if v2 else
+        ("The reserve simulation resamples the strategy's own monthly returns (2007-2026) in non-circular 12-month blocks for 25 years, pays the 3.64%-growing reserve each January and deflates by US CPI. It reports full-payment success, depletion timing and real balances. These are illustrative paths from a limited sample, not reliable forward probabilities." if v5 else
+         "The reserve simulation resamples joint monthly asset returns in non-circular 12-month blocks for 25 years, pays the inflation-linked reserve each January, rebalances quarterly or on drift and reports full-payment success, depletion timing and real balances. These are illustrative paths from a limited sample, not reliable forward probabilities." if v2 else
         "The real-capital simulation resamples joint monthly asset/CPI observations in non-circular 12-month blocks, applies quarterly/drift trades and annual spending, and compares after-spending NAV with inflation-adjusted initial capital. These are illustrative paths from a limited sample, not reliable forward probabilities."),
         "AI disclosure: Codex assisted restoration, portfolio/validation/stress implementation, integration, tests, application and document generation. Earlier source records identify Claude Code and Antigravity assistance; Claude Code implemented the mandate v2-v5 rule changes, cash-reserve accounting, the dynamic risk-parity strategy evaluation and reruns. Automated independent numerical examples are software checks, not an independent human audit. Human reviewer/date: pending. The owner remains responsible for understanding, revising and defending every material result.",
         "Submission dependencies: written acceptance of a solo entry and the deadline remain unconfirmed. Repository access, publication and deployment require separate authorisation. This local package is prepared for review, not represented as submitted."
@@ -235,7 +238,7 @@ def generate(run):
     ])
     if chart_paths:
         page("Historical wealth and drawdown",[
-            f"Portfolio {chosen}, "+(f"strategy {rec.get('forecast_hash','')[:12]}, path from {perf.get('period_start')}" if v5 else f"weights {rec.get('weight_hash','')[:12]}, from 2005")+f". Retrospective daily-return path through {cfg['snapshot_end']}, after quarterly/drift trading costs and before "+("reserve withdrawals." if v2 else "spending."),
+            f"Portfolio {chosen}, "+(f"strategy {rec.get('forecast_hash','')[:12]}, path from {perf.get('period_start')}" if v5 else f"weights {rec.get('weight_hash','')[:12]}, from 2005")+f". Retrospective daily-return path through {cfg['snapshot_end']}, "+("with monthly re-estimates, zero cost and before " if v5 else "after quarterly/drift trading costs and before ")+("reserve withdrawals." if v2 else "spending."),
             "These paths describe historical behaviour. The annual walk-forward procedure and daily risk forecasts answer different questions and are exported separately."
         ],[Image(str(chart_paths["wealth"]),width=510,height=217),Image(str(chart_paths["drawdown"]),width=510,height=217)])
     story=[];source=[]
@@ -260,7 +263,7 @@ def generate(run):
     concise.insert(-1,paragraph(f"Validation ({rec.get('model_used','unavailable')}, 99%): {monitor.get('breaches','?')}/{monitor.get('days','?')} breaches, {monitor.get('zone','unavailable')} zone; Kupiec p {fmt(monitor.get('kupiec_p'))}, conditional coverage p {fmt(monitor.get('conditional_coverage_p'))}. Largest specified scenario loss {fmt(worst,'usd')}."))
     if capital and v2:
         last=capital[-1]
-        concise.insert(-1,paragraph(f"Expected return {fmt(rec.get('expected_geometric'),'pct')} nominal ({fmt(rec.get('expected_real'),'pct')} real; "+("floor 1% real over US CPI" if v5 else "target 1-3%")+"). Cash reserve {schedule}. Illustrative {last['year']}-year outcome: all reserve payments funded in {fmt(last['all_payments_funded'],'pct')} of paths; initial real capital preserved in {fmt(last['real_capital_preserved'],'pct')}. Not a calibrated forecast."))
+        concise.insert(-1,paragraph(f"Expected return {fmt(rec.get('expected_geometric'),'pct')} nominal ({fmt(rec.get('expected_real'),'pct')} real; "+("floor 1% real over US CPI" if v5 else "target 1-3%")+f"). Cash reserve {schedule}. Illustrative {last['year']}-year outcome: all reserve payments funded in {fmt(last['all_payments_funded'],'pct')} of paths; initial real capital preserved in {fmt(last['real_capital_preserved'],'pct')}. Not a calibrated forecast."))
     elif capital:
         concise.insert(-1,paragraph(f"Illustrative real-capital shortfall after spending: {fmt(capital[0]['shortfall_probability'],'pct')} at five years; {fmt(capital[-1]['shortfall_probability'],'pct')} at ten years. Material concern for owner review; not a calibrated forecast."))
     pdf("executive_tear_sheet.pdf",concise)
